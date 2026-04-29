@@ -1,12 +1,12 @@
 # Dependencies
 node_modules/
-.pnpm-store/
 
 # Build output
 .next/
 dist/
 build/
 out/
+tsconfig.tsbuildinfo
 
 # Env / secrets
 .env

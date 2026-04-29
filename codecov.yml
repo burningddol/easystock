@@ -1,0 +1,26 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 60%
+        threshold: 1%
+      domain:
+        target: 80%
+        threshold: 1%
+        flags:
+          - domain
+    patch:
+      default:
+        target: 80%
+        threshold: 1%
+
+flags:
+  domain:
+    paths:
+      - src/lib/domain/
+      - src/features/*/lib/
+
+comment:
+  layout: "reach,diff,flags,files,components"
+  behavior: default
+  require_changes: false
