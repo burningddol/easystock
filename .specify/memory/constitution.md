@@ -1,19 +1,22 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.1.0 → 1.2.0
-Bump rationale: MINOR — Implementation Order에 calendar(월간 장부) 화면 신규 추가 (5개 → 6개), Design Source의 표준 참조 스킬을 easystock-design-system으로 지정 (항상 참조 의무)
-Modified principles: (없음 — 이번 개정은 Development Workflow 변경)
+Version change: 1.2.0 → 1.3.0
+Bump rationale: MINOR — Development Workflow에 Testing & Coverage 서브섹션 신규 추가. NON-NEGOTIABLE 원칙(특히 III, IV)의 회귀를 방지하기 위해 단위·통합·E2E 테스트 의무 + 커버리지 임계치(핵심 도메인 80% / 전체 60%) + CI 게이트 명시
+Modified principles: (없음 — 이번 개정은 Development Workflow 확장)
 Added sections:
-  - Development Workflow > Implementation Order: 6번째 화면 calendar(P6) 추가, 하단 탭 5개 구조 명시(매입은 컨텍스트 진입)
-  - Development Workflow > Design Source: 프로젝트 내 디자인 시스템 스킬 `.claude/skills/easystock-design-system` 항상 참조 의무 명시 (토큰/컴포넌트/패턴 단일 진실 공급원)
+  - Development Workflow > Testing & Coverage: 테스트 의무, 커버리지 임계치, CI 머지 차단 게이트 신규 명시
 Removed sections: (없음)
 Templates requiring updates:
   - ✅ .specify/templates/plan-template.md — Constitution Check 런타임 참조, 정적 수정 불필요
   - ✅ .specify/templates/spec-template.md — 수정 불필요
   - ✅ .specify/templates/tasks-template.md — 수정 불필요
-  - ⚠ CLAUDE.md (프로젝트 루트) — 디렉토리 구조에 calendar/ 추가, 디자인 워크플로우 표준 스킬 갱신 (별도 편집)
+  - ⚠ CLAUDE.md (프로젝트 루트) — 테스트 규칙 요약 섹션 추가 필요 (별도 편집)
 Follow-up TODOs: (없음)
+이전 개정 이력:
+  - v1.2.0 (2026-04-30): Implementation Order calendar(P6) 추가, Design Source의 easystock-design-system 항상 참조 의무
+  - v1.1.0 (2026-04-30): 원칙 III에 가중 이동 평균법 + 판매 시점 스냅샷 보존 MUST 추가, Development Workflow > Design Source 신규
+  - v1.0.0 (2026-04-30): 초기 비준 (7 원칙, 4 NON-NEGOTIABLE)
 스킬 상태: easystock-design-system 스킬은 .claude/skills/easystock-design-system/ 에 존재 확인됨 (SKILL.md, tokens.json, tokens.ts, components.md, patterns.md). 캘린더 패턴 포함.
 -->
 
@@ -158,6 +161,41 @@ UI/UX는 프로젝트 내 디자인 시스템 스킬 **`.claude/skills/easystock
 
 별도 디자인 도구(Figma 등) 의존 없이 코드 우선 워크플로우를 유지한다. 모든 디자인은 헌법 II(모바일·PWA 우선)와 I(입력 마찰 1순위)에 부합 MUST.
 
+### Testing & Coverage
+
+핵심 도메인 로직과 NON-NEGOTIABLE 원칙(특히 III, IV)의 회귀를 방지하기 위해 다음 테스트를 의무화한다.
+
+**단위 테스트 (MUST)**:
+
+- 가중 이동 평균법 단가 산정 (원칙 III)
+- 메뉴 원가 및 마진 계산
+- Sale 저장 시 메뉴 원가 스냅샷 보존, 편집 시 새 스냅샷 재계산
+- 소진 예측 (요일별 가중 평균 + 거래처 리드타임 + 안전여유)
+- 정기휴무 제외 로직 (누락 카운트, 푸시 발송, 예측 평균 산정)
+
+**통합 테스트 (MUST)**:
+
+- RLS 정책 (원칙 IV) — 사용자 격리 회귀 차단
+- Sale 저장·편집 트랜잭션 (재고 자동 차감/되돌림 일관성)
+- 매입 → 평균 단가 갱신 → 메뉴 마진 자동 재계산 흐름
+
+**E2E 테스트 (MUST)**:
+
+- 페르소나 골든패스 최소 1개 (가입 → 메뉴 등록 → 판매 입력 → 마진 확인)
+
+**커버리지 임계치 (Codecov 측정)**:
+
+- 핵심 도메인 로직 모듈 (단가·마진·예측 등 비즈니스 함수): **80% 이상**
+- 전체 코드베이스: **60% 이상**
+
+**CI 게이트 (PR 머지 차단 사유)**:
+
+- 단위 테스트 실패
+- 핵심 도메인 커버리지 회귀 (이전 PR 대비 감소)
+- E2E 골든패스 실패
+
+TDD 강제는 아니다. 다만 핵심 도메인 로직은 테스트 우선 작성을 권장한다. UI 컴포넌트는 시각적 검증이 더 효과적이므로 단위 테스트 의무 대상에서 제외하되, 디자인 시스템 패턴 회귀는 시각 회귀 테스트 또는 수동 검증으로 보완한다.
+
 ## Governance
 
 ### Authority
@@ -187,4 +225,4 @@ UI/UX는 프로젝트 내 디자인 시스템 스킬 **`.claude/skills/easystock
 
 `/speckit-plan` 단계의 Constitution Check가 1차 검증, 코드 리뷰가 2차 검증이다. NON-NEGOTIABLE 원칙(I, III, IV, V) 위반은 머지 차단 사유다.
 
-**Version**: 1.2.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30
+**Version**: 1.3.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30
