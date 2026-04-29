@@ -126,3 +126,10 @@ src/
 - 주간 재고 실사 수행률 50%+
 
 지표가 미달하면 기능 추가가 아니라 **입력 마찰 줄이기**부터 검토한다.
+
+## Active Technologies
+- TypeScript 5.x (strict mode, `any` 금지) on Node.js 20 LTS (001-mvp-core)
+- Supabase Postgres (RLS user_id 격리). Supabase Storage는 1차 MVP에서 사용하지 않음 (이미지 업로드 등 미포함) (001-mvp-core)
+
+## Recent Changes
+- 001-mvp-core: Added TypeScript 5.x (strict mode, `any` 금지) on Node.js 20 LTS
