@@ -114,9 +114,15 @@ src/
 
 (셋업 후 채움)
 
-- `pnpm dev` — 개발 서버
-- `pnpm build` — 프로덕션 빌드
-- `pnpm typecheck` — 타입 체크
+- `npm run dev` — 개발 서버
+- `npm run build` — 프로덕션 빌드
+- `npm run typecheck` — 타입 체크
+- `npm run lint` — ESLint
+- `npm run test` — Vitest 단위 + 통합
+- `npm run test:e2e` — Playwright
+- `npm run test:coverage` — 커버리지 리포트
+- `npx supabase db push --linked` — 마이그레이션 적용
+- `npx supabase gen types typescript --linked` — TS 타입 생성
 - `supabase db push` — 마이그레이션 적용
 
 ## 성공 지표 (MVP 검증 기준)
@@ -128,8 +134,10 @@ src/
 지표가 미달하면 기능 추가가 아니라 **입력 마찰 줄이기**부터 검토한다.
 
 ## Active Technologies
+
 - TypeScript 5.x (strict mode, `any` 금지) on Node.js 20 LTS (001-mvp-core)
 - Supabase Postgres (RLS user_id 격리). Supabase Storage는 1차 MVP에서 사용하지 않음 (이미지 업로드 등 미포함) (001-mvp-core)
 
 ## Recent Changes
+
 - 001-mvp-core: Added TypeScript 5.x (strict mode, `any` 금지) on Node.js 20 LTS

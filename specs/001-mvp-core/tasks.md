@@ -1,5 +1,4 @@
 ---
-
 description: "Task list for 001-mvp-core feature implementation"
 ---
 
@@ -35,14 +34,14 @@ description: "Task list for 001-mvp-core feature implementation"
 
 **Purpose**: Next.js + Supabase + 디자인 시스템 + 테스트 + 관측성 + CI 인프라 셋업
 
-- [ ] T001 Initialize Next.js 15 App Router project with pnpm in repository root (`pnpm create next-app . --typescript --tailwind --app --src-dir --import-alias "@/*"`)
+- [ ] T001 Initialize Next.js 15 App Router project manually in repository root: write `package.json` (Next 15 + React 19), `tsconfig.json`, `next.config.ts`, `next-env.d.ts`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `public/`. Run `npm install` to generate `package-lock.json`. (Manual init avoids `create-next-app` refusing on non-empty dir)
 - [ ] T002 [P] Configure TypeScript strict mode and `noUncheckedIndexedAccess` in `tsconfig.json`; add `paths` aliases for `@/lib`, `@/features`, `@/components`
-- [ ] T003 [P] Install core dependencies: `pnpm add @supabase/supabase-js @supabase/ssr @tanstack/react-query zustand react-hook-form zod @hookform/resolvers recharts date-fns decimal.js`
-- [ ] T004 [P] Install dev dependencies: `pnpm add -D vitest @vitejs/plugin-react @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom @playwright/test msw`
+- [ ] T003 [P] Install core dependencies: `npm install @supabase/supabase-js @supabase/ssr @tanstack/react-query zustand react-hook-form zod @hookform/resolvers recharts date-fns decimal.js`
+- [ ] T004 [P] Install dev dependencies: `npm install -D vitest @vitejs/plugin-react @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom @playwright/test msw`
 - [ ] T005 [P] Configure ESLint and Prettier with TypeScript rules; ban `any` and require explicit return types in `eslint.config.mjs`
 - [ ] T006 [P] Configure Tailwind CSS with token integration in `tailwind.config.ts`; map colors, spacing, radius from design system tokens
 - [ ] T007 Setup Pretendard variable font: download `pretendard-variable.woff2` to `public/fonts/`; configure `next/font/local` in `src/app/layout.tsx`
-- [ ] T008 Initialize shadcn/ui: `pnpm dlx shadcn@latest init`; configure with custom Tailwind tokens
+- [ ] T008 Initialize shadcn/ui: `npx shadcn@latest init`; configure with custom Tailwind tokens
 - [ ] T009 [P] Re-export design tokens at `src/lib/design-tokens.ts` from `.claude/skills/easystock-design-system/tokens.ts`
 - [ ] T010 [P] Configure Vitest in `vitest.config.ts` with jsdom environment, coverage reporters (json + text + html), and include patterns for `tests/unit/**` and `tests/integration/**`
 - [ ] T011 [P] Configure Playwright in `playwright.config.ts` with mobile viewport (375x667) for persona testing
@@ -50,11 +49,11 @@ description: "Task list for 001-mvp-core feature implementation"
 - [ ] T013 Create PWA manifest at `src/app/manifest.ts` with name "이지스톡", theme color from design tokens, icons (192/512), display=standalone
 - [ ] T014 Create service worker stub at `public/sw.js` with push event listener and notificationclick handler (per contracts/push.md)
 - [ ] T015 Register service worker in `src/app/layout.tsx` via client component; setup VAPID public key from `NEXT_PUBLIC_VAPID_PUBLIC_KEY` env
-- [ ] T016 [P] Install GA4 dependency: `pnpm add @next/third-parties`; create `src/lib/analytics/ga4.ts` with typed event sender (gated by consent)
+- [ ] T016 [P] Install GA4 dependency: `npm install @next/third-parties`; create `src/lib/analytics/ga4.ts` with typed event sender (gated by consent)
 - [ ] T017 [P] Create cookie consent state manager at `src/lib/analytics/consent.ts` (localStorage + Supabase sync via `record_consent` RPC stub)
 - [ ] T018 [P] Create cookie consent banner component at `src/components/ui/cookie-consent-banner.tsx`; renders only when consent state unset
-- [ ] T019 [P] Install Sentry: `pnpm add @sentry/nextjs`; configure `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts` with DSN from env
-- [ ] T020 [P] Add Vercel Analytics: `pnpm add @vercel/analytics`; integrate `<Analytics />` in `src/app/layout.tsx`
+- [ ] T019 [P] Install Sentry: `npm install @sentry/nextjs`; configure `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts` with DSN from env
+- [ ] T020 [P] Add Vercel Analytics: `npm install @vercel/analytics`; integrate `<Analytics />` in `src/app/layout.tsx`
 - [ ] T021 [P] Create CI workflow at `.github/workflows/ci.yml` with jobs: lint-typecheck, test-unit, test-integration, test-e2e, build-check; upload coverage to Codecov with flags `domain` and `overall`
 - [ ] T022 [P] Create Edge Functions deploy workflow at `.github/workflows/deploy-edge-functions.yml` triggered by changes in `supabase/functions/**`
 - [ ] T023 [P] Create DB migration workflow at `.github/workflows/migrate-db.yml` with `workflow_dispatch` and environment input (staging/prod)
@@ -78,7 +77,7 @@ description: "Task list for 001-mvp-core feature implementation"
 - [ ] T030 Write SQL migration `supabase/migrations/001_users_and_isolation.sql` creating `public.users` table, `regular_days_off` text[] column, withdrawal fields, trigger to sync from `auth.users`, RLS policies (per data-model.md §1)
 - [ ] T031 Write SQL migration `supabase/migrations/002_ingredients_and_pricing.sql` creating `ingredients`, `ingredient_price_history` tables, indexes, RLS policies (per data-model.md §2-3)
 - [ ] T032 [P] Write SQL migration `supabase/migrations/008_user_withdrawal_grace.sql` adding indexes for `permanent_delete_at` and Edge Function dependency (per data-model.md §1)
-- [ ] T033 Generate TypeScript types from schema: `pnpm db:gen-types > src/lib/supabase/types.ts`; commit generated types
+- [ ] T033 Generate TypeScript types from schema: `npm run db:gen-types > src/lib/supabase/types.ts`; commit generated types
 - [ ] T034 [P] Create Supabase browser client at `src/lib/supabase/client.ts` using `createBrowserClient`
 - [ ] T035 [P] Create Supabase server client at `src/lib/supabase/server.ts` using `createServerClient` for App Router server components
 - [ ] T036 Create middleware at `src/middleware.ts` calling `updateSession()` to refresh auth cookies; block grace-period users from protected routes (per contracts/auth.md)
@@ -140,7 +139,7 @@ description: "Task list for 001-mvp-core feature implementation"
 - [ ] T061 [US3] Write SQL migration `supabase/migrations/003_menus_and_recipes.sql` creating `menus` (with unique `(user_id, name)`), `recipe_items` tables and RLS policies (per data-model.md §6)
 - [ ] T062 [US3] Write SQL migration `supabase/migrations/012_clone_menu_template_rpc.sql` defining `clone_menu_template(store_type)` function that inserts ingredients + menus + recipe items from `menu_templates` (per contracts/domain-rpc.md)
 - [ ] T063 [US3] Write SQL migration `supabase/migrations/013_menu_templates_seed.sql` creating read-only `menu_templates` table and seeding 빙수카페 8종, 카페 음료 10종 with default recipes
-- [ ] T064 [US3] Regenerate types: `pnpm db:gen-types > src/lib/supabase/types.ts`
+- [ ] T064 [US3] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
 - [ ] T065 [US3] Write Zod schemas at `src/features/menu/schemas.ts` for `MenuInput`, `RecipeItemInput`, `CloneTemplateInput`
 
 ### UI 컴포넌트 + 라우팅
@@ -187,7 +186,7 @@ description: "Task list for 001-mvp-core feature implementation"
 - [ ] T083 [US1] Write SQL migration `supabase/migrations/014_save_sale_rpc.sql` defining `save_sale(items)` transactional RPC that validates menus, computes snapshots, decrements stock, returns `SaveSaleResult` with `marginLabel: '재료 원가 기준 (이동평균법)'` (per contracts/domain-rpc.md)
 - [ ] T084 [US1] Write SQL migration `supabase/migrations/015_edit_sale_rpc.sql` defining `edit_sale(sale_id, new_items, reason)` with lock check, audit history, stock revert+reapply
 - [ ] T085 [US1] Write SQL migration `supabase/migrations/016_delete_sale_rpc.sql` defining `delete_sale(sale_id)` with audit + stock revert
-- [ ] T086 [US1] Regenerate types: `pnpm db:gen-types > src/lib/supabase/types.ts`
+- [ ] T086 [US1] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
 - [ ] T087 [US1] Write Zod schemas at `src/features/sale/schemas.ts` for `SaveSaleInput`, `EditSaleInput` (per contracts/domain-rpc.md)
 
 ### UI 컴포넌트 + 라우팅
@@ -229,7 +228,7 @@ description: "Task list for 001-mvp-core feature implementation"
 
 - [ ] T104 [US2] Write SQL migration `supabase/migrations/005_purchases_and_history.sql` creating `vendors`, `purchase_orders`, `purchase_order_items` + RLS (per data-model.md §4-5)
 - [ ] T105 [US2] Write SQL migration `supabase/migrations/017_save_purchase_rpc.sql` defining `save_purchase(payload)` transactional RPC: validate, save, apply weighted moving average via `pricing.ts` logic in PL/pgSQL, increment stock, insert price history, return `priceChangeAlerts` for ±5% changes
-- [ ] T106 [US2] Regenerate types: `pnpm db:gen-types > src/lib/supabase/types.ts`
+- [ ] T106 [US2] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
 - [ ] T107 [US2] Write Zod schemas at `src/features/purchase/schemas.ts` for `SavePurchaseInput` and vendor management
 
 ### UI 컴포넌트 + 라우팅
@@ -273,7 +272,7 @@ description: "Task list for 001-mvp-core feature implementation"
 - [ ] T122 [US4] Write SQL migration `supabase/migrations/006_stock_counts.sql` creating `daily_stock_counts`, `stock_count_items` + RLS (per data-model.md §9)
 - [ ] T123 [US4] Write SQL migration `supabase/migrations/018_apply_stock_count_rpc.sql` defining `apply_stock_count(items)` updating `current_stock` only (단가 불변, FR-016), inserting `IngredientPriceHistory` reason='stock_count_correction'
 - [ ] T124 [US4] Write SQL migration `supabase/migrations/019_get_depletion_forecast_rpc.sql` defining `get_depletion_forecast()` returning per-ingredient status + expected_depletion_date + trend (uses forecast.ts logic ported to PL/pgSQL OR returns raw data for client-side computation — choose latter for simpler testing)
-- [ ] T125 [US4] Regenerate types: `pnpm db:gen-types > src/lib/supabase/types.ts`
+- [ ] T125 [US4] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
 - [ ] T126 [US4] Write Zod schemas at `src/features/inventory/schemas.ts`
 
 ### UI 컴포넌트 + 라우팅
@@ -383,7 +382,7 @@ description: "Task list for 001-mvp-core feature implementation"
 - [ ] T167 [P] Verify FR-019 라벨 노출: grep `재료 원가 기준 (이동평균법)` in all margin-displaying components; ensure 0 occurrences of plain `순수익` without label (헌법 III, 출시 차단 사유)
 - [ ] T168 [P] Verify design token hardcoding 0건: grep for hex codes (`#[0-9a-fA-F]{3,6}`) in `src/` excluding token files; ensure 0 violations (헌법 Design Source)
 - [ ] T169 Run E2E persona-golden-path on mobile viewport (375x667) and assert total time ≤ 5 minutes (SC-001/SC-007)
-- [ ] T170 Run `pnpm test:coverage` and verify Codecov thresholds: domain ≥80% (`src/lib/domain/`, `src/features/*/lib/`), overall ≥60% (헌법 v1.3.0)
+- [ ] T170 Run `npm run test:coverage` and verify Codecov thresholds: domain ≥80% (`src/lib/domain/`, `src/features/*/lib/`), overall ≥60% (헌법 v1.3.0)
 - [ ] T171 [P] Run Lighthouse on `/sale` mobile preview (375x667): assert PWA ≥90, Accessibility ≥90, Performance ≥90, Best Practices ≥90
 - [ ] T172 Manual verification: PWA install on iOS Safari 16.4+, push permission grant, deliver test push from Edge Function (manual trigger), confirm notification displays
 - [ ] T173 Manual verification: GA4 DebugView shows `signup_complete → first_menu_registered → first_sale_input → d7_active` events firing for test user
@@ -437,41 +436,51 @@ Setup ─→ Foundational ─→ US3 menu ─┬→ US1 sale ─┬→ US4 inven
 ## Parallel Opportunities
 
 ### Phase 1 Setup
+
 T002~T029 중 동일 file 의존성 없는 [P] 표시 task는 모두 병렬:
+
 - T002, T003, T004, T005, T009, T010, T011, T012, T016, T017, T018, T019, T020 (config files 분리)
 - T021~T024, T028~T029 (각자 다른 file)
 
 ### Phase 2 Foundational
+
 - T030~T032 (마이그레이션, 순차 추천 — schema 의존)
 - T034, T035, T037, T038, T039, T046, T047, T048, T049, T051, T052, T053, T054, T055, T056 (각각 다른 file)
 
 ### Phase 3 US3 menu
+
 - T057, T059 (다른 테스트 파일)
 - T066~T069, T073, T074 (다른 컴포넌트/훅 파일)
 - T077, T078 (다른 통합 테스트 파일)
 
 ### Phase 4 US1 sale
+
 - T079 (단위 테스트)
 - T088~T091, T094~T096 (다른 컴포넌트/훅)
 - T101~T103 (다른 통합 테스트)
 
 ### Phase 5 US2 purchase
+
 - T108~T111, T114, T115 (다른 컴포넌트/훅)
 - T118, T119 (다른 통합 테스트)
 
 ### Phase 6 US4 inventory
+
 - T120 (단위 테스트)
 - T127~T130, T133, T134 (다른 컴포넌트/훅)
 - T135 (RPC 마이그레이션, 독립 file)
 - T143, T144 (다른 통합 테스트)
 
 ### Phase 7 US5 dashboard
+
 - T147~T150, T152 (다른 컴포넌트/훅)
 
 ### Phase 8 US6 calendar
+
 - T156~T160, T162 (다른 컴포넌트/훅)
 
 ### Phase 9 Polish
+
 - T167, T168, T171, T175, T176, T177, T179, T180 (각자 다른 검증/문서)
 
 ---
@@ -505,18 +514,18 @@ MVP (Phase 4 완료) ─→ + 매입 (Phase 5) ─→ 마진 정확도 ↑
 
 ### 1인 개발자 권장 일정 (참고)
 
-| Phase | 예상 소요 |
-|---|---|
-| 1 Setup | 2~3일 |
-| 2 Foundational | 3~4일 |
-| 3 US3 menu | 3~4일 |
-| 4 US1 sale | 4~5일 (가장 복잡 — 편집/스냅샷) |
-| 5 US2 purchase | 2~3일 |
-| 6 US4 inventory | 4~5일 (forecast + push) |
-| 7 US5 dashboard | 2일 |
-| 8 US6 calendar | 3일 |
-| 9 Polish | 2~3일 |
-| **총합** | **약 25~32일** (일 6~8시간) |
+| Phase           | 예상 소요                       |
+| --------------- | ------------------------------- |
+| 1 Setup         | 2~3일                           |
+| 2 Foundational  | 3~4일                           |
+| 3 US3 menu      | 3~4일                           |
+| 4 US1 sale      | 4~5일 (가장 복잡 — 편집/스냅샷) |
+| 5 US2 purchase  | 2~3일                           |
+| 6 US4 inventory | 4~5일 (forecast + push)         |
+| 7 US5 dashboard | 2일                             |
+| 8 US6 calendar  | 3일                             |
+| 9 Polish        | 2~3일                           |
+| **총합**        | **약 25~32일** (일 6~8시간)     |
 
 ---
 
