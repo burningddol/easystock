@@ -9,4 +9,6 @@ test-results
 package-lock.json
 supabase/.branches
 supabase/.temp
-.specify/templates
+.specify
+.claude/skills
+specs

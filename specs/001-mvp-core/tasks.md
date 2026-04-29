@@ -34,17 +34,17 @@ description: "Task list for 001-mvp-core feature implementation"
 
 **Purpose**: Next.js + Supabase + 디자인 시스템 + 테스트 + 관측성 + CI 인프라 셋업
 
-- [ ] T001 Initialize Next.js 15 App Router project manually in repository root: write `package.json` (Next 15 + React 19), `tsconfig.json`, `next.config.ts`, `next-env.d.ts`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `public/`. Run `npm install` to generate `package-lock.json`. (Manual init avoids `create-next-app` refusing on non-empty dir)
-- [ ] T002 [P] Configure TypeScript strict mode and `noUncheckedIndexedAccess` in `tsconfig.json`; add `paths` aliases for `@/lib`, `@/features`, `@/components`
-- [ ] T003 [P] Install core dependencies: `npm install @supabase/supabase-js @supabase/ssr @tanstack/react-query zustand react-hook-form zod @hookform/resolvers recharts date-fns decimal.js`
-- [ ] T004 [P] Install dev dependencies: `npm install -D vitest @vitejs/plugin-react @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom @playwright/test msw`
-- [ ] T005 [P] Configure ESLint and Prettier with TypeScript rules; ban `any` and require explicit return types in `eslint.config.mjs`
+- [x] T001 Initialize Next.js 15 App Router project manually in repository root: write `package.json` (Next 15 + React 19), `tsconfig.json`, `next.config.ts`, `next-env.d.ts`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `public/`. Run `npm install` to generate `package-lock.json`. (Manual init avoids `create-next-app` refusing on non-empty dir)
+- [x] T002 [P] Configure TypeScript strict mode and `noUncheckedIndexedAccess` in `tsconfig.json`; add `paths` aliases for `@/lib`, `@/features`, `@/components`
+- [x] T003 [P] Install core dependencies: `npm install @supabase/supabase-js @supabase/ssr @tanstack/react-query zustand react-hook-form zod @hookform/resolvers recharts date-fns decimal.js`
+- [x] T004 [P] Install dev dependencies: `npm install -D vitest @vitejs/plugin-react @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom @playwright/test msw`
+- [x] T005 [P] Configure ESLint and Prettier with TypeScript rules; ban `any` and require explicit return types in `eslint.config.mjs`
 - [ ] T006 [P] Configure Tailwind CSS with token integration in `tailwind.config.ts`; map colors, spacing, radius from design system tokens
 - [ ] T007 Setup Pretendard variable font: download `pretendard-variable.woff2` to `public/fonts/`; configure `next/font/local` in `src/app/layout.tsx`
 - [ ] T008 Initialize shadcn/ui: `npx shadcn@latest init`; configure with custom Tailwind tokens
 - [ ] T009 [P] Re-export design tokens at `src/lib/design-tokens.ts` from `.claude/skills/easystock-design-system/tokens.ts`
-- [ ] T010 [P] Configure Vitest in `vitest.config.ts` with jsdom environment, coverage reporters (json + text + html), and include patterns for `tests/unit/**` and `tests/integration/**`
-- [ ] T011 [P] Configure Playwright in `playwright.config.ts` with mobile viewport (375x667) for persona testing
+- [x] T010 [P] Configure Vitest in `vitest.config.ts` with jsdom environment, coverage reporters (json + text + html), and include patterns for `tests/unit/**` and `tests/integration/**`
+- [x] T011 [P] Configure Playwright in `playwright.config.ts` with mobile viewport (375x667) for persona testing
 - [ ] T012 [P] Initialize Supabase CLI project: `supabase init`; create `supabase/config.toml` with project ref placeholder
 - [ ] T013 Create PWA manifest at `src/app/manifest.ts` with name "이지스톡", theme color from design tokens, icons (192/512), display=standalone
 - [ ] T014 Create service worker stub at `public/sw.js` with push event listener and notificationclick handler (per contracts/push.md)
@@ -54,15 +54,15 @@ description: "Task list for 001-mvp-core feature implementation"
 - [ ] T018 [P] Create cookie consent banner component at `src/components/ui/cookie-consent-banner.tsx`; renders only when consent state unset
 - [ ] T019 [P] Install Sentry: `npm install @sentry/nextjs`; configure `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts` with DSN from env
 - [ ] T020 [P] Add Vercel Analytics: `npm install @vercel/analytics`; integrate `<Analytics />` in `src/app/layout.tsx`
-- [ ] T021 [P] Create CI workflow at `.github/workflows/ci.yml` with jobs: lint-typecheck, test-unit, test-integration, test-e2e, build-check; upload coverage to Codecov with flags `domain` and `overall`
+- [x] T021 [P] Create CI workflow at `.github/workflows/ci.yml` with jobs: lint-typecheck, test-unit, test-integration, test-e2e, build-check; upload coverage to Codecov with flags `domain` and `overall`
 - [ ] T022 [P] Create Edge Functions deploy workflow at `.github/workflows/deploy-edge-functions.yml` triggered by changes in `supabase/functions/**`
 - [ ] T023 [P] Create DB migration workflow at `.github/workflows/migrate-db.yml` with `workflow_dispatch` and environment input (staging/prod)
-- [ ] T024 [P] Create Codecov configuration at `codecov.yml` with project target 60%, patch target 80%, flag `domain` paths to `src/lib/domain/` and `src/features/*/lib/`
+- [x] T024 [P] Create Codecov configuration at `codecov.yml` with project target 60%, patch target 80%, flag `domain` paths to `src/lib/domain/` and `src/features/*/lib/`
 - [ ] T025 GitHub repo setup (manual or `gh` CLI): enable branch protection on `main` requiring CI passing, Codecov check, and 1 review; document in `docs/setup-github.md`
 - [ ] T026 Register GitHub secrets (manual): `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PROJECT_REF`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_GA4_ID`, `SENTRY_DSN`, `CODECOV_TOKEN`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
 - [ ] T027 Generate VAPID keys: `npx web-push generate-vapid-keys`; document in `docs/setup-vapid.md`; register to Supabase Edge Function secrets and GitHub secrets
-- [ ] T028 [P] Create `.env.example` at repo root with all required env var names (no values) for local dev onboarding
-- [ ] T029 [P] Update `package.json` scripts: `dev`, `build`, `typecheck`, `lint`, `test`, `test:unit`, `test:integration`, `test:e2e`, `test:coverage`, `db:reset`, `db:migrate`, `db:gen-types`
+- [x] T028 [P] Create `.env.example` at repo root with all required env var names (no values) for local dev onboarding
+- [x] T029 [P] Update `package.json` scripts: `dev`, `build`, `typecheck`, `lint`, `test`, `test:unit`, `test:integration`, `test:e2e`, `test:coverage`, `db:reset`, `db:migrate`, `db:gen-types`
 
 ---
 
