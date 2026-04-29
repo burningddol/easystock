@@ -26,16 +26,19 @@ src/
   app/                Next.js App Router 라우트
   features/           도메인별 분리
     sale/             판매 일괄 입력
-    purchase/         매입 등록
+    purchase/         매입 등록 (하단 탭 아님, 컨텍스트 진입)
     menu/             메뉴/레시피
     inventory/        재고·소진 예측
-    dashboard/        홈
+    dashboard/        홈 (오늘)
+    calendar/         월간 장부
   components/ui/      shadcn 컴포넌트
-  lib/                supabase, query client, utils
+  lib/                supabase, query client, utils, design tokens 재export
   types/              도메인 타입
 ```
 
 도메인 로직은 `features/` 안에서, 공용 UI 원자만 `components/ui/`에 둔다.
+
+하단 탭은 5개: **오늘 / 캘린더 / 판매 / 메뉴 / 재료**. 매입은 빈도가 낮아 컨텍스트 진입(재료 화면 또는 빠른 액션)으로 처리.
 
 ## 도메인 용어 (이 프로젝트에서 단어 의미 고정)
 
@@ -62,6 +65,40 @@ src/
 ## 코딩 룰
 
 글로벌 `~/.claude/CLAUDE.md`의 시니어 룰을 모두 따른다. 이 파일은 그 위에 **프로젝트 컨텍스트만** 얹는다. 룰이 충돌하면 글로벌이 우선.
+
+## 디자인 워크플로우
+
+**모든 UI/UX는 `.claude/skills/easystock-design-system` 스킬을 항상 참조 MUST한다.** 이 스킬이 토큰·컴포넌트·화면 패턴의 단일 진실 공급원이다.
+
+### 스킬 파일 구성
+
+- `SKILL.md` — 디자인 원칙 (숫자가 주인공, 그림자 금지, 요일 비교 등)
+- `tokens.json` / `tokens.ts` — 색·spacing·radius·typography 토큰
+- `components.md` — Card, Button, Chip, Tag, Metric 등 컴포넌트 사양
+- `patterns.md` — 6개 화면 (홈/캘린더/판매/메뉴/재료/매입) 레이아웃 패턴
+
+### 구현 순서
+
+1. **스킬의 패턴 확인** — 만들려는 화면이 `patterns.md`에 정의되어 있는가?
+   - 있으면: 패턴대로 구현
+   - 없으면: 스킬에 패턴을 먼저 추가 → 그 다음 코드
+2. **토큰 import** — 색/간격은 반드시 `tokens.ts`에서 import (하드코딩 금지)
+3. **shadcn/ui와 매핑** — 스킬 컴포넌트 사양 ↔ shadcn 컴포넌트 매핑
+4. **Pretendard 폰트 적용** — 시스템 폰트 사용 금지
+5. **모바일 검증** — 페르소나 사용 시간 기준 (판매 입력 5분 이내)
+
+### 보조 스킬
+
+`frontend-ui-ux-engineer`는 새 패턴을 탐색할 때만 사용. 산출물은 반드시 `easystock-design-system`에 통합 후 사용 (스킬이 코드보다 먼저 갱신).
+
+별도 디자인 도구(Figma 등) 의존 없음.
+
+## 단가·마진 계산 규칙 (헌법 III 요약)
+
+- 재료 단가: **가중 이동 평균법** (매입할 때마다 평균 갱신)
+- 판매 시점 메뉴 원가는 Sale 레코드에 **스냅샷 저장** → 과거 마진은 영구 불변
+- 재고 실사는 수량 보정용, 평균 단가는 매입에서만 변경
+- UI 마진 표기: 항상 `"재료 원가 기준 (이동평균법)"` 명시
 
 ## 자주 쓰는 명령
 
