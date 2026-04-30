@@ -1,14 +1,13 @@
 "use client";
 
 import { MARGIN_LABEL } from "@/lib/domain/margin";
+import { formatWon } from "@/lib/utils/format";
 import { computeMenuMarginFromRow } from "../lib/compute-menu-margin";
 import type { MenuRowWithRecipe } from "../hooks/useMenus";
 
 interface MenuDetailCardProps {
   menu: MenuRowWithRecipe;
 }
-
-const fmt = (value: number): string => Math.round(value).toLocaleString("ko-KR");
 
 export function MenuDetailCard({ menu }: MenuDetailCardProps): React.ReactElement {
   const { cost, margin, hasRecipe } = computeMenuMarginFromRow(menu);
@@ -18,7 +17,9 @@ export function MenuDetailCard({ menu }: MenuDetailCardProps): React.ReactElemen
       <header className="flex items-start justify-between">
         <div className="flex flex-col gap-1">
           <h2 className="text-title-md text-ink-1">{menu.name}</h2>
-          <span className="text-caption text-ink-3 tabular-nums">판매가 {fmt(menu.price)}원</span>
+          <span className="text-caption text-ink-3 tabular-nums">
+            판매가 {formatWon(menu.price)}원
+          </span>
         </div>
         {hasRecipe ? (
           <div className="flex flex-col items-end gap-1">
@@ -45,11 +46,11 @@ export function MenuDetailCard({ menu }: MenuDetailCardProps): React.ReactElemen
           <div className="flex flex-col gap-1">
             <span className="text-caption text-ink-3">{MARGIN_LABEL}</span>
             <span className="text-body-regular text-ink-2 tabular-nums">
-              마진 금액 {fmt(margin.amount.toNumber())}원
+              마진 금액 {formatWon(margin.amount.toNumber())}원
             </span>
           </div>
           <span className="text-metric-md text-ink-1 tabular-nums">
-            원가 {fmt(cost.toNumber())}원
+            원가 {formatWon(cost.toNumber())}원
           </span>
         </footer>
       )}
@@ -71,7 +72,7 @@ function RecipeRow({
         {item.quantity_per_serving}
         {item.ingredient.unit}
       </span>
-      <span className="text-body-regular text-ink-2 tabular-nums">{fmt(lineCost)}원</span>
+      <span className="text-body-regular text-ink-2 tabular-nums">{formatWon(lineCost)}원</span>
     </li>
   );
 }

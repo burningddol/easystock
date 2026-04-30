@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/utils/format";
 import type { MenuRowWithRecipe } from "@/features/menu/hooks/useMenus";
 
 interface MenuRowProps {
@@ -8,8 +9,6 @@ interface MenuRowProps {
   quantity: number;
   onChange: (next: number) => void;
 }
-
-const fmt = (n: number): string => n.toLocaleString("ko-KR");
 
 export function MenuRow({ menu, quantity, onChange }: MenuRowProps): React.ReactElement {
   const active = quantity > 0;
@@ -23,7 +22,7 @@ export function MenuRow({ menu, quantity, onChange }: MenuRowProps): React.React
     >
       <div className="flex flex-col gap-1">
         <span className={cn("text-body", active ? "text-ink-1" : "text-ink-2")}>{menu.name}</span>
-        <span className="text-caption text-ink-3 tabular-nums">{fmt(menu.price)}원</span>
+        <span className="text-caption text-ink-3 tabular-nums">{formatNumber(menu.price)}원</span>
       </div>
 
       <div className="flex items-center gap-2">

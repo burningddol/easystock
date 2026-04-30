@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { formatWon } from "@/lib/utils/format";
 import { computeMenuMarginFromRow } from "../lib/compute-menu-margin";
 import type { MenuRowWithRecipe } from "../hooks/useMenus";
 
@@ -31,11 +32,11 @@ function MenuListRow({ menu }: { menu: MenuRowWithRecipe }): React.ReactElement 
         <div className="flex flex-col gap-1">
           <span className="text-body text-ink-1">{menu.name}</span>
           <span className="text-caption text-ink-3 tabular-nums">
-            {menu.price.toLocaleString("ko-KR")}원
+            {formatWon(menu.price)}원
             {hasRecipe && (
               <>
                 <span className="text-ink-4"> · </span>
-                원가 {Math.round(cost.toNumber()).toLocaleString("ko-KR")}원
+                원가 {formatWon(cost.toNumber())}원
               </>
             )}
           </span>
