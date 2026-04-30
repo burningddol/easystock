@@ -191,22 +191,22 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### UI 컴포넌트 + 라우팅
 
-- [ ] T088 [P] [US1] Create `src/features/sale/components/MenuRow.tsx` with +/- buttons (큼직), direct number input, auto-hide on quantity 0
-- [ ] T089 [P] [US1] Create `src/features/sale/components/StickyTotalCard.tsx` showing 매출/원가/순수익 with "재료 원가 기준 (이동평균법)" label, real-time updates from form state
-- [ ] T090 [P] [US1] Create `src/features/sale/components/SaleInputForm.tsx` integrating MenuRow list (sorted by 7-day favorites) + StickyTotalCard + date picker (today + 7-day retroactive)
+- [x] T088 [P] [US1] Create `src/features/sale/components/MenuRow.tsx` with +/- buttons (큼직), direct number input, auto-hide on quantity 0
+- [x] T089 [P] [US1] Create `src/features/sale/components/StickyTotalCard.tsx` showing 매출/원가/순수익 with "재료 원가 기준 (이동평균법)" label, real-time updates from form state
+- [x] T090 [P] [US1] Create `src/features/sale/components/SaleInputForm.tsx` integrating MenuRow list (sorted by 7-day favorites) + StickyTotalCard + date picker (today + 7-day retroactive)
 - [ ] T091 [P] [US1] Create `src/features/sale/components/SaleEditDialog.tsx` for editing existing sale with reason input + 7-day lock check
-- [ ] T092 [US1] Create page `src/app/(main)/sale/page.tsx` integrating SaleInputForm
-- [ ] T093 [US1] Create page `src/app/(main)/sale/[date]/page.tsx` for retroactive input (date param) and view/edit existing sale
-- [ ] T094 [P] [US1] Create hook `src/features/sale/hooks/useSaleSubmit.ts` (mutation calling `save_sale` RPC + cache invalidation)
-- [ ] T095 [P] [US1] Create hook `src/features/sale/hooks/useFavoriteMenus.ts` (TanStack Query: 지난 7일 판매량 기준 정렬, FR-009)
-- [ ] T096 [P] [US1] Create hook `src/features/sale/hooks/useSaleEdit.ts` (mutation for `edit_sale` and `delete_sale`)
+- [x] T092 [US1] Create page `src/app/(main)/sale/page.tsx` integrating SaleInputForm
+- [x] T093 [US1] Create page `src/app/(main)/sale/[date]/page.tsx` for retroactive input (date param) and view/edit existing sale
+- [x] T094 [P] [US1] Create hook `src/features/sale/hooks/useSaleSubmit.ts` (mutation calling `save_sale` RPC + cache invalidation)
+- [x] T095 [P] [US1] Create hook `src/features/sale/hooks/useFavoriteMenus.ts` (TanStack Query: 지난 7일 판매량 기준 정렬, FR-009)
+- [x] T096 [P] [US1] Create hook `src/features/sale/hooks/useSaleEdit.ts` (mutation for `edit_sale` and `delete_sale`)
 
 ### GA4 이벤트
 
-- [ ] T097 [US1] Wire `first_sale_input` GA4 event in save handler (fire only if user's sale count was 0 before)
-- [ ] T098 [US1] Wire `daily_sale_input` GA4 event in save handler with `date` parameter
-- [ ] T099 [US1] Wire `retroactive_sale_complete` GA4 event when saved date < today (확인: 어제 이전)
-- [ ] T100 [US1] Wire `sale_edited` GA4 event in edit handler (within 7-day window)
+- [x] T097 [US1] Wire `first_sale_input` GA4 event in save handler (fire only if user's sale count was 0 before)
+- [x] T098 [US1] Wire `daily_sale_input` GA4 event in save handler with `date` parameter
+- [x] T099 [US1] Wire `retroactive_sale_complete` GA4 event when saved date < today (확인: 어제 이전)
+- [x] T100 [US1] Wire `sale_edited` GA4 event in edit handler (within 7-day window)
 
 ### 통합 테스트
 
