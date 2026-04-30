@@ -193,6 +193,117 @@ export function saveIngredient(
   });
 }
 
+interface ApplyStockCountArgs {
+  countedAt: string;
+  items: ReadonlyArray<{ ingredientId: string; actualStock: number }>;
+}
+
+export interface StockCountDifference {
+  ingredientId: string;
+  name: string;
+  systemStock: number;
+  actualStock: number;
+  diff: number;
+  lossAmount: number;
+}
+
+export interface ApplyStockCountResult {
+  stockCountId: string;
+  weeklyLossAmount: number;
+  itemDifferences: StockCountDifference[];
+}
+
+interface ApplyStockCountRawRow {
+  stock_count_id: string;
+  weekly_loss_amount: number;
+  item_differences: Array<{
+    ingredient_id: string;
+    name: string;
+    system_stock: number;
+    actual_stock: number;
+    diff: number;
+    loss_amount: number;
+  }>;
+}
+
+export async function applyStockCount(
+  client: ClientLike,
+  args: ApplyStockCountArgs,
+): Promise<RpcResult<ApplyStockCountResult>> {
+  const result = await callRpc<ApplyStockCountRawRow[]>(client, "apply_stock_count", {
+    p_counted_at: args.countedAt,
+    p_items: args.items.map((it) => ({
+      ingredient_id: it.ingredientId,
+      actual_stock: it.actualStock,
+    })),
+  });
+
+  if (result.error || !result.data?.[0]) {
+    return { data: null, error: result.error };
+  }
+
+  const row = result.data[0];
+  return {
+    data: {
+      stockCountId: row.stock_count_id,
+      weeklyLossAmount: Number(row.weekly_loss_amount),
+      itemDifferences: row.item_differences.map((d) => ({
+        ingredientId: d.ingredient_id,
+        name: d.name,
+        systemStock: Number(d.system_stock),
+        actualStock: Number(d.actual_stock),
+        diff: Number(d.diff),
+        lossAmount: Number(d.loss_amount),
+      })),
+    },
+    error: null,
+  };
+}
+
+export interface DepletionForecastRow {
+  ingredientId: string;
+  name: string;
+  unit: "g" | "ml" | "piece";
+  currentStock: number;
+  leadTimeDays: number;
+  consumptionSamples: Array<{ date: string; amount: number }>;
+  signedUpAt: string;
+  regularDaysOff: ReadonlyArray<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
+}
+
+interface DepletionForecastRawRow {
+  ingredient_id: string;
+  name: string;
+  unit: "g" | "ml" | "piece";
+  current_stock: number;
+  lead_time_days: number;
+  consumption_samples: Array<{ date: string; amount: number }>;
+  signed_up_at: string;
+  regular_days_off: Array<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
+}
+
+export async function getDepletionForecast(
+  client: ClientLike,
+): Promise<RpcResult<DepletionForecastRow[]>> {
+  const result = await callRpc<DepletionForecastRawRow[]>(client, "get_depletion_forecast");
+  if (result.error) {
+    return { data: null, error: result.error };
+  }
+  return {
+    data: (result.data ?? []).map((row) => ({
+      ingredientId: row.ingredient_id,
+      name: row.name,
+      unit: row.unit,
+      currentStock: Number(row.current_stock),
+      leadTimeDays: row.lead_time_days,
+      consumptionSamples: row.consumption_samples ?? [],
+      signedUpAt: row.signed_up_at,
+      regularDaysOff: row.regular_days_off ?? [],
+    })),
+    error: null,
+  };
+}
+
 export async function savePurchase(
   client: ClientLike,
   args: SavePurchaseArgs,

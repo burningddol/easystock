@@ -39,6 +39,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_stock_counts: {
+        Row: {
+          counted_at: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          counted_at: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          counted_at?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_stock_counts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredient_price_history: {
         Row: {
           changed_at: string
@@ -483,6 +512,58 @@ export type Database = {
           },
         ]
       }
+      stock_count_items: {
+        Row: {
+          actual_stock: number
+          id: string
+          ingredient_id: string
+          stock_count_id: string
+          system_stock_at_count: number
+          user_id: string
+          weekly_loss_amount: number
+        }
+        Insert: {
+          actual_stock: number
+          id?: string
+          ingredient_id: string
+          stock_count_id: string
+          system_stock_at_count: number
+          user_id: string
+          weekly_loss_amount: number
+        }
+        Update: {
+          actual_stock?: number
+          id?: string
+          ingredient_id?: string
+          stock_count_id?: string
+          system_stock_at_count?: number
+          user_id?: string
+          weekly_loss_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_count_items_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_count_items_stock_count_id_fkey"
+            columns: ["stock_count_id"]
+            isOneToOne: false
+            referencedRelation: "daily_stock_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_count_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           analytics_consent: boolean
@@ -568,6 +649,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_stock_count: {
+        Args: { p_counted_at: string; p_items: Json }
+        Returns: {
+          item_differences: Json
+          stock_count_id: string
+          weekly_loss_amount: number
+        }[]
+      }
       clone_menu_template: {
         Args: { p_store_type: Database["public"]["Enums"]["store_type"] }
         Returns: {
@@ -584,6 +673,19 @@ export type Database = {
           total_cost_snapshot: number
           total_net_profit: number
           total_revenue: number
+        }[]
+      }
+      get_depletion_forecast: {
+        Args: never
+        Returns: {
+          consumption_samples: Json
+          current_stock: number
+          ingredient_id: string
+          lead_time_days: number
+          name: string
+          regular_days_off: Database["public"]["Enums"]["weekday"][]
+          signed_up_at: string
+          unit: Database["public"]["Enums"]["ingredient_unit"]
         }[]
       }
       request_withdrawal: {

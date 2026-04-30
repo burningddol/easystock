@@ -32,6 +32,7 @@ describeRls("RLS user_id isolation", () => {
   let saleByB: { id: string };
   let vendorByB: { id: string };
   let purchaseOrderByB: { id: string };
+  let stockCountByB: { id: string };
 
   beforeAll(async () => {
     userA = await createTestUser({ storeName: "A 가게" });
@@ -114,6 +115,16 @@ describeRls("RLS user_id isolation", () => {
       throw new Error(`purchase order fixture failed: ${order.error?.message ?? "no row"}`);
     }
     purchaseOrderByB = order.data;
+
+    const stockCount = await admin
+      .from("daily_stock_counts")
+      .insert({ user_id: userB.id, counted_at: new Date().toISOString().slice(0, 10) })
+      .select("id")
+      .single();
+    if (stockCount.error || !stockCount.data) {
+      throw new Error(`stock_count fixture failed: ${stockCount.error?.message ?? "no row"}`);
+    }
+    stockCountByB = stockCount.data;
   }, 30_000);
 
   afterAll(async () => {
@@ -306,6 +317,26 @@ describeRls("RLS user_id isolation", () => {
         .eq("id", purchaseOrderByB.id);
       expect(error).toBeNull();
       expect(data ?? []).toHaveLength(0);
+    });
+  });
+
+  describe("daily_stock_counts / stock_count_items tables", () => {
+    it("A는 B의 stock_count를 조회할 수 없다", async () => {
+      const { data, error } = await clientA
+        .from("daily_stock_counts")
+        .select("id")
+        .eq("id", stockCountByB.id);
+      expect(error).toBeNull();
+      expect(data ?? []).toHaveLength(0);
+    });
+
+    it("A는 user_id=B로 stock_count INSERT를 거부당한다", async () => {
+      const { data, error } = await clientA
+        .from("daily_stock_counts")
+        .insert({ user_id: userB.id, counted_at: "2026-04-01" })
+        .select("id");
+      expect(data ?? []).toHaveLength(0);
+      expect(error).not.toBeNull();
     });
   });
 });

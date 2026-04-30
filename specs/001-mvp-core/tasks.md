@@ -269,11 +269,11 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 데이터 모델 + RPC
 
-- [ ] T122 [US4] Write SQL migration `supabase/migrations/006_stock_counts.sql` creating `daily_stock_counts`, `stock_count_items` + RLS (per data-model.md §9)
-- [ ] T123 [US4] Write SQL migration `supabase/migrations/018_apply_stock_count_rpc.sql` defining `apply_stock_count(items)` updating `current_stock` only (단가 불변, FR-016), inserting `IngredientPriceHistory` reason='stock_count_correction'
-- [ ] T124 [US4] Write SQL migration `supabase/migrations/019_get_depletion_forecast_rpc.sql` defining `get_depletion_forecast()` returning per-ingredient status + expected_depletion_date + trend (uses forecast.ts logic ported to PL/pgSQL OR returns raw data for client-side computation — choose latter for simpler testing)
-- [ ] T125 [US4] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
-- [ ] T126 [US4] Write Zod schemas at `src/features/inventory/schemas.ts`
+- [x] T122 [US4] Write SQL migration `supabase/migrations/006_stock_counts.sql` creating `daily_stock_counts`, `stock_count_items` + RLS (per data-model.md §9)
+- [x] T123 [US4] Write SQL migration `supabase/migrations/018_apply_stock_count_rpc.sql` defining `apply_stock_count(items)` updating `current_stock` only (단가 불변, FR-016), inserting `IngredientPriceHistory` reason='stock_count_correction'
+- [x] T124 [US4] Write SQL migration `supabase/migrations/019_get_depletion_forecast_rpc.sql` defining `get_depletion_forecast()` returning per-ingredient status + expected_depletion_date + trend (uses forecast.ts logic ported to PL/pgSQL OR returns raw data for client-side computation — choose latter for simpler testing)
+- [x] T125 [US4] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
+- [x] T126 [US4] Write Zod schemas at `src/features/inventory/schemas.ts`
 
 ### UI 컴포넌트 + 라우팅
 
@@ -302,8 +302,8 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 통합 테스트
 
-- [ ] T143 [P] [US4] Write integration test `tests/integration/stock-count.test.ts` verifying `apply_stock_count` updates only quantity (단가 불변), records history with correct reason, computes weekly_loss_amount
-- [ ] T144 [P] [US4] Add to `tests/integration/rls.test.ts`: stock_counts/stock_count_items/push_subscriptions cross-user cases
+- [x] T143 [P] [US4] Write integration test `tests/integration/stock-count.test.ts` verifying `apply_stock_count` updates only quantity (단가 불변), records history with correct reason, computes weekly_loss_amount
+- [x] T144 [P] [US4] Add to `tests/integration/rls.test.ts`: stock_counts/stock_count_items/push_subscriptions cross-user cases
 - [ ] T145 [US4] Manual verification: deploy Edge Function to staging, trigger via curl, verify push delivery to test device
 
 **Checkpoint**: 재고 예측 + 푸시 알림 동작. 페르소나가 발주 알림을 실제로 받는 흐름 완성.
