@@ -182,6 +182,7 @@ function VendorPicker({
   return (
     <div className="flex gap-stack-tight">
       <select
+        name="vendorId"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="flex-1 rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
@@ -240,6 +241,7 @@ function ItemRow({
         render={({ field }) => (
           <div className="flex gap-stack-tight">
             <select
+              name={field.name}
               value={field.value}
               onChange={(e) => field.onChange(e.target.value)}
               className="flex-1 rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"

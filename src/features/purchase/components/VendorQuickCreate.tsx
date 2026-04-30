@@ -38,12 +38,10 @@ export function VendorQuickCreate({
     }
   }
 
+  // 중첩 <form>은 invalid HTML — 외부 PurchaseForm 안에 들어가므로 <div>로 렌더하고
+  // 추가 버튼은 type="button" + handleSubmit() 직접 호출.
   return (
-    <form
-      onSubmit={(e) => void handleSubmit(onSubmit)(e)}
-      className="flex flex-col gap-stack rounded-lg border border-border bg-card p-tile"
-      noValidate
-    >
+    <div className="flex flex-col gap-stack rounded-lg border border-border bg-card p-tile">
       <h3 className="text-title-md text-ink-1">새 거래처 추가</h3>
 
       <Field label="거래처 이름" error={errors.name?.message}>
@@ -78,10 +76,15 @@ export function VendorQuickCreate({
         >
           취소
         </button>
-        <PrimaryButton type="submit" disabled={isSubmitting} className="ml-auto">
+        <PrimaryButton
+          type="button"
+          onClick={() => void handleSubmit(onSubmit)()}
+          disabled={isSubmitting}
+          className="ml-auto"
+        >
           {isSubmitting ? "추가 중…" : "추가"}
         </PrimaryButton>
       </div>
-    </form>
+    </div>
   );
 }

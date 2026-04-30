@@ -16,7 +16,12 @@ const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABAS
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ANON_KEY = process.env.SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const hasSupabaseTestEnv = Boolean(SUPABASE_URL && SERVICE_ROLE_KEY && ANON_KEY);
+// CI workflow가 secret 미설정 시 placeholder fallback을 주입하므로 명시적으로 제외.
+const isPlaceholder = (v?: string): boolean =>
+  !v || v === "placeholder" || v.includes("placeholder.supabase.co");
+
+export const hasSupabaseTestEnv =
+  !isPlaceholder(SUPABASE_URL) && !isPlaceholder(SERVICE_ROLE_KEY) && !isPlaceholder(ANON_KEY);
 
 export interface TestUser {
   id: string;
