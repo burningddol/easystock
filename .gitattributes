@@ -2,3 +2,7 @@
 
 package-lock.json linguist-generated=true -diff
 *.lock linguist-generated=true -diff
+*.woff2 binary
+*.woff binary
+*.ttf binary
+*.otf binary

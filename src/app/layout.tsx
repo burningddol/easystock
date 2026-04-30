@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { pretendard } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,8 +19,8 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps): React.ReactElement {
   return (
-    <html lang="ko">
-      <body>{children}</body>
+    <html lang="ko" className={pretendard.variable}>
+      <body className="font-sans">{children}</body>
     </html>
   );
 }

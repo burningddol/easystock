@@ -39,10 +39,10 @@ description: "Task list for 001-mvp-core feature implementation"
 - [x] T003 [P] Install core dependencies: `npm install @supabase/supabase-js @supabase/ssr @tanstack/react-query zustand react-hook-form zod @hookform/resolvers recharts date-fns decimal.js`
 - [x] T004 [P] Install dev dependencies: `npm install -D vitest @vitejs/plugin-react @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom @playwright/test msw`
 - [x] T005 [P] Configure ESLint and Prettier with TypeScript rules; ban `any` and require explicit return types in `eslint.config.mjs`
-- [ ] T006 [P] Configure Tailwind CSS with token integration in `tailwind.config.ts`; map colors, spacing, radius from design system tokens
-- [ ] T007 Setup Pretendard variable font: download `pretendard-variable.woff2` to `public/fonts/`; configure `next/font/local` in `src/app/layout.tsx`
-- [ ] T008 Initialize shadcn/ui: `npx shadcn@latest init`; configure with custom Tailwind tokens
-- [ ] T009 [P] Re-export design tokens at `src/lib/design-tokens.ts` from `.claude/skills/easystock-design-system/tokens.ts`
+- [x] T006 [P] Configure Tailwind CSS with token integration in `tailwind.config.ts`; map colors, spacing, radius from design system tokens
+- [x] T007 Setup Pretendard variable font: download `pretendard-variable.woff2` to `public/fonts/`; configure `next/font/local` in `src/app/layout.tsx`
+- [x] T008 Initialize shadcn/ui: `npx shadcn@latest init`; configure with custom Tailwind tokens
+- [x] T009 [P] Re-export design tokens at `src/lib/design-tokens.ts` from `.claude/skills/easystock-design-system/tokens.ts`
 - [x] T010 [P] Configure Vitest in `vitest.config.ts` with jsdom environment, coverage reporters (json + text + html), and include patterns for `tests/unit/**` and `tests/integration/**`
 - [x] T011 [P] Configure Playwright in `playwright.config.ts` with mobile viewport (375x667) for persona testing
 - [ ] T012 [P] Initialize Supabase CLI project: `supabase init`; create `supabase/config.toml` with project ref placeholder
