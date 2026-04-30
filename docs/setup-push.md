@@ -34,20 +34,21 @@ Vault에 없으면 cron이 매 실행 시 `raise warning` 후 no-op (푸시 발�
 
 ## 4) Edge Function 배포
 
-`supabase/functions/push-scheduler/`는 `.github/workflows/deploy-edge-functions.yml`이 master 머지 시 자동 배포. 수동 배포가 필요하면:
+`supabase/functions/push-scheduler/`와 `supabase/functions/d7-tracker/`는 `.github/workflows/deploy-edge-functions.yml`이 master 머지 시 자동 배포. 수동 배포:
 
 ```bash
 npx supabase functions deploy push-scheduler --project-ref <ref>
+npx supabase functions deploy d7-tracker --project-ref <ref>
 ```
 
 ## 5) (선택) GA4 측정 활성화
 
-T140 `order_alert_received` 등 서버측 발화 — Edge Function Secrets에:
+T140 `order_alert_received` (push-scheduler) + T166 `d7_active` (d7-tracker) 서버측 발화 — Edge Function Secrets에:
 
 - `GA4_MEASUREMENT_ID`
 - `GA4_API_SECRET`
 
-미설정 시 푸시는 정상 발송, GA4 측정만 skip.
+미설정 시 푸시/D7 추적은 정상 동작, GA4 측정만 skip.
 
 ## 검증
 
@@ -67,3 +68,4 @@ select private.invoke_push_scheduler('order_alert');
 | order_alert      | 매일 09:00 | 매일 00:00 | `0 0 * * *`  |
 | closing_reminder | 매일 22:00 | 매일 13:00 | `0 13 * * *` |
 | stock_count      | 일 07:00   | 토 22:00   | `0 22 * * 6` |
+| d7_tracker       | 매일 11:00 | 매일 02:00 | `0 2 * * *`  |
