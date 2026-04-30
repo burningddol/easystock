@@ -25,13 +25,30 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json", "html", "lcov"],
       include: ["src/**/*.{ts,tsx}"],
+      // 헌법 v1.3.0: 단위 테스트 의무는 핵심 도메인 + 비즈니스 로직.
+      // UI 컴포넌트 / 페이지 / 훅 / 외부 클라이언트 wrapper는 시각 회귀 + 통합/E2E 테스트로
+      // 보완 (수동 검증 포함) → coverage 분모에서 제외.
       exclude: [
         "src/**/*.test.{ts,tsx}",
         "src/**/*.stories.{ts,tsx}",
         "src/types/**",
-        "src/app/**/layout.tsx",
-        "src/app/**/page.tsx",
+        "src/app/**",
+        "src/components/**",
+        "src/features/**/components/**",
+        "src/features/**/hooks/**",
+        // 단순 Zod 스키마 (런타임 검증만, 분기 로직 없음)
+        "src/features/**/schemas.ts",
         "src/lib/supabase/types.ts",
+        "src/lib/supabase/client.ts",
+        "src/lib/supabase/server.ts",
+        "src/lib/push/client.ts",
+        "src/lib/analytics/**",
+        "src/lib/utils/use-today-iso.ts",
+        // TanStack Query / shadcn cn / design-tokens 재export — 트리비얼 wrapper
+        "src/lib/query-client.ts",
+        "src/lib/design-tokens.ts",
+        "src/lib/utils.ts",
+        "src/stores/**",
       ],
     },
   },

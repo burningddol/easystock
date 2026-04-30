@@ -71,11 +71,14 @@ function SaleSummary({ cell }: SaleSummaryProps): React.ReactElement {
   const netProfit = cell.netProfit ?? 0;
   const marginPercent = revenue > 0 ? (netProfit / revenue) * 100 : 0;
   return (
-    <div className="grid grid-cols-2 gap-stack">
-      <Metric label="매출" value={`${formatWon(revenue)}원`} />
-      <Metric label="순수익" value={`${formatWon(netProfit)}원`} />
-      <Metric label="마진율" value={`${marginPercent.toFixed(1)}%`} />
-      <Metric label="매입" value={cell.hasPurchase ? "있음" : "—"} />
+    <div className="flex flex-col gap-stack-tight">
+      <div className="grid grid-cols-2 gap-stack">
+        <Metric label="매출" value={`${formatWon(revenue)}원`} />
+        <Metric label="순수익" value={`${formatWon(netProfit)}원`} />
+        <Metric label="마진율" value={`${marginPercent.toFixed(1)}%`} />
+        <Metric label="매입" value={cell.hasPurchase ? "있음" : "—"} />
+      </div>
+      <p className="text-micro text-ink-3">재료 원가 기준 (이동평균법)</p>
     </div>
   );
 }

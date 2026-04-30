@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMenus } from "@/features/menu/hooks/useMenus";
 import { computeSnapshotPreview, daysUntilLock, isSaleLocked } from "@/lib/domain/snapshot";
+import { MARGIN_LABEL } from "@/lib/domain/margin";
 import { Field } from "@/components/ui/field";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { cn } from "@/lib/utils";
@@ -183,6 +184,7 @@ function LockedView({ sale }: { sale: SaleWithItems }): React.ReactElement {
           <span>{formatWon(sale.total_revenue - sale.total_cost_snapshot)}원</span>
         </li>
       </ul>
+      <p className="text-micro text-ink-3">{MARGIN_LABEL}</p>
     </article>
   );
 }

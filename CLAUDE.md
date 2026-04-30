@@ -112,18 +112,36 @@ src/
 
 ## 자주 쓰는 명령
 
-(셋업 후 채움)
+### 개발 / 빌드
 
-- `npm run dev` — 개발 서버
+- `npm run dev` — Next.js 개발 서버
 - `npm run build` — 프로덕션 빌드
-- `npm run typecheck` — 타입 체크
+- `npm run start` — 프로덕션 서버 실행
+
+### 검증 (PR 머지 전 필수)
+
+- `npm run typecheck` — TypeScript 타입 체크
 - `npm run lint` — ESLint
-- `npm run test` — Vitest 단위 + 통합
-- `npm run test:e2e` — Playwright
-- `npm run test:coverage` — 커버리지 리포트
-- `npx supabase db push --linked` — 마이그레이션 적용
-- `npx supabase gen types typescript --linked` — TS 타입 생성
-- `supabase db push` — 마이그레이션 적용
+- `npm run format:check` — Prettier (포맷 검사)
+- `npm run format` — Prettier 자동 정리
+- `npm run test` — Vitest 단위 + 통합 (CI Unit/Integration job과 동일)
+- `npm run test:unit` — 단위 테스트만
+- `npm run test:integration` — 통합 테스트만 (Supabase env 필요)
+- `npm run test:e2e` — Playwright E2E
+- `npm run test:coverage` — 커버리지 리포트 (도메인 80% / 전체 60% 임계)
+
+### Supabase
+
+- `npx supabase db push --linked --include-all` — 신규 마이그레이션 클라우드 적용
+- `npx supabase gen types typescript --linked > src/lib/supabase/types.ts` — 타입 재생성
+- `npx supabase migration repair <id> --status reverted --linked` — 동일 파일 재push 시 사용
+- `npx supabase functions deploy <fn-name> --use-api --project-ref <ref>` — Edge Function 배포 (Docker 없이)
+
+### 운영 검증 (수동)
+
+- `pg_net._http_response` 테이블 — Edge Function 호출 응답 확인
+- Supabase 대시보드 → Edge Functions → Logs — push-scheduler / d7-tracker 로그
+- GA4 DebugView — `signup_complete → first_menu_registered → first_sale_input → d7_active` funnel
 
 ## 성공 지표 (MVP 검증 기준)
 
