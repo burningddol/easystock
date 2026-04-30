@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run format:check
@@ -38,7 +38,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npm run test:coverage
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -58,7 +58,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
@@ -74,7 +74,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npm run build
         env:

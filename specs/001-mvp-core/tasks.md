@@ -46,14 +46,14 @@ description: "Task list for 001-mvp-core feature implementation"
 - [x] T010 [P] Configure Vitest in `vitest.config.ts` with jsdom environment, coverage reporters (json + text + html), and include patterns for `tests/unit/**` and `tests/integration/**`
 - [x] T011 [P] Configure Playwright in `playwright.config.ts` with mobile viewport (375x667) for persona testing
 - [ ] T012 [P] Initialize Supabase CLI project: `supabase init`; create `supabase/config.toml` with project ref placeholder
-- [ ] T013 Create PWA manifest at `src/app/manifest.ts` with name "이지스톡", theme color from design tokens, icons (192/512), display=standalone
-- [ ] T014 Create service worker stub at `public/sw.js` with push event listener and notificationclick handler (per contracts/push.md)
-- [ ] T015 Register service worker in `src/app/layout.tsx` via client component; setup VAPID public key from `NEXT_PUBLIC_VAPID_PUBLIC_KEY` env
-- [ ] T016 [P] Install GA4 dependency: `npm install @next/third-parties`; create `src/lib/analytics/ga4.ts` with typed event sender (gated by consent)
-- [ ] T017 [P] Create cookie consent state manager at `src/lib/analytics/consent.ts` (localStorage + Supabase sync via `record_consent` RPC stub)
-- [ ] T018 [P] Create cookie consent banner component at `src/components/ui/cookie-consent-banner.tsx`; renders only when consent state unset
-- [ ] T019 [P] Install Sentry: `npm install @sentry/nextjs`; configure `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts` with DSN from env
-- [ ] T020 [P] Add Vercel Analytics: `npm install @vercel/analytics`; integrate `<Analytics />` in `src/app/layout.tsx`
+- [x] T013 Create PWA manifest at `src/app/manifest.ts` with name "이지스톡", theme color from design tokens, icons (192/512), display=standalone
+- [x] T014 Create service worker stub at `public/sw.js` with push event listener and notificationclick handler (per contracts/push.md)
+- [x] T015 Register service worker in `src/app/layout.tsx` via client component; setup VAPID public key from `NEXT_PUBLIC_VAPID_PUBLIC_KEY` env
+- [x] T016 [P] Install GA4 dependency: `npm install @next/third-parties`; create `src/lib/analytics/ga4.ts` with typed event sender (gated by consent)
+- [x] T017 [P] Create cookie consent state manager at `src/lib/analytics/consent.ts` (localStorage + Supabase sync via `record_consent` RPC stub)
+- [x] T018 [P] Create cookie consent banner component at `src/components/ui/cookie-consent-banner.tsx`; renders only when consent state unset
+- [x] T019 [P] Install Sentry: `npm install @sentry/nextjs`; configure `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts` with DSN from env
+- [x] T020 [P] Add Vercel Analytics: `npm install @vercel/analytics`; integrate `<Analytics />` in `src/app/layout.tsx`
 - [x] T021 [P] Create CI workflow at `.github/workflows/ci.yml` with jobs: lint-typecheck, test-unit, test-integration, test-e2e, build-check; upload coverage to Codecov with flags `domain` and `overall`
 - [ ] T022 [P] Create Edge Functions deploy workflow at `.github/workflows/deploy-edge-functions.yml` triggered by changes in `supabase/functions/**`
 - [ ] T023 [P] Create DB migration workflow at `.github/workflows/migrate-db.yml` with `workflow_dispatch` and environment input (staging/prod)
