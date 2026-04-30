@@ -277,14 +277,14 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### UI 컴포넌트 + 라우팅
 
-- [ ] T127 [P] [US4] Create `src/features/inventory/components/IngredientStatusList.tsx` grouped by status (🔴 발주 필요 / 🟡 주의 / 🟢 안전) with expected depletion date and trend badges
-- [ ] T128 [P] [US4] Create `src/features/inventory/components/ColdStartNotice.tsx` (가입 후 7일 이내 안내, FR-018)
-- [ ] T129 [P] [US4] Create `src/features/inventory/components/StockCountForm.tsx` (재료별 실재고 입력 + diff 미리보기 + weekly_loss_amount 표시)
-- [ ] T130 [P] [US4] Create `src/features/inventory/components/StockCountResultCard.tsx` showing applied corrections + weekly loss
-- [ ] T131 [US4] Create page `src/app/(main)/inventory/page.tsx` integrating IngredientStatusList + cold-start gate + quick-action to purchase
-- [ ] T132 [US4] Create page `src/app/(main)/inventory/stock-count/page.tsx` integrating StockCountForm
-- [ ] T133 [P] [US4] Create hook `src/features/inventory/hooks/useDepletionForecast.ts` (TanStack Query, fetches `get_depletion_forecast` then runs forecast.ts client-side for status classification)
-- [ ] T134 [P] [US4] Create hook `src/features/inventory/hooks/useApplyStockCount.ts` (mutation)
+- [x] T127 [P] [US4] Create `src/features/inventory/components/IngredientStatusList.tsx` grouped by status (🔴 발주 필요 / 🟡 주의 / 🟢 안전) with expected depletion date and trend badges
+- [x] T128 [P] [US4] Create `src/features/inventory/components/ColdStartNotice.tsx` (가입 후 7일 이내 안내, FR-018)
+- [x] T129 [P] [US4] Create `src/features/inventory/components/StockCountForm.tsx` (재료별 실재고 입력 + diff 미리보기 + weekly_loss_amount 표시)
+- [x] T130 [P] [US4] Create `src/features/inventory/components/StockCountResultCard.tsx` showing applied corrections + weekly loss
+- [x] T131 [US4] Create page `src/app/(main)/inventory/page.tsx` integrating IngredientStatusList + cold-start gate + quick-action to purchase
+- [x] T132 [US4] Create page `src/app/(main)/inventory/stock-count/page.tsx` integrating StockCountForm
+- [x] T133 [P] [US4] Create hook `src/features/inventory/hooks/useDepletionForecast.ts` (TanStack Query, fetches `get_depletion_forecast` then runs forecast.ts client-side for status classification)
+- [x] T134 [P] [US4] Create hook `src/features/inventory/hooks/useApplyStockCount.ts` (mutation)
 
 ### 푸시 인프라
 
@@ -297,8 +297,8 @@ description: "Task list for 001-mvp-core feature implementation"
 ### GA4 이벤트
 
 - [ ] T140 [US4] Wire `order_alert_received` GA4 event in service worker push handler (`public/sw.js`) sending via fetch to GA4 measurement protocol
-- [ ] T141 [US4] Wire `stock_count_completed` GA4 event in StockCountForm success handler
-- [ ] T142 [US4] Wire `weekly_loss_displayed` GA4 event in StockCountResultCard render
+- [x] T141 [US4] Wire `stock_count_completed` GA4 event in StockCountForm success handler
+- [x] T142 [US4] Wire `weekly_loss_displayed` GA4 event in StockCountResultCard render
 
 ### 통합 테스트
 
