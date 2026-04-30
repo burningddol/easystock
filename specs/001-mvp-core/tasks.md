@@ -102,10 +102,10 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 정기휴무 등록 흐름
 
-- [ ] T049 [P] Write `update_regular_days_off` RPC migration `supabase/migrations/011_update_regular_days_off_rpc.sql` (per contracts/domain-rpc.md)
-- [ ] T050 Create regular days off setting component at `src/features/settings/components/RegularDaysOffEditor.tsx` (요일 멀티선택 + 즉시 저장)
-- [ ] T051 [P] Create domain function `src/lib/domain/regular-days-off.ts` with helpers: `isRegularDayOff(date, daysOff)`, `excludeFromAverage(samples, daysOff)`, `applyChangeSnapshot(...)` per FR-040~045
-- [ ] T052 [P] Write unit test `tests/unit/regular-days-off.test.ts` covering: 요일 검사, 누락/푸시/예측 제외, 변경 snapshot, 예외 영업
+- [x] T049 [P] Write `update_regular_days_off` RPC migration `supabase/migrations/011_update_regular_days_off_rpc.sql` (per contracts/domain-rpc.md)
+- [x] T050 Create regular days off setting component at `src/features/settings/components/RegularDaysOffEditor.tsx` (요일 멀티선택 + 즉시 저장)
+- [x] T051 [P] Create domain function `src/lib/domain/regular-days-off.ts` with helpers: `isRegularDayOff(date, daysOff)`, `excludeFromAverage(samples, daysOff)`, `applyChangeSnapshot(...)` per FR-040~045
+- [x] T052 [P] Write unit test `tests/unit/regular-days-off.test.ts` covering: 요일 검사, 누락/푸시/예측 제외, 변경 snapshot, 예외 영업
 
 ### TanStack Query + Zustand 셋업
 
@@ -114,8 +114,8 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### RLS 통합 테스트 (헌법 IV 가드)
 
-- [ ] T055 [P] Write integration test `tests/integration/rls.test.ts` verifying cross-user SELECT/INSERT/UPDATE/DELETE rejection on all domain tables (users, ingredients, ingredient_price_history)
-- [ ] T056 [P] Add helper for integration tests: `tests/helpers/test-supabase.ts` with `createTestUser()`, `cleanupTestUser()`, `signInAs()`
+- [x] T055 [P] Write integration test `tests/integration/rls.test.ts` verifying cross-user SELECT/INSERT/UPDATE/DELETE rejection on all domain tables (users, ingredients, ingredient_price_history)
+- [x] T056 [P] Add helper for integration tests: `tests/helpers/test-supabase.ts` with `createTestUser()`, `cleanupTestUser()`, `signInAs()`
 
 **Checkpoint**: Foundation ready — auth 동작, RLS 격리 검증, 5탭 네비게이션 표시, 정기휴무 등록·저장 가능
 
