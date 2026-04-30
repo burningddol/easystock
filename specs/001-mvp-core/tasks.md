@@ -349,27 +349,27 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 데이터 RPC
 
-- [ ] T155 [US6] Write SQL migration `supabase/migrations/023_get_calendar_month_rpc.sql` defining `get_calendar_month(year, month)` returning month cumulative + per-cell data (per contracts/domain-rpc.md), respecting regular_days_off
+- [x] T155 [US6] Write SQL migration `supabase/migrations/026_get_calendar_month_rpc.sql` defining `get_calendar_month(year, month)` returning month cumulative + per-cell data (per contracts/domain-rpc.md), respecting regular_days_off — 마이그레이션 번호 023 → 026 (017~025 이미 존재)
 
 ### UI 컴포넌트 + 라우팅
 
-- [ ] T156 [P] [US6] Create `src/features/calendar/components/MonthHeader.tsx` (이전/다음 달 nav + 2026년 4월 표시)
-- [ ] T157 [P] [US6] Create `src/features/calendar/components/MonthCumulativeCard.tsx` (매출/순수익/일평균/영업일수 + 재료 원가 기준 라벨)
-- [ ] T158 [P] [US6] Create `src/features/calendar/components/CalendarGrid.tsx` (7×6 grid, 셀별 인텐시티 + 도트 + 매출 만원 + 미래·가입전·정기휴무 회색 + 누락 2일+ 강조 per design system patterns.md "캘린더")
-- [ ] T159 [P] [US6] Create `src/features/calendar/components/CellDetailPanel.tsx` (선택일 상세 — 매출/매입/베스트셀러)
-- [ ] T160 [P] [US6] Create `src/features/calendar/components/CalendarLegend.tsx` (인텐시티 5단계 + 매입/누락 도트 설명)
-- [ ] T161 [US6] Create page `src/app/(main)/calendar/page.tsx` integrating all calendar components
-- [ ] T162 [P] [US6] Create hook `src/features/calendar/hooks/useCalendarMonth.ts` (TanStack Query)
+- [x] T156 [P] [US6] Create `src/features/calendar/components/MonthHeader.tsx` (이전/다음 달 nav + 2026년 4월 표시)
+- [x] T157 [P] [US6] Create `src/features/calendar/components/MonthCumulativeCard.tsx` (매출/순수익/일평균/영업일수 + 재료 원가 기준 라벨)
+- [x] T158 [P] [US6] Create `src/features/calendar/components/CalendarGrid.tsx` (7×6 grid, 셀별 인텐시티 + 도트 + 매출 만원 + 미래·가입전·정기휴무 회색 + 누락 2일+ 강조 per design system patterns.md "캘린더")
+- [x] T159 [P] [US6] Create `src/features/calendar/components/CellDetailPanel.tsx` (선택일 상세 — 매출/매입/베스트셀러)
+- [x] T160 [P] [US6] Create `src/features/calendar/components/CalendarLegend.tsx` (인텐시티 5단계 + 매입/누락 도트 설명)
+- [x] T161 [US6] Create page `src/app/(main)/calendar/page.tsx` integrating all calendar components
+- [x] T162 [P] [US6] Create hook `src/features/calendar/hooks/useCalendarMonth.ts` (TanStack Query)
 
 ### 누락일 → 소급 입력 흐름
 
-- [ ] T163 [US6] Implement cell click handler in CalendarGrid: 누락일(7일 이내) → router.push(`/sale/${date}`); 7일 초과 → "이미 만료" toast; 미래 → "입력 불가" toast (FR-022~024)
+- [x] T163 [US6] Implement cell click handler in CalendarGrid: 누락일(7일 이내) → router.push(`/sale/${date}`); 7일 초과 → "이미 만료" toast; 미래 → "입력 불가" toast (FR-022~024) — toast 인프라 미존재로 CellDetailPanel 인라인 메시지로 대체
 
 ### GA4 이벤트
 
-- [ ] T164 [US6] Wire `calendar_viewed` GA4 event on calendar page mount
-- [ ] T165 [US6] Wire `calendar_missing_day_clicked` GA4 event when missing-day cell tapped (D7 funnel 핵심)
-- [ ] T166 [US6] Wire `d7_active` GA4 event from server cron in `supabase/functions/d7-tracker/index.ts` (daily checks users at signup_anniversary +7 with active session in last 24h)
+- [x] T164 [US6] Wire `calendar_viewed` GA4 event on calendar page mount
+- [x] T165 [US6] Wire `calendar_missing_day_clicked` GA4 event when missing-day cell tapped (D7 funnel 핵심)
+- [x] T166 [US6] Wire `d7_active` GA4 event from server cron in `supabase/functions/d7-tracker/index.ts` (daily checks users at signup_anniversary +7 with active session in last 24h) — 마이그레이션 027 cron + KST cohort window. 활성 신호는 sales.created_at within 24h (sale 입력 = 핵심 가치 행위)
 
 **Checkpoint**: 캘린더 완성. 페르소나 월간 장부 시각화 + 누락일 즉시 보정 동선 완성.
 
