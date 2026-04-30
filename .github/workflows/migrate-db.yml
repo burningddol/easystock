@@ -1,0 +1,44 @@
+name: Migrate DB
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "대상 환경"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: migrate-db-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply migrations to ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Link project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+      - name: Push migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if [ -z "$(ls -A supabase/migrations 2>/dev/null | grep -v .gitkeep)" ]; then
+            echo "No migrations to push yet (only .gitkeep). Skipping."
+            exit 0
+          fi
+          supabase db push --password "$SUPABASE_DB_PASSWORD"
