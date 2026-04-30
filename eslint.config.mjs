@@ -46,6 +46,7 @@ export default [
       "test-results/**",
       "supabase/.branches/**",
       "supabase/.temp/**",
+      "supabase/functions/**",
       "next-env.d.ts",
     ],
   },

@@ -84,14 +84,14 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### Auth 흐름
 
-- [ ] T037 [P] Create signup page at `src/app/(auth)/signup/page.tsx` with form (email, password, storeName, storeType, regularDaysOff multiselect) using RHF + Zod
-- [ ] T038 [P] Create signup form component at `src/features/auth/components/SignupForm.tsx`; on submit calls `supabase.auth.signUp` then `complete_signup` RPC
-- [ ] T039 [P] Create login page at `src/app/(auth)/login/page.tsx` and `LoginForm` component
-- [ ] T040 Create signup completion RPC migration `supabase/migrations/009_complete_signup_rpc.sql` that inserts `public.users` row from `auth.users` with provided store info
-- [ ] T041 Wire `signup_complete` GA4 event firing in signup success handler (gated by analytics_consent)
-- [ ] T042 Wire `consent_granted` / `consent_denied` GA4 events in cookie banner click handlers
-- [ ] T043 Implement withdrawal RPC: write `supabase/migrations/010_request_withdrawal_rpc.sql` setting `withdrawal_requested_at = now()`, `permanent_delete_at = now() + interval '30 days'`
-- [ ] T044 Create permanent delete Edge Function `supabase/functions/permanent-delete/index.ts` with cron trigger (daily) to cascade-delete users past `permanent_delete_at`
+- [x] T037 [P] Create signup page at `src/app/(auth)/signup/page.tsx` with form (email, password, storeName, storeType, regularDaysOff multiselect) using RHF + Zod
+- [x] T038 [P] Create signup form component at `src/features/auth/components/SignupForm.tsx`; on submit calls `supabase.auth.signUp` then `complete_signup` RPC
+- [x] T039 [P] Create login page at `src/app/(auth)/login/page.tsx` and `LoginForm` component
+- [x] T040 Create signup completion RPC migration `supabase/migrations/009_complete_signup_rpc.sql` (handled via `handle_new_auth_user` trigger from migration 001 — separate RPC unnecessary, raw_user_meta_data 흐름 표준)
+- [x] T041 Wire `signup_complete` GA4 event firing in signup success handler (gated by analytics_consent)
+- [x] T042 Wire `consent_granted` / `consent_denied` GA4 events in cookie banner click handlers (denied은 게이트 통과 안 하므로 미발화 — PIPA 정합)
+- [x] T043 Implement withdrawal RPC: write `supabase/migrations/010_request_withdrawal_rpc.sql` setting `withdrawal_requested_at = now()`, `permanent_delete_at = now() + interval '30 days'`
+- [x] T044 Create permanent delete Edge Function `supabase/functions/permanent-delete/index.ts` with cron trigger (daily) to cascade-delete users past `permanent_delete_at`
 
 ### 5-Tab 네비게이션 + 라우팅
 

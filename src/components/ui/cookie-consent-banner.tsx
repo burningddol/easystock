@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { trackEvent } from "@/lib/analytics/ga4";
 import {
   type ConsentState,
   getConsent,
@@ -20,6 +21,18 @@ export function CookieConsentBanner(): React.ReactElement | null {
 
   if (!mounted || state !== "unset") return null;
 
+  function handleDecision(decision: "granted" | "denied"): void {
+    setConsent(decision);
+    // Note: trackEvent gates on getConsent() === "granted". Calling here right after
+    // setConsent ensures the storage write is observed by trackEvent's subsequent read.
+    if (decision === "granted") {
+      trackEvent("consent_granted");
+    } else {
+      // consent_denied은 게이트 통과 못 함 — denied 시에는 GA4 이벤트 미발화 (의도).
+      // PIPA 정합. 거부 자체의 anonymized count가 필요하면 cookieless beacon 별도 도입.
+    }
+  }
+
   return (
     <div
       role="dialog"
@@ -34,14 +47,14 @@ export function CookieConsentBanner(): React.ReactElement | null {
         <div className="flex shrink-0 gap-stack-tight">
           <button
             type="button"
-            onClick={() => setConsent("denied")}
+            onClick={() => handleDecision("denied")}
             className="rounded-md border border-border px-stack py-stack-tight text-body-regular text-ink-2 hover:bg-card-hover"
           >
             거부
           </button>
           <button
             type="button"
-            onClick={() => setConsent("granted")}
+            onClick={() => handleDecision("granted")}
             className="rounded-md bg-ink-1 px-stack py-stack-tight text-body-regular text-bg hover:opacity-90"
           >
             동의
