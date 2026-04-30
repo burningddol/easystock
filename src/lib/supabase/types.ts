@@ -593,6 +593,18 @@ export type Database = {
           success: boolean
         }[]
       }
+      save_ingredient: {
+        Args: {
+          p_name: string
+          p_unit: Database["public"]["Enums"]["ingredient_unit"]
+        }
+        Returns: {
+          current_avg_price: number
+          id: string
+          name: string
+          unit: Database["public"]["Enums"]["ingredient_unit"]
+        }[]
+      }
       save_menu: {
         Args: { p_name: string; p_price: number; p_recipe?: Json }
         Returns: {
@@ -614,6 +626,14 @@ export type Database = {
           total_cost_snapshot: number
           total_net_profit: number
           total_revenue: number
+        }[]
+      }
+      save_vendor: {
+        Args: { p_lead_time_days?: number; p_name: string }
+        Returns: {
+          id: string
+          lead_time_days: number
+          name: string
         }[]
       }
       update_regular_days_off: {

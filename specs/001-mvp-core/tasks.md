@@ -233,19 +233,19 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### UI 컴포넌트 + 라우팅
 
-- [ ] T108 [P] [US2] Create `src/features/purchase/components/PurchaseForm.tsx` (vendor select with autocomplete + 신규 추가, date picker, items list with ingredient autocomplete + 수량/금액)
-- [ ] T109 [P] [US2] Create `src/features/purchase/components/VendorQuickCreate.tsx` for inline vendor add (name + lead_time_days, default 1)
-- [ ] T110 [P] [US2] Create `src/features/purchase/components/IngredientQuickCreate.tsx` for inline ingredient add (name + unit, name unique check)
-- [ ] T111 [P] [US2] Create `src/features/purchase/components/PriceChangeAlertList.tsx` showing ±5% alerts after save with previous→new price + percent
-- [ ] T112 [US2] Create page `src/app/purchase/page.tsx` (context-entry, not in bottom tab) integrating PurchaseForm
-- [ ] T113 [US2] Add quick-action entry from `src/app/(main)/inventory/page.tsx` linking to `/purchase` (header action button per design system patterns)
-- [ ] T114 [P] [US2] Create hook `src/features/purchase/hooks/usePurchaseSubmit.ts` (mutation calling `save_purchase` RPC + invalidate menus/ingredients caches)
-- [ ] T115 [P] [US2] Create hook `src/features/purchase/hooks/useVendors.ts` and `useIngredients.ts` (TanStack Query)
+- [x] T108 [P] [US2] Create `src/features/purchase/components/PurchaseForm.tsx` (vendor select with autocomplete + 신규 추가, date picker, items list with ingredient autocomplete + 수량/금액)
+- [x] T109 [P] [US2] Create `src/features/purchase/components/VendorQuickCreate.tsx` for inline vendor add (name + lead_time_days, default 1)
+- [x] T110 [P] [US2] Create `src/features/purchase/components/IngredientQuickCreate.tsx` for inline ingredient add (name + unit, name unique check)
+- [x] T111 [P] [US2] Create `src/features/purchase/components/PriceChangeAlertList.tsx` showing ±5% alerts after save with previous→new price + percent
+- [x] T112 [US2] Create page `src/app/purchase/page.tsx` (context-entry, not in bottom tab) integrating PurchaseForm
+- [x] T113 [US2] Add quick-action entry from `src/app/(main)/inventory/page.tsx` linking to `/purchase` (header action button per design system patterns)
+- [x] T114 [P] [US2] Create hook `src/features/purchase/hooks/usePurchaseSubmit.ts` (mutation calling `save_purchase` RPC + invalidate menus/ingredients caches)
+- [x] T115 [P] [US2] Create hook `src/features/purchase/hooks/useVendors.ts` and `useIngredients.ts` (TanStack Query)
 
 ### GA4 이벤트
 
-- [ ] T116 [US2] Wire `first_purchase_logged` GA4 event in save handler (fire only if user's purchase count was 0 before)
-- [ ] T117 [US2] Wire `price_change_alert_shown` GA4 event when PriceChangeAlertList renders ≥1 alert
+- [x] T116 [US2] Wire `first_purchase_logged` GA4 event in save handler (fire only if user's purchase count was 0 before)
+- [x] T117 [US2] Wire `price_change_alert_shown` GA4 event when PriceChangeAlertList renders ≥1 alert
 
 ### 통합 테스트
 
