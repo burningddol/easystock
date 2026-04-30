@@ -45,7 +45,7 @@ description: "Task list for 001-mvp-core feature implementation"
 - [x] T009 [P] Re-export design tokens at `src/lib/design-tokens.ts` from `.claude/skills/easystock-design-system/tokens.ts`
 - [x] T010 [P] Configure Vitest in `vitest.config.ts` with jsdom environment, coverage reporters (json + text + html), and include patterns for `tests/unit/**` and `tests/integration/**`
 - [x] T011 [P] Configure Playwright in `playwright.config.ts` with mobile viewport (375x667) for persona testing
-- [ ] T012 [P] Initialize Supabase CLI project: `supabase init`; create `supabase/config.toml` with project ref placeholder
+- [x] T012 [P] Initialize Supabase CLI project: `supabase init`; create `supabase/config.toml` with project ref placeholder
 - [x] T013 Create PWA manifest at `src/app/manifest.ts` with name "이지스톡", theme color from design tokens, icons (192/512), display=standalone
 - [x] T014 Create service worker stub at `public/sw.js` with push event listener and notificationclick handler (per contracts/push.md)
 - [x] T015 Register service worker in `src/app/layout.tsx` via client component; setup VAPID public key from `NEXT_PUBLIC_VAPID_PUBLIC_KEY` env
@@ -55,12 +55,12 @@ description: "Task list for 001-mvp-core feature implementation"
 - [x] T019 [P] Install Sentry: `npm install @sentry/nextjs`; configure `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts` with DSN from env
 - [x] T020 [P] Add Vercel Analytics: `npm install @vercel/analytics`; integrate `<Analytics />` in `src/app/layout.tsx`
 - [x] T021 [P] Create CI workflow at `.github/workflows/ci.yml` with jobs: lint-typecheck, test-unit, test-integration, test-e2e, build-check; upload coverage to Codecov with flags `domain` and `overall`
-- [ ] T022 [P] Create Edge Functions deploy workflow at `.github/workflows/deploy-edge-functions.yml` triggered by changes in `supabase/functions/**`
-- [ ] T023 [P] Create DB migration workflow at `.github/workflows/migrate-db.yml` with `workflow_dispatch` and environment input (staging/prod)
+- [x] T022 [P] Create Edge Functions deploy workflow at `.github/workflows/deploy-edge-functions.yml` triggered by changes in `supabase/functions/**`
+- [x] T023 [P] Create DB migration workflow at `.github/workflows/migrate-db.yml` with `workflow_dispatch` and environment input (staging/prod)
 - [x] T024 [P] Create Codecov configuration at `codecov.yml` with project target 60%, patch target 80%, flag `domain` paths to `src/lib/domain/` and `src/features/*/lib/`
-- [ ] T025 GitHub repo setup (manual or `gh` CLI): enable branch protection on `main` requiring CI passing, Codecov check, and 1 review; document in `docs/setup-github.md`
-- [ ] T026 Register GitHub secrets (manual): `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PROJECT_REF`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_GA4_ID`, `SENTRY_DSN`, `CODECOV_TOKEN`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
-- [ ] T027 Generate VAPID keys: `npx web-push generate-vapid-keys`; document in `docs/setup-vapid.md`; register to Supabase Edge Function secrets and GitHub secrets
+- [x] T025 GitHub repo setup (manual or `gh` CLI): enable branch protection on `main` requiring CI passing, Codecov check, and 1 review; document in `docs/setup-github.md`
+- [x] T026 Register GitHub secrets (manual): `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PROJECT_REF`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_GA4_ID`, `SENTRY_DSN`, `CODECOV_TOKEN`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
+- [x] T027 Generate VAPID keys: `npx web-push generate-vapid-keys`; document in `docs/setup-vapid.md`; register to Supabase Edge Function secrets and GitHub secrets
 - [x] T028 [P] Create `.env.example` at repo root with all required env var names (no values) for local dev onboarding
 - [x] T029 [P] Update `package.json` scripts: `dev`, `build`, `typecheck`, `lint`, `test`, `test:unit`, `test:integration`, `test:e2e`, `test:coverage`, `db:reset`, `db:migrate`, `db:gen-types`
 
