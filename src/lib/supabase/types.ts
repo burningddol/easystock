@@ -716,6 +716,10 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_calendar_month: {
+        Args: { p_month: number; p_year: number }
+        Returns: Json
+      }
       get_depletion_forecast: {
         Args: never
         Returns: {

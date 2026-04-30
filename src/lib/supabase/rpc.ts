@@ -305,6 +305,95 @@ export function unsubscribePush(client: ClientLike, endpoint: string): Promise<R
   return callRpc(client, "unsubscribe_push", { p_endpoint: endpoint });
 }
 
+export interface CalendarCumulative {
+  totalRevenue: number;
+  totalNetProfit: number;
+  avgDailyRevenue: number;
+  operatingDays: number;
+}
+
+export interface CalendarCell {
+  date: string;
+  isFuture: boolean;
+  isBeforeSignup: boolean;
+  isRegularDayOff: boolean;
+  hasSale: boolean;
+  hasPurchase: boolean;
+  isMissing: boolean;
+  revenue: number | null;
+  netProfit: number | null;
+}
+
+export interface CalendarMonthData {
+  year: number;
+  month: number;
+  cumulative: CalendarCumulative;
+  cells: CalendarCell[];
+  marginLabel: string;
+}
+
+interface CalendarMonthRaw {
+  year: number;
+  month: number;
+  cumulative: {
+    total_revenue: number;
+    total_net_profit: number;
+    avg_daily_revenue: number;
+    operating_days: number;
+  };
+  cells: Array<{
+    date: string;
+    is_future: boolean;
+    is_before_signup: boolean;
+    is_regular_day_off: boolean;
+    has_sale: boolean;
+    has_purchase: boolean;
+    is_missing: boolean;
+    revenue: number | null;
+    net_profit: number | null;
+  }>;
+  margin_label: string;
+}
+
+export async function getCalendarMonth(
+  client: ClientLike,
+  args: { year: number; month: number },
+): Promise<RpcResult<CalendarMonthData>> {
+  const result = await callRpc<CalendarMonthRaw>(client, "get_calendar_month", {
+    p_year: args.year,
+    p_month: args.month,
+  });
+  if (result.error) {
+    return { data: null, error: result.error };
+  }
+  const raw = result.data!;
+  return {
+    data: {
+      year: raw.year,
+      month: raw.month,
+      cumulative: {
+        totalRevenue: raw.cumulative.total_revenue,
+        totalNetProfit: raw.cumulative.total_net_profit,
+        avgDailyRevenue: raw.cumulative.avg_daily_revenue,
+        operatingDays: raw.cumulative.operating_days,
+      },
+      cells: raw.cells.map((c) => ({
+        date: c.date,
+        isFuture: c.is_future,
+        isBeforeSignup: c.is_before_signup,
+        isRegularDayOff: c.is_regular_day_off,
+        hasSale: c.has_sale,
+        hasPurchase: c.has_purchase,
+        isMissing: c.is_missing,
+        revenue: c.revenue,
+        netProfit: c.net_profit,
+      })),
+      marginLabel: raw.margin_label,
+    },
+    error: null,
+  };
+}
+
 export interface DashboardYesterday {
   soldAt: string;
   revenue: number;
