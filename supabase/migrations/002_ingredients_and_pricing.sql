@@ -16,7 +16,7 @@ create type public.price_history_reason as enum (
 
 -- ─── ingredients ─────────────────────────────────────────────────
 create table public.ingredients (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users (id) on delete cascade,
   name text not null,
   unit public.ingredient_unit not null,
@@ -65,7 +65,7 @@ execute function public.reject_unit_change();
 
 -- ─── ingredient_price_history (FR-029) ──────────────────────────
 create table public.ingredient_price_history (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users (id) on delete cascade,
   ingredient_id uuid not null references public.ingredients (id) on delete cascade,
   changed_at timestamptz not null default now(),
