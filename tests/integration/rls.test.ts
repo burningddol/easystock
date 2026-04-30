@@ -29,6 +29,7 @@ describeRls("RLS user_id isolation", () => {
   let ingredientByB: { id: string; user_id: string };
   let menuByB: { id: string };
   let recipeItemByB: { id: string };
+  let saleByB: { id: string };
 
   beforeAll(async () => {
     userA = await createTestUser({ storeName: "A 가게" });
@@ -71,6 +72,21 @@ describeRls("RLS user_id isolation", () => {
       throw new Error(`recipe fixture failed: ${recipe.error?.message ?? "no row"}`);
     }
     recipeItemByB = recipe.data;
+
+    const sale = await admin
+      .from("sales")
+      .insert({
+        user_id: userB.id,
+        sold_at: new Date().toISOString().slice(0, 10),
+        total_revenue: 5000,
+        total_cost_snapshot: 1000,
+      })
+      .select("id")
+      .single();
+    if (sale.error || !sale.data) {
+      throw new Error(`sale fixture failed: ${sale.error?.message ?? "no row"}`);
+    }
+    saleByB = sale.data;
   }, 30_000);
 
   afterAll(async () => {
@@ -199,6 +215,44 @@ describeRls("RLS user_id isolation", () => {
         .select("id");
       expect(data ?? []).toHaveLength(0);
       expect(error).not.toBeNull();
+    });
+  });
+
+  describe("sales / sale_items / sale_edit_history tables", () => {
+    it("A는 B의 sale을 조회할 수 없다", async () => {
+      const { data, error } = await clientA.from("sales").select("id").eq("id", saleByB.id);
+      expect(error).toBeNull();
+      expect(data ?? []).toHaveLength(0);
+    });
+
+    it("A는 B의 sale을 UPDATE/DELETE 시 영향 행 0", async () => {
+      const upd = await clientA
+        .from("sales")
+        .update({ total_revenue: 99999 })
+        .eq("id", saleByB.id)
+        .select("id");
+      expect(upd.data ?? []).toHaveLength(0);
+
+      const del = await clientA.from("sales").delete().eq("id", saleByB.id).select("id");
+      expect(del.data ?? []).toHaveLength(0);
+    });
+
+    it("A는 B의 sale_items를 조회할 수 없다", async () => {
+      const { data, error } = await clientA
+        .from("sale_items")
+        .select("id")
+        .eq("sale_id", saleByB.id);
+      expect(error).toBeNull();
+      expect(data ?? []).toHaveLength(0);
+    });
+
+    it("A는 B의 sale_edit_history를 조회할 수 없다", async () => {
+      const { data, error } = await clientA
+        .from("sale_edit_history")
+        .select("id")
+        .eq("sale_id", saleByB.id);
+      expect(error).toBeNull();
+      expect(data ?? []).toHaveLength(0);
     });
   });
 });

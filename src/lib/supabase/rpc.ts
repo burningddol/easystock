@@ -91,3 +91,41 @@ export function saveMenu(
     })),
   });
 }
+
+interface SaleRpcRow {
+  sale_id: string;
+  total_revenue: number;
+  total_cost_snapshot: number;
+  total_net_profit: number;
+  margin_percent: number;
+}
+
+interface SaveSaleArgs {
+  soldAt: string; // YYYY-MM-DD
+  items: ReadonlyArray<{ menuId: string; quantity: number }>;
+}
+
+export function saveSale(client: ClientLike, args: SaveSaleArgs): Promise<RpcResult<SaleRpcRow[]>> {
+  return callRpc(client, "save_sale", {
+    p_sold_at: args.soldAt,
+    p_items: args.items.map((it) => ({ menu_id: it.menuId, quantity: it.quantity })),
+  });
+}
+
+interface EditSaleArgs {
+  saleId: string;
+  newItems: ReadonlyArray<{ menuId: string; quantity: number }>;
+  reason?: string;
+}
+
+export function editSale(client: ClientLike, args: EditSaleArgs): Promise<RpcResult<SaleRpcRow[]>> {
+  return callRpc(client, "edit_sale", {
+    p_sale_id: args.saleId,
+    p_new_items: args.newItems.map((it) => ({ menu_id: it.menuId, quantity: it.quantity })),
+    p_reason: args.reason ?? null,
+  });
+}
+
+export function deleteSale(client: ClientLike, saleId: string): Promise<RpcResult<unknown>> {
+  return callRpc(client, "delete_sale", { p_sale_id: saleId });
+}

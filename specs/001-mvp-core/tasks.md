@@ -181,13 +181,13 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 데이터 모델 + RPC
 
-- [ ] T081 [US1] Write SQL migration `supabase/migrations/004_sales_with_snapshot.sql` creating `sales` (with `is_locked` generated column) + `sale_items` (with `menu_cost_snapshot`, `unit_price`) + RLS (per data-model.md §7)
-- [ ] T082 [US1] Write SQL migration `supabase/migrations/007_sale_edit_history.sql` creating `sale_edit_history` (JSONB before/after) + RLS (per data-model.md §8)
-- [ ] T083 [US1] Write SQL migration `supabase/migrations/014_save_sale_rpc.sql` defining `save_sale(items)` transactional RPC that validates menus, computes snapshots, decrements stock, returns `SaveSaleResult` with `marginLabel: '재료 원가 기준 (이동평균법)'` (per contracts/domain-rpc.md)
-- [ ] T084 [US1] Write SQL migration `supabase/migrations/015_edit_sale_rpc.sql` defining `edit_sale(sale_id, new_items, reason)` with lock check, audit history, stock revert+reapply
-- [ ] T085 [US1] Write SQL migration `supabase/migrations/016_delete_sale_rpc.sql` defining `delete_sale(sale_id)` with audit + stock revert
-- [ ] T086 [US1] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
-- [ ] T087 [US1] Write Zod schemas at `src/features/sale/schemas.ts` for `SaveSaleInput`, `EditSaleInput` (per contracts/domain-rpc.md)
+- [x] T081 [US1] Write SQL migration `supabase/migrations/004_sales_with_snapshot.sql` creating `sales` (with `is_locked` generated column) + `sale_items` (with `menu_cost_snapshot`, `unit_price`) + RLS (per data-model.md §7)
+- [x] T082 [US1] Write SQL migration `supabase/migrations/007_sale_edit_history.sql` creating `sale_edit_history` (JSONB before/after) + RLS (per data-model.md §8)
+- [x] T083 [US1] Write SQL migration `supabase/migrations/014_save_sale_rpc.sql` defining `save_sale(items)` transactional RPC that validates menus, computes snapshots, decrements stock, returns `SaveSaleResult` with `marginLabel: '재료 원가 기준 (이동평균법)'` (per contracts/domain-rpc.md)
+- [x] T084 [US1] Write SQL migration `supabase/migrations/015_edit_sale_rpc.sql` defining `edit_sale(sale_id, new_items, reason)` with lock check, audit history, stock revert+reapply
+- [x] T085 [US1] Write SQL migration `supabase/migrations/016_delete_sale_rpc.sql` defining `delete_sale(sale_id)` with audit + stock revert
+- [x] T086 [US1] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
+- [x] T087 [US1] Write Zod schemas at `src/features/sale/schemas.ts` for `SaveSaleInput`, `EditSaleInput` (per contracts/domain-rpc.md)
 
 ### UI 컴포넌트 + 라우팅
 
@@ -210,9 +210,9 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 통합 테스트
 
-- [ ] T101 [P] [US1] Write integration test `tests/integration/sale-save.test.ts` verifying `save_sale` transaction: menu cost snapshot stored, stock decremented, RLS isolated
-- [ ] T102 [P] [US1] Write integration test `tests/integration/sale-edit.test.ts` verifying lock (>7일 reject), stock revert+reapply, audit history insertion, new snapshot on edit
-- [ ] T103 [P] [US1] Add to `tests/integration/rls.test.ts`: sales/sale_items/sale_edit_history cross-user isolation cases
+- [x] T101 [P] [US1] Write integration test `tests/integration/sale-save.test.ts` verifying `save_sale` transaction: menu cost snapshot stored, stock decremented, RLS isolated
+- [x] T102 [P] [US1] Write integration test `tests/integration/sale-edit.test.ts` verifying lock (>7일 reject), stock revert+reapply, audit history insertion, new snapshot on edit
+- [x] T103 [P] [US1] Add to `tests/integration/rls.test.ts`: sales/sale_items/sale_edit_history cross-user isolation cases
 
 **Checkpoint**: ★ MVP 첫 검증 지점 — 가입 → 메뉴 → 판매 입력 → 마진 확인 흐름 완전 동작. 페르소나 골든패스 5분 통과 가능 (단, purchase 없이는 모든 단가 0이라 마진 100%).
 

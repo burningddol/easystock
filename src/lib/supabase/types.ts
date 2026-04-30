@@ -251,6 +251,144 @@ export type Database = {
           },
         ]
       }
+      sale_edit_history: {
+        Row: {
+          after_items: Json | null
+          before_items: Json
+          change_type: Database["public"]["Enums"]["sale_change_type"]
+          changed_at: string
+          id: string
+          reason: string | null
+          sale_id: string
+          user_id: string
+        }
+        Insert: {
+          after_items?: Json | null
+          before_items: Json
+          change_type: Database["public"]["Enums"]["sale_change_type"]
+          changed_at?: string
+          id?: string
+          reason?: string | null
+          sale_id: string
+          user_id: string
+        }
+        Update: {
+          after_items?: Json | null
+          before_items?: Json
+          change_type?: Database["public"]["Enums"]["sale_change_type"]
+          changed_at?: string
+          id?: string
+          reason?: string | null
+          sale_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_edit_history_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_edit_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_items: {
+        Row: {
+          id: string
+          menu_cost_snapshot: number
+          menu_id: string
+          quantity: number
+          sale_id: string
+          unit_price: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          menu_cost_snapshot: number
+          menu_id: string
+          quantity: number
+          sale_id: string
+          unit_price: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          menu_cost_snapshot?: number
+          menu_id?: string
+          quantity?: number
+          sale_id?: string
+          unit_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          created_at: string
+          id: string
+          sold_at: string
+          total_cost_snapshot: number
+          total_revenue: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sold_at: string
+          total_cost_snapshot?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sold_at?: string
+          total_cost_snapshot?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           analytics_consent: boolean
@@ -305,6 +443,17 @@ export type Database = {
           menu_ids: string[]
         }[]
       }
+      delete_sale: { Args: { p_sale_id: string }; Returns: undefined }
+      edit_sale: {
+        Args: { p_new_items: Json; p_reason?: string; p_sale_id: string }
+        Returns: {
+          margin_percent: number
+          sale_id: string
+          total_cost_snapshot: number
+          total_net_profit: number
+          total_revenue: number
+        }[]
+      }
       request_withdrawal: {
         Args: never
         Returns: {
@@ -316,6 +465,16 @@ export type Database = {
         Args: { p_name: string; p_price: number; p_recipe?: Json }
         Returns: {
           menu_id: string
+        }[]
+      }
+      save_sale: {
+        Args: { p_items: Json; p_sold_at: string }
+        Returns: {
+          margin_percent: number
+          sale_id: string
+          total_cost_snapshot: number
+          total_net_profit: number
+          total_revenue: number
         }[]
       }
       update_regular_days_off: {
@@ -334,6 +493,7 @@ export type Database = {
         | "sale_consumption"
         | "sale_edit_revert"
         | "sale_edit_apply"
+      sale_change_type: "edit" | "delete"
       store_type: "bingsu_cafe" | "cafe" | "dessert_cafe"
       weekday: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
     }
@@ -474,6 +634,7 @@ export const Constants = {
         "sale_edit_revert",
         "sale_edit_apply",
       ],
+      sale_change_type: ["edit", "delete"],
       store_type: ["bingsu_cafe", "cafe", "dessert_cafe"],
       weekday: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
     },
