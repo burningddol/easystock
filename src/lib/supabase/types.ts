@@ -312,6 +312,12 @@ export type Database = {
           success: boolean
         }[]
       }
+      save_menu: {
+        Args: { p_name: string; p_price: number; p_recipe?: Json }
+        Returns: {
+          menu_id: string
+        }[]
+      }
       update_regular_days_off: {
         Args: { p_days_off: Database["public"]["Enums"]["weekday"][] }
         Returns: {
