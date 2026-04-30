@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { formatNumber } from "@/lib/utils/format";
+import { daysUntilDate, formatNumber } from "@/lib/utils/format";
 import type { DepletionStatus } from "@/lib/domain/forecast";
 import type { IngredientForecastView } from "../hooks/useDepletionForecast";
 
@@ -88,12 +88,8 @@ function toneClass(status: DepletionStatus): string {
 }
 
 function formatDepletion(item: IngredientForecastView): string {
-  if (!item.expectedDepletionDate) return "예측 데이터 부족";
-  const today = new Date();
-  const days = Math.max(
-    0,
-    Math.floor((item.expectedDepletionDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000)),
-  );
+  const days = daysUntilDate(item.expectedDepletionDate);
+  if (days === null) return "예측 데이터 부족";
   if (days === 0) return "오늘 소진";
   return `${days}일 후 소진`;
 }
