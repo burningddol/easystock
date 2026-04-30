@@ -176,8 +176,8 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 도메인 로직 (테스트 우선)
 
-- [ ] T079 [P] [US1] Write unit test `tests/unit/snapshot.test.ts` for sale snapshot: `createSaleSnapshot(items, ingredients)`, `recomputeOnEdit(...)`, 7-day lock detection
-- [ ] T080 [US1] Implement domain function `src/lib/domain/snapshot.ts` to satisfy T079; uses pricing.ts and margin.ts
+- [x] T079 [P] [US1] Write unit test `tests/unit/snapshot.test.ts` for sale snapshot: `createSaleSnapshot(items, ingredients)`, `recomputeOnEdit(...)`, 7-day lock detection
+- [x] T080 [US1] Implement domain function `src/lib/domain/snapshot.ts` to satisfy T079; uses pricing.ts and margin.ts
 
 ### 데이터 모델 + RPC
 
