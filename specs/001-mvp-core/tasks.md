@@ -318,24 +318,24 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 데이터 페칭 RPC
 
-- [ ] T146 [US5] Write SQL migration `supabase/migrations/022_get_today_dashboard_rpc.sql` defining `get_today_dashboard()` returning: alerts (depletion + 유통기한), yesterday KPI (revenue, net_profit, margin_percent, weekday-over-weekday change), top3 menus (week-based margin), low-margin reason
+- [x] T146 [US5] Write SQL migration `supabase/migrations/025_get_today_dashboard_rpc.sql` defining `get_today_dashboard()` returning: alerts (depletion + 유통기한), yesterday KPI (revenue, net_profit, margin_percent, weekday-over-weekday change), top3 menus (week-based margin), low-margin reason — 마이그레이션 번호 022 → 025 (021까지 이미 존재)
 
 ### UI 컴포넌트 + 라우팅
 
-- [ ] T147 [P] [US5] Create `src/features/dashboard/components/AlertsCard.tsx` listing action items (소진 예상, 유통기한 임박)
-- [ ] T148 [P] [US5] Create `src/features/dashboard/components/YesterdayKpiCard.tsx` with 매출/순수익/마진율 + "재료 원가 기준 (이동평균법)" label + 지난주 같은 요일 대비 % (FR-020)
-- [ ] T149 [P] [US5] Create `src/features/dashboard/components/MarginTop3Card.tsx` listing top 3 by margin% + low-margin menu with cause text (e.g., "딸기값 인상 영향")
-- [ ] T150 [P] [US5] Create `src/features/dashboard/components/MissingSaleBadge.tsx` (FR-091, 어제 판매 미입력 시 빨간 배지)
-- [ ] T151 [US5] Create page `src/app/(main)/today/page.tsx` integrating dashboard cards (per design system patterns.md "홈" pattern)
-- [ ] T152 [P] [US5] Create hook `src/features/dashboard/hooks/useTodayDashboard.ts` (TanStack Query)
+- [x] T147 [P] [US5] Create `src/features/dashboard/components/AlertsCard.tsx` listing action items (소진 예상, 유통기한 임박)
+- [x] T148 [P] [US5] Create `src/features/dashboard/components/YesterdayKpiCard.tsx` with 매출/순수익/마진율 + "재료 원가 기준 (이동평균법)" label + 지난주 같은 요일 대비 % (FR-020)
+- [x] T149 [P] [US5] Create `src/features/dashboard/components/MarginTop3Card.tsx` listing top 3 by margin% + low-margin menu with cause text (e.g., "딸기값 인상 영향")
+- [x] T150 [P] [US5] Create `src/features/dashboard/components/MissingSaleBadge.tsx` (FR-091, 어제 판매 미입력 시 빨간 배지)
+- [x] T151 [US5] Create page `src/app/(main)/today/page.tsx` integrating dashboard cards (per design system patterns.md "홈" pattern)
+- [x] T152 [P] [US5] Create hook `src/features/dashboard/hooks/useTodayDashboard.ts` (TanStack Query)
 
 ### GA4 이벤트
 
-- [ ] T153 [US5] Wire `dashboard_viewed` GA4 event on today page mount
+- [x] T153 [US5] Wire `dashboard_viewed` GA4 event on today page mount
 
 ### 검증
 
-- [ ] T154 [US5] Manual UX verification: 페르소나 1분 체크 흐름이 모바일 폭(375px)에서 동작 (헌법 I)
+- [ ] T154 [US5] Manual UX verification: 페르소나 1분 체크 흐름이 모바일 폭(375px)에서 동작 (헌법 I) — 베타 테스트 단계로 이월 (`npm run dev` + Chrome DevTools 모바일 뷰)
 
 **Checkpoint**: 매일 1분 체크 흐름 완성.
 
