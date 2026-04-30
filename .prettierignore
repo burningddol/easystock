@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+build
+out
+coverage
+playwright-report
+test-results
+package-lock.json
+supabase/.branches
+supabase/.temp
+.specify
+.claude/skills
+specs

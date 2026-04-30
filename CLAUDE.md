@@ -26,16 +26,19 @@ src/
   app/                Next.js App Router 라우트
   features/           도메인별 분리
     sale/             판매 일괄 입력
-    purchase/         매입 등록
+    purchase/         매입 등록 (하단 탭 아님, 컨텍스트 진입)
     menu/             메뉴/레시피
     inventory/        재고·소진 예측
-    dashboard/        홈
+    dashboard/        홈 (오늘)
+    calendar/         월간 장부
   components/ui/      shadcn 컴포넌트
-  lib/                supabase, query client, utils
+  lib/                supabase, query client, utils, design tokens 재export
   types/              도메인 타입
 ```
 
 도메인 로직은 `features/` 안에서, 공용 UI 원자만 `components/ui/`에 둔다.
+
+하단 탭은 5개: **오늘 / 캘린더 / 판매 / 메뉴 / 재료**. 매입은 빈도가 낮아 컨텍스트 진입(재료 화면 또는 빠른 액션)으로 처리.
 
 ## 도메인 용어 (이 프로젝트에서 단어 의미 고정)
 
@@ -63,13 +66,63 @@ src/
 
 글로벌 `~/.claude/CLAUDE.md`의 시니어 룰을 모두 따른다. 이 파일은 그 위에 **프로젝트 컨텍스트만** 얹는다. 룰이 충돌하면 글로벌이 우선.
 
+## 디자인 워크플로우
+
+**모든 UI/UX는 `.claude/skills/easystock-design-system` 스킬을 항상 참조 MUST한다.** 이 스킬이 토큰·컴포넌트·화면 패턴의 단일 진실 공급원이다.
+
+### 스킬 파일 구성
+
+- `SKILL.md` — 디자인 원칙 (숫자가 주인공, 그림자 금지, 요일 비교 등)
+- `tokens.json` / `tokens.ts` — 색·spacing·radius·typography 토큰
+- `components.md` — Card, Button, Chip, Tag, Metric 등 컴포넌트 사양
+- `patterns.md` — 6개 화면 (홈/캘린더/판매/메뉴/재료/매입) 레이아웃 패턴
+
+### 구현 순서
+
+1. **스킬의 패턴 확인** — 만들려는 화면이 `patterns.md`에 정의되어 있는가?
+   - 있으면: 패턴대로 구현
+   - 없으면: 스킬에 패턴을 먼저 추가 → 그 다음 코드
+2. **토큰 import** — 색/간격은 반드시 `tokens.ts`에서 import (하드코딩 금지)
+3. **shadcn/ui와 매핑** — 스킬 컴포넌트 사양 ↔ shadcn 컴포넌트 매핑
+4. **Pretendard 폰트 적용** — 시스템 폰트 사용 금지
+5. **모바일 검증** — 페르소나 사용 시간 기준 (판매 입력 5분 이내)
+
+### 보조 스킬
+
+`frontend-ui-ux-engineer`는 새 패턴을 탐색할 때만 사용. 산출물은 반드시 `easystock-design-system`에 통합 후 사용 (스킬이 코드보다 먼저 갱신).
+
+별도 디자인 도구(Figma 등) 의존 없음.
+
+## 단가·마진 계산 규칙 (헌법 III 요약)
+
+- 재료 단가: **가중 이동 평균법** (매입할 때마다 평균 갱신)
+- 판매 시점 메뉴 원가는 Sale 레코드에 **스냅샷 저장** → 과거 마진은 영구 불변
+- 재고 실사는 수량 보정용, 평균 단가는 매입에서만 변경
+- UI 마진 표기: 항상 `"재료 원가 기준 (이동평균법)"` 명시
+
+## 테스트 규칙 (헌법 v1.3.0 요약)
+
+- **단위 테스트 의무**: 가중 평균 단가 / 메뉴 원가·마진 / Sale 스냅샷·편집 재계산 / 소진 예측 / 정기휴무 제외 로직
+- **통합 테스트 의무**: RLS 정책 / Sale 저장·편집 트랜잭션 / 매입→단가 갱신→마진 재계산 흐름
+- **E2E 테스트 의무**: 페르소나 골든패스 1개 이상 (가입 → 메뉴 등록 → 판매 입력 → 마진 확인)
+- **커버리지 임계치**: 핵심 도메인 80% / 전체 60% — Codecov 측정
+- **CI 게이트**: 단위 테스트 실패 / 핵심 도메인 커버리지 회귀 / E2E 실패 시 PR 머지 차단
+- TDD 강제 아님. 단, 핵심 도메인 로직은 테스트 우선 권장
+- UI 컴포넌트는 단위 테스트 의무 제외 — 시각 회귀 또는 수동 검증으로 보완
+
 ## 자주 쓰는 명령
 
 (셋업 후 채움)
 
-- `pnpm dev` — 개발 서버
-- `pnpm build` — 프로덕션 빌드
-- `pnpm typecheck` — 타입 체크
+- `npm run dev` — 개발 서버
+- `npm run build` — 프로덕션 빌드
+- `npm run typecheck` — 타입 체크
+- `npm run lint` — ESLint
+- `npm run test` — Vitest 단위 + 통합
+- `npm run test:e2e` — Playwright
+- `npm run test:coverage` — 커버리지 리포트
+- `npx supabase db push --linked` — 마이그레이션 적용
+- `npx supabase gen types typescript --linked` — TS 타입 생성
 - `supabase db push` — 마이그레이션 적용
 
 ## 성공 지표 (MVP 검증 기준)
@@ -79,3 +132,12 @@ src/
 - 주간 재고 실사 수행률 50%+
 
 지표가 미달하면 기능 추가가 아니라 **입력 마찰 줄이기**부터 검토한다.
+
+## Active Technologies
+
+- TypeScript 5.x (strict mode, `any` 금지) on Node.js 20 LTS (001-mvp-core)
+- Supabase Postgres (RLS user_id 격리). Supabase Storage는 1차 MVP에서 사용하지 않음 (이미지 업로드 등 미포함) (001-mvp-core)
+
+## Recent Changes
+
+- 001-mvp-core: Added TypeScript 5.x (strict mode, `any` 금지) on Node.js 20 LTS
