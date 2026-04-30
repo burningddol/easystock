@@ -20,11 +20,30 @@ const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
  * timezone 해석 회피 위해 date 부품을 직접 분해 (Date 생성자에 ISO 문자열 + Z 패스
  * 사용 시 호스트 tz에 따라 ±1일 오차 가능).
  */
-export function weekdayKoFromIso(iso: string): string {
+/**
+ * "YYYY-MM-DD" 문자열을 로컬 시간 0시 Date로 변환. 호스트 tz 무관하게 캘린더 일자
+ * 단위 비교에 사용. ISO 부분 분해 → Date 생성자 (UTC 해석 회피).
+ */
+export function parseLocalDateFromIso(iso: string): Date | null {
   const parts = iso.split("-").map(Number);
   const [y, m, d] = parts;
-  if (y === undefined || m === undefined || d === undefined) return "";
-  return WEEKDAY_KO[new Date(y, m - 1, d).getDay()] ?? "";
+  if (y === undefined || m === undefined || d === undefined) return null;
+  return new Date(y, m - 1, d);
+}
+
+export function weekdayKoFromIso(iso: string): string {
+  const date = parseLocalDateFromIso(iso);
+  if (!date) return "";
+  return WEEKDAY_KO[date.getDay()] ?? "";
+}
+
+/**
+ * "YYYY-MM-DD" → "M월 D일 (요일)" 한국어 라벨. CellDetailPanel·캘린더 헤더 등 공유.
+ */
+export function formatDateKoFromIso(iso: string): string {
+  const date = parseLocalDateFromIso(iso);
+  if (!date) return iso;
+  return formatTodayKo(date);
 }
 
 /**
