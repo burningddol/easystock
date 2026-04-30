@@ -202,6 +202,100 @@ export type Database = {
           },
         ]
       }
+      purchase_order_items: {
+        Row: {
+          amount: number
+          id: string
+          ingredient_id: string
+          purchase_order_id: string
+          quantity: number
+          unit_price: number | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          id?: string
+          ingredient_id: string
+          purchase_order_id: string
+          quantity: number
+          unit_price?: number | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          id?: string
+          ingredient_id?: string
+          purchase_order_id?: string
+          quantity?: number
+          unit_price?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          id: string
+          purchased_at: string
+          total_amount: number
+          user_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          purchased_at: string
+          total_amount?: number
+          user_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          purchased_at?: string
+          total_amount?: number
+          user_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipe_items: {
         Row: {
           created_at: string
@@ -431,6 +525,44 @@ export type Database = {
         }
         Relationships: []
       }
+      vendors: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          lead_time_days: number
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lead_time_days?: number
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lead_time_days?: number
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendors_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -465,6 +597,13 @@ export type Database = {
         Args: { p_name: string; p_price: number; p_recipe?: Json }
         Returns: {
           menu_id: string
+        }[]
+      }
+      save_purchase: {
+        Args: { p_items: Json; p_purchased_at: string; p_vendor_id: string }
+        Returns: {
+          price_change_alerts: Json
+          purchase_order_id: string
         }[]
       }
       save_sale: {
