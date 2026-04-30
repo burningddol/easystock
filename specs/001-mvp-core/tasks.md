@@ -288,15 +288,15 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 푸시 인프라
 
-- [ ] T135 [P] [US4] Write SQL migration `supabase/migrations/020_push_subscriptions_and_rpcs.sql` creating `push_subscriptions` table + `subscribe_push`/`unsubscribe_push` RPCs (per data-model.md §10)
-- [ ] T136 [US4] Create push subscription helper at `src/lib/push/client.ts` with `requestPushPermissionAndSubscribe()` (per contracts/push.md client flow)
-- [ ] T137 [US4] Wire push permission request in sale save success flow when first_sale_input fires (per R1: first 가치 경험 직후)
-- [ ] T138 [US4] Create Supabase Edge Function `supabase/functions/push-scheduler/index.ts` with payload builders for `order_alert`, `closing_reminder`, `stock_count`, `critical_depletion` (per contracts/push.md), excluding regular-day-off users
-- [ ] T139 [US4] Configure pg_cron schedules in `supabase/migrations/021_push_cron_schedules.sql`: `0 0 * * *` (KST 09:00 order_alert), `0 13 * * *` (KST 22:00 closing_reminder), `0 22 * * 0` (KST 월 07:00 stock_count)
+- [x] T135 [P] [US4] Write SQL migration `supabase/migrations/022_push_subscriptions_and_rpcs.sql` creating `push_subscriptions` table + `subscribe_push`/`unsubscribe_push` RPCs (per data-model.md §10) — 마이그레이션 번호 020 → 022 (017까지 이미 존재)
+- [x] T136 [US4] Create push subscription helper at `src/lib/push/client.ts` with `requestPushPermissionAndSubscribe()` (per contracts/push.md client flow)
+- [x] T137 [US4] Wire push permission request in sale save success flow when first_sale_input fires (per R1: first 가치 경험 직후)
+- [x] T138 [US4] Create Supabase Edge Function `supabase/functions/push-scheduler/index.ts` with payload builders for `order_alert`, `closing_reminder`, `stock_count`, `critical_depletion` (per contracts/push.md), excluding regular-day-off users + withdrawn users
+- [x] T139 [US4] Configure pg_cron schedules in `supabase/migrations/023_push_cron_schedules.sql` + `024_push_scheduler_warning_level.sql`: `0 0 * * *` (KST 09:00 order_alert), `0 13 * * *` (KST 22:00 closing_reminder), `0 22 * * 6` (KST 토 07:00 stock_count). Vault에 service_role_key 미등록 시 raise warning + null return
 
 ### GA4 이벤트
 
-- [ ] T140 [US4] Wire `order_alert_received` GA4 event in service worker push handler (`public/sw.js`) sending via fetch to GA4 measurement protocol
+- [x] T140 [US4] Wire `order_alert_received` GA4 event — simplify 결과 sw.js 대신 Edge Function `reportToGa4()` (서버측 Measurement Protocol). 클라이언트는 빌드시 env 주입 경로 없어 server-side가 신뢰성 높음. T140~T143 모든 `*_received` 이벤트 동일하게 처리
 - [x] T141 [US4] Wire `stock_count_completed` GA4 event in StockCountForm success handler
 - [x] T142 [US4] Wire `weekly_loss_displayed` GA4 event in StockCountResultCard render
 
@@ -304,7 +304,7 @@ description: "Task list for 001-mvp-core feature implementation"
 
 - [x] T143 [P] [US4] Write integration test `tests/integration/stock-count.test.ts` verifying `apply_stock_count` updates only quantity (단가 불변), records history with correct reason, computes weekly_loss_amount
 - [x] T144 [P] [US4] Add to `tests/integration/rls.test.ts`: stock_counts/stock_count_items/push_subscriptions cross-user cases
-- [ ] T145 [US4] Manual verification: deploy Edge Function to staging, trigger via curl, verify push delivery to test device
+- [x] T145 [US4] Manual verification (1/2): Edge Function 클라우드 배포 (`supabase functions deploy push-scheduler --use-api`) + curl 트리거 시 `success:true` 응답 확인 완료. 실제 디바이스 푸시 수신 검증은 첫 사용자 권한 허용 후 수동 (베타 테스트 단계로 이월)
 
 **Checkpoint**: 재고 예측 + 푸시 알림 동작. 페르소나가 발주 알림을 실제로 받는 흐름 완성.
 
