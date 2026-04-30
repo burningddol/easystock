@@ -160,6 +160,39 @@ interface SavePurchaseRawRow {
   }>;
 }
 
+interface SaveVendorRow {
+  id: string;
+  name: string;
+  lead_time_days: number;
+}
+
+export function saveVendor(
+  client: ClientLike,
+  args: { name: string; leadTimeDays: number },
+): Promise<RpcResult<SaveVendorRow[]>> {
+  return callRpc(client, "save_vendor", {
+    p_name: args.name,
+    p_lead_time_days: args.leadTimeDays,
+  });
+}
+
+interface SaveIngredientRow {
+  id: string;
+  name: string;
+  unit: "g" | "ml" | "piece";
+  current_avg_price: number;
+}
+
+export function saveIngredient(
+  client: ClientLike,
+  args: { name: string; unit: "g" | "ml" | "piece" },
+): Promise<RpcResult<SaveIngredientRow[]>> {
+  return callRpc(client, "save_ingredient", {
+    p_name: args.name,
+    p_unit: args.unit,
+  });
+}
+
 export async function savePurchase(
   client: ClientLike,
   args: SavePurchaseArgs,
