@@ -63,7 +63,7 @@ enabled = true
 policy = "oneshot"
 inspector_port = 8083
 
-[functions]
+[functions.permanent-delete]
 verify_jwt = true
 
 [analytics]
