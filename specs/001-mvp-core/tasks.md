@@ -74,13 +74,13 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 데이터 모델 기반
 
-- [ ] T030 Write SQL migration `supabase/migrations/001_users_and_isolation.sql` creating `public.users` table, `regular_days_off` text[] column, withdrawal fields, trigger to sync from `auth.users`, RLS policies (per data-model.md §1)
-- [ ] T031 Write SQL migration `supabase/migrations/002_ingredients_and_pricing.sql` creating `ingredients`, `ingredient_price_history` tables, indexes, RLS policies (per data-model.md §2-3)
-- [ ] T032 [P] Write SQL migration `supabase/migrations/008_user_withdrawal_grace.sql` adding indexes for `permanent_delete_at` and Edge Function dependency (per data-model.md §1)
-- [ ] T033 Generate TypeScript types from schema: `npm run db:gen-types > src/lib/supabase/types.ts`; commit generated types
-- [ ] T034 [P] Create Supabase browser client at `src/lib/supabase/client.ts` using `createBrowserClient`
-- [ ] T035 [P] Create Supabase server client at `src/lib/supabase/server.ts` using `createServerClient` for App Router server components
-- [ ] T036 Create middleware at `src/middleware.ts` calling `updateSession()` to refresh auth cookies; block grace-period users from protected routes (per contracts/auth.md)
+- [x] T030 Write SQL migration `supabase/migrations/001_users_and_isolation.sql` creating `public.users` table, `regular_days_off` text[] column, withdrawal fields, trigger to sync from `auth.users`, RLS policies (per data-model.md §1)
+- [x] T031 Write SQL migration `supabase/migrations/002_ingredients_and_pricing.sql` creating `ingredients`, `ingredient_price_history` tables, indexes, RLS policies (per data-model.md §2-3)
+- [x] T032 [P] Write SQL migration `supabase/migrations/008_user_withdrawal_grace.sql` adding indexes for `permanent_delete_at` and Edge Function dependency (per data-model.md §1)
+- [x] T033 Generate TypeScript types from schema: `npm run db:gen-types > src/lib/supabase/types.ts`; commit generated types (1차 stub: 미들웨어 의존 테이블만 손으로 정의, 마이그 적용 후 실제 generated 타입으로 후속 PR에서 대체)
+- [x] T034 [P] Create Supabase browser client at `src/lib/supabase/client.ts` using `createBrowserClient`
+- [x] T035 [P] Create Supabase server client at `src/lib/supabase/server.ts` using `createServerClient` for App Router server components
+- [x] T036 Create middleware at `src/middleware.ts` calling `updateSession()` to refresh auth cookies; block grace-period users from protected routes (per contracts/auth.md)
 
 ### Auth 흐름
 
