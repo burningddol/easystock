@@ -194,7 +194,7 @@ description: "Task list for 001-mvp-core feature implementation"
 - [x] T088 [P] [US1] Create `src/features/sale/components/MenuRow.tsx` with +/- buttons (큼직), direct number input, auto-hide on quantity 0
 - [x] T089 [P] [US1] Create `src/features/sale/components/StickyTotalCard.tsx` showing 매출/원가/순수익 with "재료 원가 기준 (이동평균법)" label, real-time updates from form state
 - [x] T090 [P] [US1] Create `src/features/sale/components/SaleInputForm.tsx` integrating MenuRow list (sorted by 7-day favorites) + StickyTotalCard + date picker (today + 7-day retroactive)
-- [ ] T091 [P] [US1] Create `src/features/sale/components/SaleEditDialog.tsx` for editing existing sale with reason input + 7-day lock check
+- [x] T091 [P] [US1] Create `src/features/sale/components/SaleEditDialog.tsx` for editing existing sale with reason input + 7-day lock check
 - [x] T092 [US1] Create page `src/app/(main)/sale/page.tsx` integrating SaleInputForm
 - [x] T093 [US1] Create page `src/app/(main)/sale/[date]/page.tsx` for retroactive input (date param) and view/edit existing sale
 - [x] T094 [P] [US1] Create hook `src/features/sale/hooks/useSaleSubmit.ts` (mutation calling `save_sale` RPC + cache invalidation)

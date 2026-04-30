@@ -8,6 +8,7 @@ import { computeSnapshotPreview } from "@/lib/domain/snapshot";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { MenuRow } from "./MenuRow";
 import { StickyTotalCard } from "./StickyTotalCard";
+import { SaleSaveBar } from "./SaleSaveBar";
 import { useSaleSubmit } from "../hooks/useSaleSubmit";
 import { useFavoriteMenus } from "../hooks/useFavoriteMenus";
 import { toSnapshotMenu } from "../lib/to-snapshot-menu";
@@ -93,23 +94,24 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
 
       {preview && totalQuantity > 0 && <StickyTotalCard preview={preview} />}
 
-      <div className="fixed inset-x-0 bottom-16 z-40 border-t border-border bg-bg px-screen py-stack">
-        <div className="mx-auto flex max-w-screen-md items-center gap-stack">
-          {submit.isError && (
+      <SaleSaveBar
+        left={
+          submit.isError && (
             <p role="alert" className="flex-1 text-caption text-red">
               {submit.error.message}
             </p>
-          )}
+          )
+        }
+        right={
           <PrimaryButton
             type="button"
             onClick={handleSubmit}
             disabled={totalQuantity === 0 || submit.isPending}
-            className="ml-auto"
           >
             {submit.isPending ? "저장 중…" : `${totalQuantity}개 저장`}
           </PrimaryButton>
-        </div>
-      </div>
+        }
+      />
     </div>
   );
 }

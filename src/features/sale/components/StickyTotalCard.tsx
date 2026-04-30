@@ -1,13 +1,12 @@
 "use client";
 
 import { MARGIN_LABEL } from "@/lib/domain/margin";
+import { formatWon } from "@/lib/utils/format";
 import type { SaleSnapshotPreview } from "@/lib/domain/snapshot";
 
 interface StickyTotalCardProps {
   preview: SaleSnapshotPreview;
 }
-
-const fmt = (n: number): string => Math.round(n).toLocaleString("ko-KR");
 
 export function StickyTotalCard({ preview }: StickyTotalCardProps): React.ReactElement {
   const revenue = preview.totalRevenue.toNumber();
@@ -18,9 +17,9 @@ export function StickyTotalCard({ preview }: StickyTotalCardProps): React.ReactE
   return (
     <div className="sticky bottom-20 z-30 mx-[-16px] border-t border-border bg-card px-screen py-stack">
       <div className="grid grid-cols-3 items-end gap-stack">
-        <Metric label="매출" value={fmt(revenue)} accent />
-        <Metric label="원가" value={fmt(cost)} />
-        <Metric label="순수익" value={fmt(profit)} accent />
+        <Metric label="매출" value={formatWon(revenue)} accent />
+        <Metric label="원가" value={formatWon(cost)} />
+        <Metric label="순수익" value={formatWon(profit)} accent />
       </div>
       <p className="mt-stack-tight flex items-baseline justify-between text-caption text-ink-3">
         <span>{MARGIN_LABEL}</span>
