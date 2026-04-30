@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import Decimal from "decimal.js";
+import { Decimal } from "@/lib/domain/_decimal";
 import {
   calculateMenuCost,
   calculateMargin,
@@ -90,10 +90,15 @@ describe("calculateMargin", () => {
     expect(result.rate.toString()).toBe("100");
   });
 
-  it("라벨이 항상 '재료 원가 기준 (이동평균법)'", () => {
+  it("라벨이 항상 MARGIN_LABEL 상수와 일치 — UI에서 import해 비교 가능", () => {
     const result = calculateMargin({ price: 5000, cost: new Decimal(2000) });
-    expect(result.label).toBe("재료 원가 기준 (이동평균법)");
-    expect(MARGIN_LABEL).toBe("재료 원가 기준 (이동평균법)");
+    expect(result.label).toBe(MARGIN_LABEL);
+  });
+
+  it("cost를 number로 넘겨도 Decimal로 normalize됨 — RPC 응답 직결 호출 호환", () => {
+    const result = calculateMargin({ price: 5000, cost: 2000 });
+    expect(result.amount.toString()).toBe("3000");
+    expect(result.rate.toString()).toBe("60");
   });
 
   it("음수 가격은 거부", () => {
