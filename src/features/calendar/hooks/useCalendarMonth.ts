@@ -20,11 +20,16 @@ async function fetchCalendarMonth(year: number, month: number): Promise<Calendar
   return { ...data, cells: withConsecutiveMissingDays(data.cells) };
 }
 
-export function useCalendarMonth(year: number, month: number): UseQueryResult<CalendarMonthView> {
+export function useCalendarMonth(
+  year: number | null,
+  month: number | null,
+): UseQueryResult<CalendarMonthView> {
   return useQuery({
-    queryKey: calendarMonthQueryKey(year, month),
-    queryFn: () => fetchCalendarMonth(year, month),
+    queryKey: calendarMonthQueryKey(year ?? 0, month ?? 0),
+    queryFn: () => fetchCalendarMonth(year as number, month as number),
     // 월간 데이터는 변동이 적고 sale/purchase 변경 시 명시적 invalidate가 더 정확.
     staleTime: 5 * 60 * 1000,
+    // year/month가 mount 전에는 null이라 placeholder 쿼리(0,0)가 발사되지 않도록 차단.
+    enabled: year !== null && month !== null,
   });
 }

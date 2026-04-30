@@ -1,0 +1,55 @@
+"use client";
+
+/**
+ * 캘린더 범례 (patterns.md "캘린더 위계 #3 그리드 하단").
+ * 인텐시티 5단계 + 매입/누락 도트 설명.
+ */
+export function CalendarLegend(): React.ReactElement {
+  return (
+    <section
+      aria-label="캘린더 범례"
+      className="flex flex-col gap-stack-tight rounded-lg border border-border bg-card p-tile text-caption text-ink-3"
+    >
+      <div className="flex items-center gap-stack-tight">
+        <span className="text-micro">매출</span>
+        <IntensityScale />
+      </div>
+      <div className="flex flex-wrap items-center gap-stack-tight">
+        <DotKey tone="amber" label="매입 있음" />
+        <DotKey tone="red" label="판매 미입력" />
+      </div>
+    </section>
+  );
+}
+
+function IntensityScale(): React.ReactElement {
+  return (
+    <div className="flex items-center gap-1">
+      {[0, 1, 2, 3, 4].map((level) => (
+        <div
+          key={level}
+          className="h-3 w-3 rounded-sm"
+          style={{
+            backgroundColor: `color-mix(in srgb, var(--ink-1) ${level * 3.5}%, var(--card))`,
+          }}
+        />
+      ))}
+      <span className="ml-1 text-micro">낮음 → 높음</span>
+    </div>
+  );
+}
+
+interface DotKeyProps {
+  tone: "amber" | "red";
+  label: string;
+}
+
+function DotKey({ tone, label }: DotKeyProps): React.ReactElement {
+  const cls = tone === "amber" ? "bg-amber" : "bg-red";
+  return (
+    <span className="flex items-center gap-1">
+      <span className={`h-1.5 w-1.5 rounded-full ${cls}`} aria-hidden />
+      <span>{label}</span>
+    </span>
+  );
+}
