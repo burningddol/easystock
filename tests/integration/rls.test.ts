@@ -33,6 +33,7 @@ describeRls("RLS user_id isolation", () => {
   let vendorByB: { id: string };
   let purchaseOrderByB: { id: string };
   let stockCountByB: { id: string };
+  let pushSubByB: { id: string };
 
   beforeAll(async () => {
     userA = await createTestUser({ storeName: "A 가게" });
@@ -125,6 +126,21 @@ describeRls("RLS user_id isolation", () => {
       throw new Error(`stock_count fixture failed: ${stockCount.error?.message ?? "no row"}`);
     }
     stockCountByB = stockCount.data;
+
+    const pushSub = await admin
+      .from("push_subscriptions")
+      .insert({
+        user_id: userB.id,
+        endpoint: `https://push.example.test/${userB.id}`,
+        keys_p256dh: "fake-p256dh",
+        keys_auth: "fake-auth",
+      })
+      .select("id")
+      .single();
+    if (pushSub.error || !pushSub.data) {
+      throw new Error(`push_sub fixture failed: ${pushSub.error?.message ?? "no row"}`);
+    }
+    pushSubByB = pushSub.data;
   }, 30_000);
 
   afterAll(async () => {
@@ -334,6 +350,31 @@ describeRls("RLS user_id isolation", () => {
       const { data, error } = await clientA
         .from("daily_stock_counts")
         .insert({ user_id: userB.id, counted_at: "2026-04-01" })
+        .select("id");
+      expect(data ?? []).toHaveLength(0);
+      expect(error).not.toBeNull();
+    });
+  });
+
+  describe("push_subscriptions table", () => {
+    it("A는 B의 push_subscription을 조회할 수 없다", async () => {
+      const { data, error } = await clientA
+        .from("push_subscriptions")
+        .select("id")
+        .eq("id", pushSubByB.id);
+      expect(error).toBeNull();
+      expect(data ?? []).toHaveLength(0);
+    });
+
+    it("A는 user_id=B로 push_subscription INSERT를 거부당한다", async () => {
+      const { data, error } = await clientA
+        .from("push_subscriptions")
+        .insert({
+          user_id: userB.id,
+          endpoint: "https://push.example.test/attack",
+          keys_p256dh: "x",
+          keys_auth: "y",
+        })
         .select("id");
       expect(data ?? []).toHaveLength(0);
       expect(error).not.toBeNull();

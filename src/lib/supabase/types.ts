@@ -325,6 +325,47 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          keys_auth: string
+          keys_p256dh: string
+          last_used_at: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          keys_auth: string
+          keys_p256dh: string
+          last_used_at?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          keys_auth?: string
+          keys_p256dh?: string
+          last_used_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipe_items: {
         Row: {
           created_at: string
@@ -738,6 +779,16 @@ export type Database = {
           name: string
         }[]
       }
+      subscribe_push: {
+        Args: {
+          p_endpoint: string
+          p_keys_auth: string
+          p_keys_p256dh: string
+          p_user_agent?: string
+        }
+        Returns: string
+      }
+      unsubscribe_push: { Args: { p_endpoint: string }; Returns: undefined }
       update_regular_days_off: {
         Args: { p_days_off: Database["public"]["Enums"]["weekday"][] }
         Returns: {
