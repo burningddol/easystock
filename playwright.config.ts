@@ -1,4 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
+import { loadEnv } from "vite";
+
+// .env.local 등 dotenv 파일을 process.env에 주입.
+// 로컬: .env.local에서 SUPABASE_* 자동 로드 → 골든패스 E2E 실제 실행
+// CI: GitHub secret이 process.env에 직접 들어가서 그대로 작동.
+Object.assign(process.env, loadEnv("", process.cwd(), ""));
 
 export default defineConfig({
   testDir: "./tests/e2e",
