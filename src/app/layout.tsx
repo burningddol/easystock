@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ServiceWorkerRegister } from "@/components/providers/ServiceWorkerRegister";
 import { CookieConsentBanner } from "@/components/ui/cookie-consent-banner";
 import { pretendard } from "./fonts";
@@ -34,7 +35,7 @@ export default function RootLayout({ children }: RootLayoutProps): React.ReactEl
   return (
     <html lang="ko" className={pretendard.variable}>
       <body className="font-sans">
-        {children}
+        <QueryProvider>{children}</QueryProvider>
         <CookieConsentBanner />
         <ServiceWorkerRegister />
         <VercelAnalytics />

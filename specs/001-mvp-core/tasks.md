@@ -95,10 +95,10 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 5-Tab 네비게이션 + 라우팅
 
-- [ ] T045 Create `src/app/(main)/layout.tsx` with bottom tab navigation (오늘/캘린더/판매/메뉴/재료) per design system patterns.md
-- [ ] T046 [P] Create empty page stubs: `src/app/(main)/today/page.tsx`, `calendar/page.tsx`, `sale/page.tsx`, `menu/page.tsx`, `inventory/page.tsx` (each renders "준비 중")
-- [ ] T047 [P] Create `src/app/purchase/page.tsx` (context-entry, not in bottom tab) stub
-- [ ] T048 [P] Create `src/app/settings/page.tsx` for store info / 정기휴무 / 탈퇴 stub
+- [x] T045 Create `src/app/(main)/layout.tsx` with bottom tab navigation (오늘/캘린더/판매/메뉴/재료) per design system patterns.md
+- [x] T046 [P] Create empty page stubs: `src/app/(main)/today/page.tsx`, `calendar/page.tsx`, `sale/page.tsx`, `menu/page.tsx`, `inventory/page.tsx` (each renders "준비 중")
+- [x] T047 [P] Create `src/app/purchase/page.tsx` (context-entry, not in bottom tab) stub
+- [x] T048 [P] Create `src/app/settings/page.tsx` for store info / 정기휴무 / 탈퇴 stub
 
 ### 정기휴무 등록 흐름
 
@@ -109,8 +109,8 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### TanStack Query + Zustand 셋업
 
-- [ ] T053 [P] Create TanStack Query client provider at `src/lib/query-client.ts` and `src/components/providers/QueryProvider.tsx`; mount in root layout
-- [ ] T054 [P] Create Zustand store skeleton at `src/stores/sale-draft.ts` for sale form 임시저장 (페르소나 마감 후 입력 보호)
+- [x] T053 [P] Create TanStack Query client provider at `src/lib/query-client.ts` and `src/components/providers/QueryProvider.tsx`; mount in root layout
+- [x] T054 [P] Create Zustand store skeleton at `src/stores/sale-draft.ts` for sale form 임시저장 (페르소나 마감 후 입력 보호)
 
 ### RLS 통합 테스트 (헌법 IV 가드)
 
