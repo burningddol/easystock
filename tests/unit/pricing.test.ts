@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import Decimal from "decimal.js";
+import { Decimal } from "@/lib/domain/_decimal";
 import { computeNewWeightedAverage } from "@/lib/domain/pricing";
 
 /**

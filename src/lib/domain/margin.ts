@@ -1,9 +1,10 @@
-import Decimal from "decimal.js";
+import { Decimal } from "./_decimal";
+import { assertNonNegative } from "./_assert";
 
 /**
  * 헌법 III: 메뉴 원가 / 마진 산정.
  *
- * - 메뉴 원가 = Σ(레시피 항목.수량 × 재료.current_avg_price)
+ * - 메뉴 원가 = Σ(레시피 항목.quantity × 재료.avgPrice)
  * - 마진 금액 = 메뉴 가격 - 메뉴 원가
  * - 마진율 = 마진 금액 / 메뉴 가격 × 100
  *
@@ -20,19 +21,15 @@ export interface RecipeItemForCost {
 
 export function calculateMenuCost(recipe: readonly RecipeItemForCost[]): Decimal {
   return recipe.reduce((total, item) => {
-    if (item.quantity < 0) {
-      throw new Error(`recipe item quantity must be non-negative (got ${item.quantity})`);
-    }
-    if (item.avgPrice < 0) {
-      throw new Error(`recipe item avgPrice must be non-negative (got ${item.avgPrice})`);
-    }
+    assertNonNegative(item.quantity, "recipe item quantity");
+    assertNonNegative(item.avgPrice, "recipe item avgPrice");
     return total.plus(new Decimal(item.quantity).times(item.avgPrice));
   }, new Decimal(0));
 }
 
 export interface MarginInput {
   price: number;
-  cost: Decimal;
+  cost: number | Decimal;
 }
 
 export interface MarginResult {
@@ -42,13 +39,17 @@ export interface MarginResult {
 }
 
 export function calculateMargin({ price, cost }: MarginInput): MarginResult {
-  if (price < 0) {
-    throw new Error(`menu price must be non-negative (got ${price})`);
+  assertNonNegative(price, "menu price");
+
+  const costDecimal = cost instanceof Decimal ? cost : new Decimal(cost);
+
+  if (price === 0) {
+    return { amount: costDecimal.negated(), rate: new Decimal(0), label: MARGIN_LABEL };
   }
 
   const priceDecimal = new Decimal(price);
-  const amount = priceDecimal.minus(cost);
-  const rate = priceDecimal.isZero() ? new Decimal(0) : amount.dividedBy(priceDecimal).times(100);
+  const amount = priceDecimal.minus(costDecimal);
+  const rate = amount.dividedBy(priceDecimal).times(100);
 
   return { amount, rate, label: MARGIN_LABEL };
 }
