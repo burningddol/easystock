@@ -129,10 +129,10 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 도메인 로직 (테스트 우선)
 
-- [ ] T057 [P] [US3] Write unit test `tests/unit/margin.test.ts` for menu cost/margin calculation: `calculateMenuCost(recipe, ingredientPrices)`, `calculateMargin(price, cost)` with label assertion
-- [ ] T058 [US3] Implement domain function `src/lib/domain/margin.ts` to satisfy T057 unit tests; uses Decimal.js for precision
-- [ ] T059 [P] [US3] Write unit test `tests/unit/pricing.test.ts` for weighted moving average: 30-day scenario, first purchase (stock=0), accumulated precision ≤ 0.01원 (SC-009)
-- [ ] T060 [US3] Implement domain function `src/lib/domain/pricing.ts` with `computeNewWeightedAverage(currentStock, currentAvg, newQty, newPrice)` to satisfy T059
+- [x] T057 [P] [US3] Write unit test `tests/unit/margin.test.ts` for menu cost/margin calculation: `calculateMenuCost(recipe, ingredientPrices)`, `calculateMargin(price, cost)` with label assertion
+- [x] T058 [US3] Implement domain function `src/lib/domain/margin.ts` to satisfy T057 unit tests; uses Decimal.js for precision
+- [x] T059 [P] [US3] Write unit test `tests/unit/pricing.test.ts` for weighted moving average: 30-day scenario, first purchase (stock=0), accumulated precision ≤ 0.01원 (SC-009)
+- [x] T060 [US3] Implement domain function `src/lib/domain/pricing.ts` with `computeNewWeightedAverage(currentStock, currentAvg, newQty, newPrice)` to satisfy T059
 
 ### 데이터 모델 + RPC
 
