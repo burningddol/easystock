@@ -4,16 +4,56 @@
 
 :root {
   color-scheme: light;
+  --bg: #f7f6f2;
+  --card: #ffffff;
+  --card-hover: #f1efe9;
+  --ink-1: #1a1a1a;
+  --ink-2: #43423f;
+  --ink-3: #87857f;
+  --ink-4: #c4c1b8;
+  --border: #e8e5db;
+  --border-strong: #b8b4a8;
+
+  --c-red: #d6493a;
+  --c-red-deep: #8a2c1f;
+  --c-red-soft: #fbe6e1;
+  --c-amber: #b07d1a;
+  --c-amber-deep: #6e4a08;
+  --c-amber-soft: #fbf0d4;
+  --c-green: #4a8a52;
+  --c-green-deep: #2c5a35;
+  --c-green-soft: #e1f0e2;
+  --c-blue: #3e7bb4;
+  --c-blue-deep: #234a72;
+  --c-blue-soft: #dde9f4;
+}
+
+[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+  --bg: #161513;
+  --card: #1f1d1a;
+  --card-hover: #2a2724;
+  --ink-1: #f0ede5;
+  --ink-2: #c8c4b8;
+  --ink-3: #8a8780;
+  --ink-4: #5a5752;
+  --border: #2e2c28;
+  --border-strong: #4a4742;
+
+  --c-red-soft: #3a1a14;
+  --c-amber-soft: #3a2a10;
+  --c-green-soft: #1a2a1d;
+  --c-blue-soft: #18283a;
 }
 
 html,
 body {
   margin: 0;
   padding: 0;
-  font-family:
-    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
-    system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo",
-    "Noto Sans KR", "Malgun Gothic", sans-serif;
+  background: var(--bg);
+  color: var(--ink-1);
+  font-family: var(--font-pretendard), "Pretendard", ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
