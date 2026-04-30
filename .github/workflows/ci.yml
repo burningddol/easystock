@@ -32,6 +32,12 @@ jobs:
     name: Unit + Integration Tests
     runs-on: ubuntu-latest
     needs: lint-and-typecheck
+    # secrets 있으면 통합/RLS 테스트도 cloud hit, 없으면 hasSupabaseTestEnv로 skip.
+    # (e2e job과 동일한 fallback chain — supabase CLI / Next.js 양쪽 컨벤션 모두 허용)
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || secrets.SUPABASE_URL || '' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY || '' }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
