@@ -729,6 +729,7 @@ export type Database = {
           unit: Database["public"]["Enums"]["ingredient_unit"]
         }[]
       }
+      get_today_dashboard: { Args: never; Returns: Json }
       request_withdrawal: {
         Args: never
         Returns: {

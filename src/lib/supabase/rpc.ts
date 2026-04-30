@@ -305,6 +305,140 @@ export function unsubscribePush(client: ClientLike, endpoint: string): Promise<R
   return callRpc(client, "unsubscribe_push", { p_endpoint: endpoint });
 }
 
+export interface DashboardYesterday {
+  soldAt: string;
+  revenue: number;
+  netProfit: number;
+  marginPercent: number;
+  lastWeekRevenue: number;
+  revenueChangePercent: number | null;
+}
+
+export interface DashboardWeeklyChartPoint {
+  soldAt: string;
+  revenue: number;
+}
+
+export interface DashboardExpiryAlert {
+  ingredientId: string;
+  name: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
+}
+
+export interface DashboardTopMenu {
+  menuId: string;
+  name: string;
+  unitsSold: number;
+  revenue: number;
+  netProfit: number;
+  marginPercent: number;
+}
+
+export interface DashboardLowMarginMenu {
+  menuId: string;
+  name: string;
+  marginPercent: number;
+  cause: string | null;
+}
+
+export interface TodayDashboardData {
+  storeName: string;
+  yesterday: DashboardYesterday;
+  weeklyChart: DashboardWeeklyChartPoint[];
+  expiryAlerts: DashboardExpiryAlert[];
+  missingYesterdaySale: boolean;
+  top3Menus: DashboardTopMenu[];
+  lowMarginMenu: DashboardLowMarginMenu | null;
+}
+
+// jsonb_build_object 가 numeric을 JSON number로 직렬화하므로 이 RPC는 모든 숫자가
+// 런타임에서 number 타입. snake_case → camelCase 매핑만 수행.
+interface TodayDashboardRaw {
+  store_name: string;
+  yesterday: {
+    sold_at: string;
+    revenue: number;
+    net_profit: number;
+    margin_percent: number;
+    last_week_revenue: number;
+    revenue_change_percent: number | null;
+  };
+  weekly_chart: Array<{ sold_at: string; revenue: number }>;
+  expiry_alerts: Array<{
+    ingredient_id: string;
+    name: string;
+    expiry_date: string;
+    days_until_expiry: number;
+  }>;
+  missing_yesterday_sale: boolean;
+  top3_menus: Array<{
+    menu_id: string;
+    name: string;
+    units_sold: number;
+    revenue: number;
+    net_profit: number;
+    margin_percent: number;
+  }>;
+  low_margin_menu: {
+    menu_id: string;
+    name: string;
+    margin_percent: number;
+    cause: string | null;
+  } | null;
+}
+
+export async function getTodayDashboard(
+  client: ClientLike,
+): Promise<RpcResult<TodayDashboardData>> {
+  const result = await callRpc<TodayDashboardRaw>(client, "get_today_dashboard");
+  if (result.error) {
+    return { data: null, error: result.error };
+  }
+  const raw = result.data!;
+  return {
+    data: {
+      storeName: raw.store_name,
+      yesterday: {
+        soldAt: raw.yesterday.sold_at,
+        revenue: raw.yesterday.revenue,
+        netProfit: raw.yesterday.net_profit,
+        marginPercent: raw.yesterday.margin_percent,
+        lastWeekRevenue: raw.yesterday.last_week_revenue,
+        revenueChangePercent: raw.yesterday.revenue_change_percent,
+      },
+      weeklyChart: raw.weekly_chart.map((p) => ({
+        soldAt: p.sold_at,
+        revenue: p.revenue,
+      })),
+      expiryAlerts: raw.expiry_alerts.map((e) => ({
+        ingredientId: e.ingredient_id,
+        name: e.name,
+        expiryDate: e.expiry_date,
+        daysUntilExpiry: e.days_until_expiry,
+      })),
+      missingYesterdaySale: raw.missing_yesterday_sale,
+      top3Menus: raw.top3_menus.map((m) => ({
+        menuId: m.menu_id,
+        name: m.name,
+        unitsSold: m.units_sold,
+        revenue: m.revenue,
+        netProfit: m.net_profit,
+        marginPercent: m.margin_percent,
+      })),
+      lowMarginMenu: raw.low_margin_menu
+        ? {
+            menuId: raw.low_margin_menu.menu_id,
+            name: raw.low_margin_menu.name,
+            marginPercent: raw.low_margin_menu.margin_percent,
+            cause: raw.low_margin_menu.cause,
+          }
+        : null,
+    },
+    error: null,
+  };
+}
+
 export async function getDepletionForecast(
   client: ClientLike,
 ): Promise<RpcResult<DepletionForecastRow[]>> {
