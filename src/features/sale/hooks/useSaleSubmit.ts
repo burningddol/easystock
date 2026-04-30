@@ -4,6 +4,7 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { createClient } from "@/lib/supabase/client";
 import { saveSale } from "@/lib/supabase/rpc";
 import { trackEvent } from "@/lib/analytics/ga4";
+import { requestPushPermissionAndSubscribe } from "@/lib/push/client";
 import { menuListQueryKey } from "@/features/menu/hooks/useMenus";
 import type { SaveSaleInput } from "../schemas";
 
@@ -49,6 +50,9 @@ export function useSaleSubmit(): UseMutationResult<SubmitResult, Error, SubmitVa
       trackEvent("daily_sale_input", { sold_at: input.soldAt });
       if (input.isFirstSale) {
         trackEvent("first_sale_input", {});
+        // R1: 첫 가치 경험 직후에 푸시 권한 요청 (T137).
+        // 실패해도 sale 저장 흐름엔 영향 없음 (best-effort).
+        void requestPushPermissionAndSubscribe();
       }
       if (isRetroactive) {
         trackEvent("retroactive_sale_complete", { sold_at: input.soldAt });

@@ -282,6 +282,29 @@ interface DepletionForecastRawRow {
   regular_days_off: Array<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
 }
 
+interface SubscribePushArgs {
+  endpoint: string;
+  keysP256dh: string;
+  keysAuth: string;
+  userAgent?: string;
+}
+
+export function subscribePush(
+  client: ClientLike,
+  args: SubscribePushArgs,
+): Promise<RpcResult<string>> {
+  return callRpc(client, "subscribe_push", {
+    p_endpoint: args.endpoint,
+    p_keys_p256dh: args.keysP256dh,
+    p_keys_auth: args.keysAuth,
+    p_user_agent: args.userAgent ?? null,
+  });
+}
+
+export function unsubscribePush(client: ClientLike, endpoint: string): Promise<RpcResult<unknown>> {
+  return callRpc(client, "unsubscribe_push", { p_endpoint: endpoint });
+}
+
 export async function getDepletionForecast(
   client: ClientLike,
 ): Promise<RpcResult<DepletionForecastRow[]>> {
