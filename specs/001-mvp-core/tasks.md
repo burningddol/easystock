@@ -226,10 +226,10 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 데이터 모델 + RPC
 
-- [ ] T104 [US2] Write SQL migration `supabase/migrations/005_purchases_and_history.sql` creating `vendors`, `purchase_orders`, `purchase_order_items` + RLS (per data-model.md §4-5)
-- [ ] T105 [US2] Write SQL migration `supabase/migrations/017_save_purchase_rpc.sql` defining `save_purchase(payload)` transactional RPC: validate, save, apply weighted moving average via `pricing.ts` logic in PL/pgSQL, increment stock, insert price history, return `priceChangeAlerts` for ±5% changes
-- [ ] T106 [US2] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
-- [ ] T107 [US2] Write Zod schemas at `src/features/purchase/schemas.ts` for `SavePurchaseInput` and vendor management
+- [x] T104 [US2] Write SQL migration `supabase/migrations/005_purchases_and_history.sql` creating `vendors`, `purchase_orders`, `purchase_order_items` + RLS (per data-model.md §4-5)
+- [x] T105 [US2] Write SQL migration `supabase/migrations/017_save_purchase_rpc.sql` defining `save_purchase(payload)` transactional RPC: validate, save, apply weighted moving average via `pricing.ts` logic in PL/pgSQL, increment stock, insert price history, return `priceChangeAlerts` for ±5% changes
+- [x] T106 [US2] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
+- [x] T107 [US2] Write Zod schemas at `src/features/purchase/schemas.ts` for `SavePurchaseInput` and vendor management
 
 ### UI 컴포넌트 + 라우팅
 
@@ -249,8 +249,8 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 통합 테스트
 
-- [ ] T118 [P] [US2] Write integration test `tests/integration/purchase-flow.test.ts` verifying weighted average correctness across multiple purchases, first-purchase (stock=0) edge case, history record reason='purchase', menu margin auto-recompute
-- [ ] T119 [P] [US2] Add to `tests/integration/rls.test.ts`: vendors/purchase_orders/purchase_order_items cross-user cases
+- [x] T118 [P] [US2] Write integration test `tests/integration/purchase-flow.test.ts` verifying weighted average correctness across multiple purchases, first-purchase (stock=0) edge case, history record reason='purchase', menu margin auto-recompute
+- [x] T119 [P] [US2] Add to `tests/integration/rls.test.ts`: vendors/purchase_orders/purchase_order_items cross-user cases
 
 **Checkpoint**: 가중 평균 단가 적용 → 메뉴 마진이 실제 값으로 표시. 페르소나 골든패스가 의미 있는 마진율을 보여줌 (예: 딸기빙수 77%).
 

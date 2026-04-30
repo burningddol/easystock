@@ -30,6 +30,8 @@ describeRls("RLS user_id isolation", () => {
   let menuByB: { id: string };
   let recipeItemByB: { id: string };
   let saleByB: { id: string };
+  let vendorByB: { id: string };
+  let purchaseOrderByB: { id: string };
 
   beforeAll(async () => {
     userA = await createTestUser({ storeName: "A 가게" });
@@ -87,6 +89,31 @@ describeRls("RLS user_id isolation", () => {
       throw new Error(`sale fixture failed: ${sale.error?.message ?? "no row"}`);
     }
     saleByB = sale.data;
+
+    const vendor = await admin
+      .from("vendors")
+      .insert({ user_id: userB.id, name: "B 도매상", lead_time_days: 1 })
+      .select("id")
+      .single();
+    if (vendor.error || !vendor.data) {
+      throw new Error(`vendor fixture failed: ${vendor.error?.message ?? "no row"}`);
+    }
+    vendorByB = vendor.data;
+
+    const order = await admin
+      .from("purchase_orders")
+      .insert({
+        user_id: userB.id,
+        vendor_id: vendorByB.id,
+        purchased_at: new Date().toISOString().slice(0, 10),
+        total_amount: 50000,
+      })
+      .select("id")
+      .single();
+    if (order.error || !order.data) {
+      throw new Error(`purchase order fixture failed: ${order.error?.message ?? "no row"}`);
+    }
+    purchaseOrderByB = order.data;
   }, 30_000);
 
   afterAll(async () => {
@@ -251,6 +278,32 @@ describeRls("RLS user_id isolation", () => {
         .from("sale_edit_history")
         .select("id")
         .eq("sale_id", saleByB.id);
+      expect(error).toBeNull();
+      expect(data ?? []).toHaveLength(0);
+    });
+  });
+
+  describe("vendors / purchase_orders / purchase_order_items tables", () => {
+    it("A는 B의 vendor를 조회할 수 없다", async () => {
+      const { data, error } = await clientA.from("vendors").select("id").eq("id", vendorByB.id);
+      expect(error).toBeNull();
+      expect(data ?? []).toHaveLength(0);
+    });
+
+    it("A는 user_id=B로 vendor INSERT를 거부당한다", async () => {
+      const { data, error } = await clientA
+        .from("vendors")
+        .insert({ user_id: userB.id, name: "위장 거래처", lead_time_days: 1 })
+        .select("id");
+      expect(data ?? []).toHaveLength(0);
+      expect(error).not.toBeNull();
+    });
+
+    it("A는 B의 purchase_order를 조회할 수 없다", async () => {
+      const { data, error } = await clientA
+        .from("purchase_orders")
+        .select("id")
+        .eq("id", purchaseOrderByB.id);
       expect(error).toBeNull();
       expect(data ?? []).toHaveLength(0);
     });

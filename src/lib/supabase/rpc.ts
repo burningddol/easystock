@@ -129,3 +129,67 @@ export function editSale(client: ClientLike, args: EditSaleArgs): Promise<RpcRes
 export function deleteSale(client: ClientLike, saleId: string): Promise<RpcResult<unknown>> {
   return callRpc(client, "delete_sale", { p_sale_id: saleId });
 }
+
+interface SavePurchaseArgs {
+  vendorId: string;
+  purchasedAt: string; // YYYY-MM-DD
+  items: ReadonlyArray<{ ingredientId: string; quantity: number; amount: number }>;
+}
+
+export interface PriceChangeAlert {
+  ingredientId: string;
+  ingredientName: string;
+  previousAvgPrice: number;
+  newAvgPrice: number;
+  changePercent: number;
+}
+
+export interface SavePurchaseResult {
+  purchaseOrderId: string;
+  priceChangeAlerts: PriceChangeAlert[];
+}
+
+interface SavePurchaseRawRow {
+  purchase_order_id: string;
+  price_change_alerts: Array<{
+    ingredient_id: string;
+    ingredient_name: string;
+    previous_avg_price: number;
+    new_avg_price: number;
+    change_percent: number;
+  }>;
+}
+
+export async function savePurchase(
+  client: ClientLike,
+  args: SavePurchaseArgs,
+): Promise<RpcResult<SavePurchaseResult>> {
+  const result = await callRpc<SavePurchaseRawRow[]>(client, "save_purchase", {
+    p_vendor_id: args.vendorId,
+    p_purchased_at: args.purchasedAt,
+    p_items: args.items.map((it) => ({
+      ingredient_id: it.ingredientId,
+      quantity: it.quantity,
+      amount: it.amount,
+    })),
+  });
+
+  if (result.error || !result.data?.[0]) {
+    return { data: null, error: result.error };
+  }
+
+  const row = result.data[0];
+  return {
+    data: {
+      purchaseOrderId: row.purchase_order_id,
+      priceChangeAlerts: row.price_change_alerts.map((a) => ({
+        ingredientId: a.ingredient_id,
+        ingredientName: a.ingredient_name,
+        previousAvgPrice: Number(a.previous_avg_price),
+        newAvgPrice: Number(a.new_avg_price),
+        changePercent: Number(a.change_percent),
+      })),
+    },
+    error: null,
+  };
+}
