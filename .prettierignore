@@ -12,3 +12,4 @@ supabase/.temp
 .specify
 .claude/skills
 specs
+src/lib/supabase/types.ts

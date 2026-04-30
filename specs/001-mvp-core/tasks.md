@@ -136,11 +136,11 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 데이터 모델 + RPC
 
-- [ ] T061 [US3] Write SQL migration `supabase/migrations/003_menus_and_recipes.sql` creating `menus` (with unique `(user_id, name)`), `recipe_items` tables and RLS policies (per data-model.md §6)
-- [ ] T062 [US3] Write SQL migration `supabase/migrations/012_clone_menu_template_rpc.sql` defining `clone_menu_template(store_type)` function that inserts ingredients + menus + recipe items from `menu_templates` (per contracts/domain-rpc.md)
-- [ ] T063 [US3] Write SQL migration `supabase/migrations/013_menu_templates_seed.sql` creating read-only `menu_templates` table and seeding 빙수카페 8종, 카페 음료 10종 with default recipes
-- [ ] T064 [US3] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
-- [ ] T065 [US3] Write Zod schemas at `src/features/menu/schemas.ts` for `MenuInput`, `RecipeItemInput`, `CloneTemplateInput`
+- [x] T061 [US3] Write SQL migration `supabase/migrations/003_menus_and_recipes.sql` creating `menus` (with unique `(user_id, name)`), `recipe_items` tables and RLS policies (per data-model.md §6)
+- [x] T062 [US3] Write SQL migration `supabase/migrations/012_clone_menu_template_rpc.sql` defining `clone_menu_template(store_type)` function that inserts ingredients + menus + recipe items from `menu_templates` (per contracts/domain-rpc.md)
+- [x] T063 [US3] Write SQL migration `supabase/migrations/013_menu_templates_seed.sql` creating read-only `menu_templates` table and seeding 빙수카페 8종, 카페 음료 10종 with default recipes
+- [x] T064 [US3] Regenerate types: `npm run db:gen-types > src/lib/supabase/types.ts`
+- [x] T065 [US3] Write Zod schemas at `src/features/menu/schemas.ts` for `MenuInput`, `RecipeItemInput`, `CloneTemplateInput`
 
 ### UI 컴포넌트 + 라우팅
 
@@ -161,8 +161,8 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 통합 테스트
 
-- [ ] T077 [P] [US3] Write integration test `tests/integration/menu-template.test.ts` verifying `clone_menu_template` creates correct menus + recipes + ingredients without unique violations
-- [ ] T078 [P] [US3] Add to `tests/integration/rls.test.ts`: menus/recipe_items cross-user isolation cases
+- [x] T077 [P] [US3] Write integration test `tests/integration/menu-template.test.ts` verifying `clone_menu_template` creates correct menus + recipes + ingredients without unique violations
+- [x] T078 [P] [US3] Add to `tests/integration/rls.test.ts`: menus/recipe_items cross-user isolation cases
 
 **Checkpoint**: 메뉴 등록 + 템플릿 + 마진 계산 표시 동작. 단, 재료 단가 모두 0원이라 마진 100%로 표시됨 (정상). Phase 4·5 후 실제 단가 반영.
 

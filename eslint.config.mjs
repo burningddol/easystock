@@ -48,6 +48,7 @@ export default [
       "supabase/.temp/**",
       "supabase/functions/**",
       "next-env.d.ts",
+      "src/lib/supabase/types.ts",
     ],
   },
 ];
