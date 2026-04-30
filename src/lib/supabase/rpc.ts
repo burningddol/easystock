@@ -52,9 +52,7 @@ interface RequestWithdrawalRow {
   permanent_delete_at: string;
 }
 
-export function requestWithdrawal(
-  client: ClientLike,
-): Promise<RpcResult<RequestWithdrawalRow[]>> {
+export function requestWithdrawal(client: ClientLike): Promise<RpcResult<RequestWithdrawalRow[]>> {
   return callRpc(client, "request_withdrawal");
 }
 
