@@ -6,6 +6,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { createClient } from "@/lib/supabase/client";
+import { Field } from "@/components/ui/field";
+import { PrimaryButton } from "@/components/ui/primary-button";
 import {
   STORE_TYPES,
   STORE_TYPE_LABELS,
@@ -132,29 +134,9 @@ export function SignupForm(): React.ReactElement {
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="rounded-md bg-ink-1 px-stack py-stack text-body text-bg hover:opacity-90 disabled:opacity-50"
-      >
+      <PrimaryButton type="submit" disabled={isSubmitting}>
         {isSubmitting ? "가입 중..." : "가입하기"}
-      </button>
+      </PrimaryButton>
     </form>
-  );
-}
-
-interface FieldProps {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}
-
-function Field({ label, error, children }: FieldProps): React.ReactElement {
-  return (
-    <label className="flex flex-col gap-stack-tight">
-      <span className="text-label text-ink-2">{label}</span>
-      {children}
-      {error && <span className="text-caption text-red">{error}</span>}
-    </label>
   );
 }

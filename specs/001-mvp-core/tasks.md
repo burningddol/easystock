@@ -144,20 +144,20 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### UI 컴포넌트 + 라우팅
 
-- [ ] T066 [P] [US3] Create `src/features/menu/components/MenuList.tsx` listing user menus with margin badge (재료 원가 기준 라벨 포함)
-- [ ] T067 [P] [US3] Create `src/features/menu/components/MenuDetailCard.tsx` showing recipe items + 재료별 단가 + 메뉴원가 + 마진율 with 변동 표시 (FR-058 ±5% indicator)
-- [ ] T068 [P] [US3] Create `src/features/menu/components/MenuForm.tsx` for create/edit (name unique 검증, recipe items 추가/삭제)
-- [ ] T069 [P] [US3] Create `src/features/menu/components/TemplateLoadDialog.tsx` showing template preview + "불러오기" button
-- [ ] T070 [US3] Create page `src/app/(main)/menu/page.tsx` integrating MenuList + TemplateLoadDialog (cold-start: empty list + prominent template CTA)
-- [ ] T071 [US3] Create page `src/app/(main)/menu/[id]/page.tsx` integrating MenuDetailCard
-- [ ] T072 [US3] Create page `src/app/(main)/menu/new/page.tsx` integrating MenuForm
-- [ ] T073 [P] [US3] Create hook `src/features/menu/hooks/useMenus.ts` (TanStack Query for menu list + invalidation on save)
-- [ ] T074 [P] [US3] Create hook `src/features/menu/hooks/useCloneTemplate.ts` (mutation calling `clone_menu_template` RPC)
+- [x] T066 [P] [US3] Create `src/features/menu/components/MenuList.tsx` listing user menus with margin badge (재료 원가 기준 라벨 포함)
+- [x] T067 [P] [US3] Create `src/features/menu/components/MenuDetailCard.tsx` showing recipe items + 재료별 단가 + 메뉴원가 + 마진율 with 변동 표시 (FR-058 ±5% indicator)
+- [x] T068 [P] [US3] Create `src/features/menu/components/MenuForm.tsx` for create/edit (name unique 검증, recipe items 추가/삭제)
+- [x] T069 [P] [US3] Create `src/features/menu/components/TemplateLoadDialog.tsx` showing template preview + "불러오기" button
+- [x] T070 [US3] Create page `src/app/(main)/menu/page.tsx` integrating MenuList + TemplateLoadDialog (cold-start: empty list + prominent template CTA)
+- [x] T071 [US3] Create page `src/app/(main)/menu/[id]/page.tsx` integrating MenuDetailCard
+- [x] T072 [US3] Create page `src/app/(main)/menu/new/page.tsx` integrating MenuForm
+- [x] T073 [P] [US3] Create hook `src/features/menu/hooks/useMenus.ts` (TanStack Query for menu list + invalidation on save)
+- [x] T074 [P] [US3] Create hook `src/features/menu/hooks/useCloneTemplate.ts` (mutation calling `clone_menu_template` RPC)
 
 ### GA4 이벤트
 
-- [ ] T075 [US3] Wire `first_menu_registered` GA4 event in MenuForm save handler (fire only if user's menu count was 0 before this save)
-- [ ] T076 [US3] Wire `template_loaded` GA4 event in TemplateLoadDialog success with `store_type` parameter
+- [x] T075 [US3] Wire `first_menu_registered` GA4 event in MenuForm save handler (fire only if user's menu count was 0 before this save)
+- [x] T076 [US3] Wire `template_loaded` GA4 event in TemplateLoadDialog success with `store_type` parameter
 
 ### 통합 테스트
 

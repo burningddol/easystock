@@ -67,3 +67,27 @@ export function cloneMenuTemplate(
 ): Promise<RpcResult<CloneMenuTemplateRow[]>> {
   return callRpc(client, "clone_menu_template", { p_store_type: args.storeType });
 }
+
+interface SaveMenuArgs {
+  name: string;
+  price: number;
+  recipe: ReadonlyArray<{ ingredientId: string; quantityPerServing: number }>;
+}
+
+interface SaveMenuRow {
+  menu_id: string;
+}
+
+export function saveMenu(
+  client: ClientLike,
+  args: SaveMenuArgs,
+): Promise<RpcResult<SaveMenuRow[]>> {
+  return callRpc(client, "save_menu", {
+    p_name: args.name,
+    p_price: args.price,
+    p_recipe: args.recipe.map((it) => ({
+      ingredient_id: it.ingredientId,
+      quantity_per_serving: it.quantityPerServing,
+    })),
+  });
+}
