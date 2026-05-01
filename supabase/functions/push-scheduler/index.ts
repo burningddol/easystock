@@ -28,6 +28,13 @@ interface PushPayload {
   type: AlertType;
 }
 
+interface PushSubscriptionRow {
+  id: string;
+  endpoint: string;
+  keys_p256dh: string;
+  keys_auth: string;
+}
+
 // @ts-expect-error: Deno global
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 // @ts-expect-error: Deno global
@@ -38,8 +45,8 @@ const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
 // @ts-expect-error: Deno global
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@easystock.app";
-// GA4 Measurement Protocol — secrets에 NEXT_PUBLIC_GA_MEASUREMENT_ID + GA4_API_SECRET 등록 시
-// T140 order_alert_received 등 서버측 발화. 미설정 시 no-op.
+// GA4 Measurement Protocol — d7-tracker와 동일 secrets 공유 (GA4_MEASUREMENT_ID +
+// GA4_API_SECRET). 미설정 시 reportToGa4 no-op.
 // @ts-expect-error: Deno global
 const GA4_MEASUREMENT_ID = Deno.env.get("GA4_MEASUREMENT_ID") ?? "";
 // @ts-expect-error: Deno global
@@ -65,8 +72,9 @@ async function reportToGa4(type: AlertType, sentCount: number): Promise<void> {
         }),
       },
     );
-  } catch {
-    // 측정 실패는 푸시 발송 결과에 영향 없음
+  } catch (err) {
+    // 측정 실패는 푸시 발송 결과에 영향 없음 — log로만 기록.
+    console.warn("ga4 dispatch failed", err);
   }
 }
 
@@ -90,10 +98,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const todayWeekday = KOREAN_WEEKDAYS[new Date().getUTCDay()] ?? "MON";
+  // KST 기준 오늘 요일 — UTC getUTCDay()는 KST 자정~UTC 09:00 구간에서 하루 밀린다.
+  // (FR-041 정기휴무 누락 방지). d7-tracker의 KST cohort window와 동일 +9h shift.
+  const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+  const todayWeekday = KOREAN_WEEKDAYS[new Date(Date.now() + KST_OFFSET_MS).getUTCDay()];
 
-  // 정기휴무 오늘인 사용자는 제외 (FR-041)
-  // 탈퇴 신청한 사용자는 제외 (FR-036). 정기휴무 요일 사용자는 아래 루프에서 별도 제외 (FR-041).
+  // FR-036 탈퇴 신청자 제외 + FR-041 정기휴무 사용자는 루프 안에서 todayWeekday 비교로 제외.
   const { data: targets, error: queryError } = await admin
     .from("users")
     .select("id, regular_days_off, push_subscriptions(id, endpoint, keys_p256dh, keys_auth)")
@@ -110,12 +120,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   for (const user of targets ?? []) {
     if ((user.regular_days_off ?? []).includes(todayWeekday)) continue;
-    const subs = (user.push_subscriptions ?? []) as Array<{
-      id: string;
-      endpoint: string;
-      keys_p256dh: string;
-      keys_auth: string;
-    }>;
+    const subs = (user.push_subscriptions ?? []) as PushSubscriptionRow[];
 
     for (const sub of subs) {
       try {
