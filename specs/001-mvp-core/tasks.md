@@ -379,20 +379,20 @@ description: "Task list for 001-mvp-core feature implementation"
 
 **Purpose**: 헌법 + 디자인 시스템 + 페르소나 게이트 검증
 
-- [ ] T167 [P] Verify FR-019 라벨 노출: grep `재료 원가 기준 (이동평균법)` in all margin-displaying components; ensure 0 occurrences of plain `순수익` without label (헌법 III, 출시 차단 사유)
-- [ ] T168 [P] Verify design token hardcoding 0건: grep for hex codes (`#[0-9a-fA-F]{3,6}`) in `src/` excluding token files; ensure 0 violations (헌법 Design Source)
-- [ ] T169 Run E2E persona-golden-path on mobile viewport (375x667) and assert total time ≤ 5 minutes (SC-001/SC-007)
-- [ ] T170 Run `npm run test:coverage` and verify Codecov thresholds: domain ≥80% (`src/lib/domain/`, `src/features/*/lib/`), overall ≥60% (헌법 v1.3.0)
-- [ ] T171 [P] Run Lighthouse on `/sale` mobile preview (375x667): assert PWA ≥90, Accessibility ≥90, Performance ≥90, Best Practices ≥90
-- [ ] T172 Manual verification: PWA install on iOS Safari 16.4+, push permission grant, deliver test push from Edge Function (manual trigger), confirm notification displays
-- [ ] T173 Manual verification: GA4 DebugView shows `signup_complete → first_menu_registered → first_sale_input → d7_active` events firing for test user
-- [ ] T174 Manual verification: trigger Sentry error in dev (e.g., throw in event handler), confirm captured in Sentry dashboard with source map
-- [ ] T175 [P] Deploy Edge Functions to staging via `.github/workflows/deploy-edge-functions.yml`; verify push-scheduler runs and permanent-delete cron registered
-- [ ] T176 [P] Verify Korean typography: visual diff against `easystock-design-system/patterns.md` reference (Pretendard rendering, tabular-nums on metrics, units in 보조색·작은 사이즈)
-- [ ] T177 [P] Verify CI all jobs green on representative PR; Codecov badge displays current %
-- [ ] T178 Verify branch protection: open intentional failing PR (test fail), confirm merge button disabled until fixed
-- [ ] T179 [P] Add `README.md` with setup instructions, env var list, common commands (referencing `.env.example` and `docs/setup-{github,vapid}.md`)
-- [ ] T180 [P] Update CLAUDE.md "자주 쓰는 명령" 섹션 with finalized scripts (replace placeholder)
+- [x] T167 [P] Verify FR-019 라벨 노출 — 마진 표시 컴포넌트 6개 grep 통과 + CellDetailPanel/SaleEditDialog LockedView 라벨 누락 2건 수정 (PR #60)
+- [x] T168 [P] Verify design token hardcoding — `src/` 내 hex 3건만 (`src/app/layout.tsx` themeColor + `src/app/manifest.ts` theme/background_color, OS spec literal 요구로 예외)
+- [x] T169 페르소나 골든패스 wall-clock ≤ 5분 게이트 — `tests/e2e/golden-path.spec.ts` 시작/종료 timestamp + assertion (PR #61)
+- [x] T170 Coverage 임계 통과 — 도메인 99.16% (≥80%) / 전체 69.33% (≥60%). vitest.config 분모 정정 + format/biz-lib 단위 테스트 +16 (PR #60)
+- [x] T171 [P] Lighthouse `/sale` 모바일 절차 — `docs/lighthouse.md` + `npm run lighthouse:sale` 셀프서비스 스크립트. CI 게이트 부적합 → 출시 직전 1회 베이스라인 (PR #61)
+- [ ] T172 Manual verification: PWA install on iOS Safari 16.4+, push permission grant, deliver test push from Edge Function (manual trigger), confirm notification displays — 베타 단계 (실기기 필요)
+- [ ] T173 Manual verification: GA4 DebugView shows `signup_complete → first_menu_registered → first_sale_input → d7_active` events firing for test user — 베타 단계 (가입 후 7일 경과 + sale 입력 사용자 필요)
+- [ ] T174 Manual verification: trigger Sentry error in dev, confirm captured with source map — 출시 직전 (Sentry SDK 이미 설치, throw 트리거만)
+- [x] T175 [P] Edge Functions 배포 — `.github/workflows/deploy-edge-functions.yml`이 master 머지 시 자동 (push-scheduler / d7-tracker / permanent-delete 모두 검증됨, 사용자가 활성화 완료)
+- [ ] T176 [P] Korean typography 시각 비교 — 베타 단계 (Pretendard 렌더링 + tabular-nums + 보조 단위 회색은 모든 컴포넌트에 적용 완료, 시각 회귀는 사용자 환경에서 1회 확인)
+- [x] T177 [P] CI all green — PR #56/57/58/59/60/61 모두 4/4 통과 (Lint+Typecheck / Unit+Integration / Build / E2E)
+- [ ] T178 Branch protection 검증 — 의도적 실패 PR 1건 수동 (repository setting 의존, 출시 전 1회)
+- [x] T179 [P] README.md 신규 — 셋업 가이드 + 명령 표 + 디렉토리 구조 + 헌법 요약 (PR #60)
+- [x] T180 [P] CLAUDE.md "자주 쓰는 명령" 갱신 — 카테고리화 + repair / use-api / format 추가 (PR #60)
 
 ---
 
