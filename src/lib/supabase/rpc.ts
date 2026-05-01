@@ -32,6 +32,19 @@ async function callRpc<T>(
 }
 
 /**
+ * PostgREST가 numeric(p,s) 컬럼을 string으로 직렬화하므로 number 변환 필요.
+ * 단순 `Number()`는 NaN을 silent 통과 → 명시적 가드를 둔 단일 출처 헬퍼.
+ */
+function numeric(value: string | number | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  const n = Number(value);
+  if (Number.isNaN(n)) {
+    throw new Error(`numeric() received non-numeric value: ${value}`);
+  }
+  return n;
+}
+
+/**
  * 첫 행만 사용하는 RPC 래퍼 — `apply_stock_count` / `save_purchase`처럼 SETOF 1건을
  * 반환하지만 호출 측은 단일 객체로 다루는 패턴 단일 출처. data[0]이 없으면 null.
  */
@@ -327,14 +340,14 @@ export function applyStockCount(
     },
     (row) => ({
       stockCountId: row.stock_count_id,
-      weeklyLossAmount: Number(row.weekly_loss_amount),
+      weeklyLossAmount: numeric(row.weekly_loss_amount),
       itemDifferences: row.item_differences.map((d) => ({
         ingredientId: d.ingredient_id,
         name: d.name,
-        systemStock: Number(d.system_stock),
-        actualStock: Number(d.actual_stock),
-        diff: Number(d.diff),
-        lossAmount: Number(d.loss_amount),
+        systemStock: numeric(d.system_stock),
+        actualStock: numeric(d.actual_stock),
+        diff: numeric(d.diff),
+        lossAmount: numeric(d.loss_amount),
       })),
     }),
   );
@@ -609,7 +622,7 @@ export async function getDepletionForecast(
       ingredientId: row.ingredient_id,
       name: row.name,
       unit: row.unit,
-      currentStock: Number(row.current_stock),
+      currentStock: numeric(row.current_stock),
       leadTimeDays: row.lead_time_days,
       consumptionSamples: row.consumption_samples ?? [],
       signedUpAt: row.signed_up_at,
@@ -640,9 +653,9 @@ export function savePurchase(
       priceChangeAlerts: row.price_change_alerts.map((a) => ({
         ingredientId: a.ingredient_id,
         ingredientName: a.ingredient_name,
-        previousAvgPrice: Number(a.previous_avg_price),
-        newAvgPrice: Number(a.new_avg_price),
-        changePercent: Number(a.change_percent),
+        previousAvgPrice: numeric(a.previous_avg_price),
+        newAvgPrice: numeric(a.new_avg_price),
+        changePercent: numeric(a.change_percent),
       })),
     }),
   );
