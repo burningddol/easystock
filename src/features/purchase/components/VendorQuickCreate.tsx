@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Field } from "@/components/ui/field";
@@ -17,7 +16,6 @@ export function VendorQuickCreate({
   onCreated,
   onCancel,
 }: VendorQuickCreateProps): React.ReactElement {
-  const [error, setError] = useState<string | null>(null);
   const mutation = useCreateVendor();
   const {
     register,
@@ -29,17 +27,12 @@ export function VendorQuickCreate({
   });
 
   async function onSubmit(values: VendorInput): Promise<void> {
-    setError(null);
-    try {
-      const created = await mutation.mutateAsync(values);
-      onCreated(created);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "거래처 생성 실패");
-    }
+    const created = await mutation.mutateAsync(values);
+    onCreated(created);
   }
 
-  // 중첩 <form>은 invalid HTML — 외부 PurchaseForm 안에 들어가므로 <div>로 렌더하고
-  // 추가 버튼은 type="button" + handleSubmit() 직접 호출.
+  // 부모 PurchaseForm이 이미 <form>이라 중첩 <form> 회피 — <div>로 렌더하고 추가
+  // 버튼은 type="button" + handleSubmit() 직접 호출.
   return (
     <div className="flex flex-col gap-stack rounded-lg border border-border bg-card p-tile">
       <h3 className="text-title-md text-ink-1">새 거래처 추가</h3>
@@ -62,9 +55,9 @@ export function VendorQuickCreate({
         />
       </Field>
 
-      {error && (
+      {mutation.error && (
         <p role="alert" className="text-caption text-red">
-          {error}
+          {mutation.error.message}
         </p>
       )}
 

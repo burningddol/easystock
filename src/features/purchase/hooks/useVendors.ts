@@ -43,7 +43,7 @@ async function createVendor(input: VendorInput): Promise<VendorRow> {
   if (error) throw new Error(error.message);
   const row = data?.[0];
   if (!row) throw new Error("save_vendor: empty response");
-  return { id: row.id, name: row.name, lead_time_days: row.lead_time_days };
+  return row;
 }
 
 export function useCreateVendor(): UseMutationResult<VendorRow, Error, VendorInput> {

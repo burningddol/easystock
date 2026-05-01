@@ -34,3 +34,10 @@ export const ingredientInputSchema = z.object({
 });
 
 export type IngredientInput = z.infer<typeof ingredientInputSchema>;
+
+// IngredientQuickCreate (매입 inline) + AddIngredientForm (재료 페이지) 두 곳에서 공유.
+export const INGREDIENT_UNIT_LABELS: Record<IngredientInput["unit"], string> = {
+  g: "g (그램)",
+  ml: "ml (밀리리터)",
+  piece: "개",
+};
