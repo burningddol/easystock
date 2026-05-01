@@ -31,6 +31,37 @@ async function callRpc<T>(
   return result;
 }
 
+/**
+ * 첫 행만 사용하는 RPC 래퍼 — `apply_stock_count` / `save_purchase`처럼 SETOF 1건을
+ * 반환하지만 호출 측은 단일 객체로 다루는 패턴 단일 출처. data[0]이 없으면 null.
+ */
+async function callRpcSingleRow<TRaw, TOut>(
+  client: ClientLike,
+  fn: string,
+  args: Record<string, unknown>,
+  mapRow: (row: TRaw) => TOut,
+): Promise<RpcResult<TOut>> {
+  const result = await callRpc<TRaw[]>(client, fn, args);
+  if (result.error || !result.data?.[0]) {
+    return { data: null, error: result.error };
+  }
+  return { data: mapRow(result.data[0]), error: null };
+}
+
+/** 단일 row payload(객체 1개)를 반환하는 RPC 래퍼 — `get_today_dashboard` 등. */
+async function callRpcMapped<TRaw, TOut>(
+  client: ClientLike,
+  fn: string,
+  args: Record<string, unknown> | undefined,
+  map: (raw: TRaw) => TOut,
+): Promise<RpcResult<TOut>> {
+  const result = await callRpc<TRaw>(client, fn, args);
+  if (result.error || !result.data) {
+    return { data: null, error: result.error };
+  }
+  return { data: map(result.data), error: null };
+}
+
 interface UpdateRegularDaysOffArgs {
   p_days_off: readonly Weekday[];
 }
@@ -280,25 +311,21 @@ interface ApplyStockCountRawRow {
   }>;
 }
 
-export async function applyStockCount(
+export function applyStockCount(
   client: ClientLike,
   args: ApplyStockCountArgs,
 ): Promise<RpcResult<ApplyStockCountResult>> {
-  const result = await callRpc<ApplyStockCountRawRow[]>(client, "apply_stock_count", {
-    p_counted_at: args.countedAt,
-    p_items: args.items.map((it) => ({
-      ingredient_id: it.ingredientId,
-      actual_stock: it.actualStock,
-    })),
-  });
-
-  if (result.error || !result.data?.[0]) {
-    return { data: null, error: result.error };
-  }
-
-  const row = result.data[0];
-  return {
-    data: {
+  return callRpcSingleRow<ApplyStockCountRawRow, ApplyStockCountResult>(
+    client,
+    "apply_stock_count",
+    {
+      p_counted_at: args.countedAt,
+      p_items: args.items.map((it) => ({
+        ingredient_id: it.ingredientId,
+        actual_stock: it.actualStock,
+      })),
+    },
+    (row) => ({
       stockCountId: row.stock_count_id,
       weeklyLossAmount: Number(row.weekly_loss_amount),
       itemDifferences: row.item_differences.map((d) => ({
@@ -309,9 +336,8 @@ export async function applyStockCount(
         diff: Number(d.diff),
         lossAmount: Number(d.loss_amount),
       })),
-    },
-    error: null,
-  };
+    }),
+  );
 }
 
 export interface DepletionForecastRow {
@@ -409,20 +435,15 @@ interface CalendarMonthRaw {
   margin_label: string;
 }
 
-export async function getCalendarMonth(
+export function getCalendarMonth(
   client: ClientLike,
   args: { year: number; month: number },
 ): Promise<RpcResult<CalendarMonthData>> {
-  const result = await callRpc<CalendarMonthRaw>(client, "get_calendar_month", {
-    p_year: args.year,
-    p_month: args.month,
-  });
-  if (result.error || !result.data) {
-    return { data: null, error: result.error };
-  }
-  const raw = result.data;
-  return {
-    data: {
+  return callRpcMapped<CalendarMonthRaw, CalendarMonthData>(
+    client,
+    "get_calendar_month",
+    { p_year: args.year, p_month: args.month },
+    (raw) => ({
       year: raw.year,
       month: raw.month,
       cumulative: {
@@ -443,9 +464,8 @@ export async function getCalendarMonth(
         netProfit: c.net_profit,
       })),
       marginLabel: raw.margin_label,
-    },
-    error: null,
-  };
+    }),
+  );
 }
 
 export interface DashboardYesterday {
@@ -531,16 +551,12 @@ interface TodayDashboardRaw {
   } | null;
 }
 
-export async function getTodayDashboard(
-  client: ClientLike,
-): Promise<RpcResult<TodayDashboardData>> {
-  const result = await callRpc<TodayDashboardRaw>(client, "get_today_dashboard");
-  if (result.error || !result.data) {
-    return { data: null, error: result.error };
-  }
-  const raw = result.data;
-  return {
-    data: {
+export function getTodayDashboard(client: ClientLike): Promise<RpcResult<TodayDashboardData>> {
+  return callRpcMapped<TodayDashboardRaw, TodayDashboardData>(
+    client,
+    "get_today_dashboard",
+    undefined,
+    (raw) => ({
       storeName: raw.store_name,
       yesterday: {
         soldAt: raw.yesterday.sold_at,
@@ -577,18 +593,17 @@ export async function getTodayDashboard(
             cause: raw.low_margin_menu.cause,
           }
         : null,
-    },
-    error: null,
-  };
+    }),
+  );
 }
 
+// SETOF — 빈 결과를 [] 로 정규화 (`callRpcMapped`는 data === null을 RPC 실패로 보므로
+// 여기는 직접 처리). UI는 forecast 비어있어도 정상 렌더링해야 함.
 export async function getDepletionForecast(
   client: ClientLike,
 ): Promise<RpcResult<DepletionForecastRow[]>> {
   const result = await callRpc<DepletionForecastRawRow[]>(client, "get_depletion_forecast");
-  if (result.error) {
-    return { data: null, error: result.error };
-  }
+  if (result.error) return { data: null, error: result.error };
   return {
     data: (result.data ?? []).map((row) => ({
       ingredientId: row.ingredient_id,
@@ -604,27 +619,23 @@ export async function getDepletionForecast(
   };
 }
 
-export async function savePurchase(
+export function savePurchase(
   client: ClientLike,
   args: SavePurchaseArgs,
 ): Promise<RpcResult<SavePurchaseResult>> {
-  const result = await callRpc<SavePurchaseRawRow[]>(client, "save_purchase", {
-    p_vendor_id: args.vendorId,
-    p_purchased_at: args.purchasedAt,
-    p_items: args.items.map((it) => ({
-      ingredient_id: it.ingredientId,
-      quantity: it.quantity,
-      amount: it.amount,
-    })),
-  });
-
-  if (result.error || !result.data?.[0]) {
-    return { data: null, error: result.error };
-  }
-
-  const row = result.data[0];
-  return {
-    data: {
+  return callRpcSingleRow<SavePurchaseRawRow, SavePurchaseResult>(
+    client,
+    "save_purchase",
+    {
+      p_vendor_id: args.vendorId,
+      p_purchased_at: args.purchasedAt,
+      p_items: args.items.map((it) => ({
+        ingredient_id: it.ingredientId,
+        quantity: it.quantity,
+        amount: it.amount,
+      })),
+    },
+    (row) => ({
       purchaseOrderId: row.purchase_order_id,
       priceChangeAlerts: row.price_change_alerts.map((a) => ({
         ingredientId: a.ingredient_id,
@@ -633,7 +644,6 @@ export async function savePurchase(
         newAvgPrice: Number(a.new_avg_price),
         changePercent: Number(a.change_percent),
       })),
-    },
-    error: null,
-  };
+    }),
+  );
 }
