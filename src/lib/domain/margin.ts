@@ -28,7 +28,8 @@ export function calculateMenuCost(recipe: readonly RecipeItemForCost[]): Decimal
 }
 
 export interface MarginInput {
-  price: number;
+  // Decimal 직접 전달 가능 — Sale 합계처럼 누적 Decimal을 number로 round-trip하지 않도록.
+  price: number | Decimal;
   cost: number | Decimal;
 }
 
@@ -39,15 +40,14 @@ export interface MarginResult {
 }
 
 export function calculateMargin({ price, cost }: MarginInput): MarginResult {
-  assertNonNegative(price, "menu price");
-
+  const priceDecimal = price instanceof Decimal ? price : new Decimal(price);
   const costDecimal = cost instanceof Decimal ? cost : new Decimal(cost);
+  assertNonNegative(priceDecimal.toNumber(), "menu price");
 
-  if (price === 0) {
+  if (priceDecimal.isZero()) {
     return { amount: costDecimal.negated(), rate: new Decimal(0), label: MARGIN_LABEL };
   }
 
-  const priceDecimal = new Decimal(price);
   const amount = priceDecimal.minus(costDecimal);
   const rate = amount.dividedBy(priceDecimal).times(100);
 

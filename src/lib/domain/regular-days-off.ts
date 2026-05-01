@@ -12,14 +12,20 @@ import type { Database } from "@/lib/supabase/types";
 
 export type Weekday = Database["public"]["Enums"]["weekday"];
 
-const WEEKDAY_BY_INDEX: readonly Weekday[] = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+// 7-tuple로 명시 → date.getDay()의 0-6 인덱스가 type-level에서 narrow됨.
+// 이전엔 `if (!w) throw` 가드가 있었으나 getDay()가 항상 0-6을 반환해 불가능 분기였음.
+const WEEKDAY_BY_INDEX = [
+  "SUN",
+  "MON",
+  "TUE",
+  "WED",
+  "THU",
+  "FRI",
+  "SAT",
+] as const satisfies readonly [Weekday, Weekday, Weekday, Weekday, Weekday, Weekday, Weekday];
 
 export function weekdayOf(date: Date): Weekday {
-  const w = WEEKDAY_BY_INDEX[date.getDay()];
-  if (!w) {
-    throw new Error(`invalid weekday index: ${date.getDay()}`);
-  }
-  return w;
+  return WEEKDAY_BY_INDEX[date.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6];
 }
 
 export function isRegularDayOff(date: Date, daysOff: readonly Weekday[]): boolean {
