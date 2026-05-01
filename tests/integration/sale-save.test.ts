@@ -1,12 +1,13 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   cleanupTestUser,
   createTestUser,
   getServiceRoleClient,
-  hasSupabaseTestEnv,
+  isoDate,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
+import { describeIfSupabase } from "../helpers/integration-describe";
 import { cloneMenuTemplate, saveSale } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
@@ -19,14 +20,12 @@ import type { Database } from "@/lib/supabase/types";
  * - 같은 날 두 번 저장은 duplicate_sale 거부
  */
 
-const describeSaleSave = hasSupabaseTestEnv ? describe : describe.skip;
-
-describeSaleSave("save_sale RPC", () => {
+describeIfSupabase("save_sale RPC", () => {
   let user: TestUser;
   let client: SupabaseClient<Database>;
   let menuId: string;
   let ingredientId: string;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = isoDate();
 
   beforeAll(async () => {
     user = await createTestUser({ storeType: "cafe" });

@@ -3,10 +3,11 @@ import {
   cleanupTestUser,
   createTestUser,
   getServiceRoleClient,
-  hasSupabaseTestEnv,
+  isoDate,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
+import { describeIfSupabase } from "../helpers/integration-describe";
 import { cloneMenuTemplate, getTodayDashboard } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
@@ -20,17 +21,7 @@ import type { Database } from "@/lib/supabase/types";
  * - top3 메뉴 마진 정렬
  */
 
-const describeDashboard = hasSupabaseTestEnv ? describe : describe.skip;
-
-// RPC가 server-side `current_date` (UTC) 기준이므로 클라이언트도 UTC 기준 날짜 산술.
-// setDate는 로컬 타임존 기반이라 DST 전환일 등 ±1일 오차 가능.
-const isoDate = (offsetDays: number): string => {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
-};
-
-describeDashboard("get_today_dashboard RPC", () => {
+describeIfSupabase("get_today_dashboard RPC", () => {
   let user: TestUser;
   let client: SupabaseClient<Database>;
   let menuId: string;

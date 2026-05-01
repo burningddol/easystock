@@ -1,11 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  cleanupTestUser,
-  createTestUser,
-  hasSupabaseTestEnv,
-  signInAs,
-  type TestUser,
-} from "../helpers/test-supabase";
+import { afterAll, beforeAll, expect, it } from "vitest";
+import { cleanupTestUser, createTestUser, signInAs, type TestUser } from "../helpers/test-supabase";
+import { describeIfSupabase } from "../helpers/integration-describe";
 import { cloneMenuTemplate, deleteMenu, editMenu, saveMenu } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
@@ -17,9 +12,7 @@ import type { Database } from "@/lib/supabase/types";
  * - 삭제는 soft (is_active=false), 과거 sale 참조 보존
  */
 
-const describeMenuMutations = hasSupabaseTestEnv ? describe : describe.skip;
-
-describeMenuMutations("edit_menu / delete_menu RPC", () => {
+describeIfSupabase("edit_menu / delete_menu RPC", () => {
   let user: TestUser;
   let client: SupabaseClient<Database>;
   let ingredientId: string;

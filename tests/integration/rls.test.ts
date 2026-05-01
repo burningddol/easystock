@@ -3,10 +3,11 @@ import {
   cleanupTestUser,
   createTestUser,
   getServiceRoleClient,
-  hasSupabaseTestEnv,
+  isoDate,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
+import { describeIfSupabase } from "../helpers/integration-describe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 
@@ -20,9 +21,7 @@ import type { Database } from "@/lib/supabase/types";
  * Supabase 환경 변수가 없으면 skip (CI에서는 secret이 설정된 환경에서만 실행).
  */
 
-const describeRls = hasSupabaseTestEnv ? describe : describe.skip;
-
-describeRls("RLS user_id isolation", () => {
+describeIfSupabase("RLS user_id isolation", () => {
   let userA: TestUser;
   let userB: TestUser;
   let clientA: SupabaseClient<Database>;
@@ -81,7 +80,7 @@ describeRls("RLS user_id isolation", () => {
       .from("sales")
       .insert({
         user_id: userB.id,
-        sold_at: new Date().toISOString().slice(0, 10),
+        sold_at: isoDate(),
         total_revenue: 5000,
         total_cost_snapshot: 1000,
       })
@@ -107,7 +106,7 @@ describeRls("RLS user_id isolation", () => {
       .insert({
         user_id: userB.id,
         vendor_id: vendorByB.id,
-        purchased_at: new Date().toISOString().slice(0, 10),
+        purchased_at: isoDate(),
         total_amount: 50000,
       })
       .select("id")
@@ -119,7 +118,7 @@ describeRls("RLS user_id isolation", () => {
 
     const stockCount = await admin
       .from("daily_stock_counts")
-      .insert({ user_id: userB.id, counted_at: new Date().toISOString().slice(0, 10) })
+      .insert({ user_id: userB.id, counted_at: isoDate() })
       .select("id")
       .single();
     if (stockCount.error || !stockCount.data) {

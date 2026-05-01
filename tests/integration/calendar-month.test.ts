@@ -1,12 +1,13 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import {
+  backdateSignup,
   cleanupTestUser,
   createTestUser,
   getServiceRoleClient,
-  hasSupabaseTestEnv,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
+import { describeIfSupabase } from "../helpers/integration-describe";
 import { cloneMenuTemplate, getCalendarMonth } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
@@ -20,9 +21,7 @@ import type { Database } from "@/lib/supabase/types";
  * - RLS: 다른 사용자 데이터 leak 차단
  */
 
-const describeCalendar = hasSupabaseTestEnv ? describe : describe.skip;
-
-describeCalendar("get_calendar_month RPC", () => {
+describeIfSupabase("get_calendar_month RPC", () => {
   let user: TestUser;
   let client: SupabaseClient<Database>;
   let menuId: string;
@@ -36,10 +35,9 @@ describeCalendar("get_calendar_month RPC", () => {
     const menu = await client.from("menus").select("id").eq("name", "아메리카노").single();
     menuId = menu.data!.id;
 
+    // 1월 셀의 is_before_signup=false를 보장하려면 가입일이 1월 이전이어야 함.
+    await backdateSignup(user.id, "2025-12-01");
     const admin = getServiceRoleClient();
-    // 1월 셀 검증을 위해 가입일을 1월 이전으로 backdate (그렇지 않으면 1월 셀은
-    // is_before_signup=true → is_missing=false가 되어 누락 판정 검증 불가)
-    await admin.from("users").update({ signed_up_at: "2025-12-01" }).eq("id", user.id);
     const ing = await admin
       .from("ingredients")
       .select("id")

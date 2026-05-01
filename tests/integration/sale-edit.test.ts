@@ -1,12 +1,13 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   cleanupTestUser,
   createTestUser,
   getServiceRoleClient,
-  hasSupabaseTestEnv,
+  isoDate,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
+import { describeIfSupabase } from "../helpers/integration-describe";
 import { cloneMenuTemplate, deleteSale, editSale, saveSale } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
@@ -18,15 +19,13 @@ import type { Database } from "@/lib/supabase/types";
  * - sale_edit_history 기록 (FR-031)
  */
 
-const describeSaleEdit = hasSupabaseTestEnv ? describe : describe.skip;
-
-describeSaleEdit("edit_sale + delete_sale RPC", () => {
+describeIfSupabase("edit_sale + delete_sale RPC", () => {
   let user: TestUser;
   let client: SupabaseClient<Database>;
   let menuId: string;
   let ingredientId: string;
   let saleId: string;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = isoDate();
 
   beforeAll(async () => {
     user = await createTestUser({ storeType: "cafe" });
