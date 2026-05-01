@@ -19,13 +19,6 @@ export interface IngredientRow {
   current_avg_price: number;
 }
 
-interface RawIngredientRow {
-  id: string;
-  name: string;
-  unit: "g" | "ml" | "piece";
-  current_avg_price: number;
-}
-
 export const ingredientListQueryKey = ["ingredients", "list"] as const;
 
 async function fetchIngredients(): Promise<IngredientRow[]> {
@@ -36,10 +29,13 @@ async function fetchIngredients(): Promise<IngredientRow[]> {
     .eq("is_active", true)
     .order("name");
   if (error) throw new Error(error.message);
-  return ((data ?? []) as unknown as RawIngredientRow[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    unit: row.unit,
+  // supabase-js v2의 select 결과 타입 추론이 nested join + numeric 조합에서 흔들려
+  // 명시 캐스팅. numeric 컬럼은 PostgREST가 string으로 직렬화 → Number로 좁힘.
+  const rows = (data ?? []) as Array<
+    Omit<IngredientRow, "current_avg_price"> & { current_avg_price: string | number }
+  >;
+  return rows.map((row) => ({
+    ...row,
     current_avg_price: Number(row.current_avg_price),
   }));
 }

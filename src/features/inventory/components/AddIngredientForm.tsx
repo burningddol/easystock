@@ -1,29 +1,25 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Field } from "@/components/ui/field";
 import { PrimaryButton } from "@/components/ui/primary-button";
-import { ingredientInputSchema, type IngredientInput } from "@/features/purchase/schemas";
+import {
+  INGREDIENT_UNIT_LABELS,
+  ingredientInputSchema,
+  type IngredientInput,
+} from "@/features/purchase/schemas";
 import { useCreateIngredient } from "@/features/purchase/hooks/useIngredients";
 
 interface AddIngredientFormProps {
   onClose: () => void;
 }
 
-const UNIT_LABELS: Record<IngredientInput["unit"], string> = {
-  g: "g (그램)",
-  ml: "ml (밀리리터)",
-  piece: "개",
-};
-
 /**
  * 재료 등록 폼. 토글은 부모(InventoryPage)가 관리 — 헤더 버튼으로 열고 onClose로 닫음.
  * unit은 등록 후 변경 불가 (data-model.md §2 reject_unit_change 트리거) — 라벨에 명시.
  */
 export function AddIngredientForm({ onClose }: AddIngredientFormProps): React.ReactElement {
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const createMutation = useCreateIngredient();
 
   const {
@@ -37,13 +33,7 @@ export function AddIngredientForm({ onClose }: AddIngredientFormProps): React.Re
   });
 
   async function onSubmit(values: IngredientInput): Promise<void> {
-    setSubmitError(null);
-    try {
-      await createMutation.mutateAsync(values);
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "등록 실패");
-      return;
-    }
+    await createMutation.mutateAsync(values);
     reset();
     onClose();
   }
@@ -62,7 +52,6 @@ export function AddIngredientForm({ onClose }: AddIngredientFormProps): React.Re
           type="button"
           onClick={() => {
             reset();
-            setSubmitError(null);
             onClose();
           }}
           className="text-caption text-ink-3 hover:text-ink-2"
@@ -85,17 +74,17 @@ export function AddIngredientForm({ onClose }: AddIngredientFormProps): React.Re
           {...register("unit")}
           className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
         >
-          {(Object.keys(UNIT_LABELS) as Array<IngredientInput["unit"]>).map((unit) => (
+          {Object.entries(INGREDIENT_UNIT_LABELS).map(([unit, label]) => (
             <option key={unit} value={unit}>
-              {UNIT_LABELS[unit]}
+              {label}
             </option>
           ))}
         </select>
       </Field>
 
-      {submitError && (
+      {createMutation.error && (
         <p role="alert" className="text-body-regular text-red">
-          {submitError}
+          {createMutation.error.message}
         </p>
       )}
 
