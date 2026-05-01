@@ -11,17 +11,17 @@ interface MenuRowProps {
 }
 
 export function MenuRow({ menu, quantity, onChange }: MenuRowProps): React.ReactElement {
-  const active = quantity > 0;
+  const isActive = quantity > 0;
 
   return (
     <li
       className={cn(
         "flex items-center justify-between rounded-lg border px-tile py-stack",
-        active ? "border-border-strong bg-card" : "border-border bg-card",
+        isActive ? "border-border-strong bg-card" : "border-border bg-card",
       )}
     >
       <div className="flex flex-col gap-1">
-        <span className={cn("text-body", active ? "text-ink-1" : "text-ink-2")}>{menu.name}</span>
+        <span className={cn("text-body", isActive ? "text-ink-1" : "text-ink-2")}>{menu.name}</span>
         <span className="text-caption text-ink-3 tabular-nums">{formatNumber(menu.price)}원</span>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMenus } from "@/features/menu/hooks/useMenus";
 import { computeSnapshotPreview, daysUntilLock, isSaleLocked } from "@/lib/domain/snapshot";
@@ -26,30 +26,26 @@ export function SaleEditDialog({ sale }: SaleEditDialogProps): React.ReactElemen
   const editMutation = useSaleEdit();
   const deleteMutation = useSaleDelete();
 
-  const createdAt = useMemo(() => new Date(sale.created_at), [sale.created_at]);
-  const locked = isSaleLocked(createdAt);
+  // useMemo는 trivial Date 생성/Map 구성에 비용 오버헤드만 더함 — 단순 계산은 inline.
+  const createdAt = new Date(sale.created_at);
+  const isLocked = isSaleLocked(createdAt);
   const daysLeft = daysUntilLock(createdAt);
 
-  const initialQuantities = useMemo(
+  // lazy 초기화 — initialQuantities 변경 시 setQuantities로 명시 재설정 (현재는 마운트 1회).
+  const [quantities, setQuantities] = useState<Map<string, number>>(
     () => new Map(sale.items.map((it) => [it.menu_id, it.quantity])),
-    [sale.items],
   );
-
-  const [quantities, setQuantities] = useState<Map<string, number>>(initialQuantities);
   const [reason, setReason] = useState("");
 
-  const items = useMemo(
-    () =>
-      Array.from(quantities.entries())
-        .filter(([, qty]) => qty > 0)
-        .map(([menuId, quantity]) => ({ menuId, quantity })),
-    [quantities],
-  );
+  // quantities Map identity가 매번 새로워서 useMemo가 skip 못 함 → inline derive.
+  const items = Array.from(quantities.entries())
+    .filter(([, qty]) => qty > 0)
+    .map(([menuId, quantity]) => ({ menuId, quantity }));
 
-  const preview = useMemo(() => {
-    if (!menus || menus.length === 0 || items.length === 0) return null;
-    return computeSnapshotPreview(items, menus.map(toSnapshotMenu));
-  }, [items, menus]);
+  const preview =
+    menus && menus.length > 0 && items.length > 0
+      ? computeSnapshotPreview(items, menus.map(toSnapshotMenu))
+      : null;
 
   function setQuantity(menuId: string, next: number): void {
     setQuantities((prev) => {
@@ -76,7 +72,7 @@ export function SaleEditDialog({ sale }: SaleEditDialogProps): React.ReactElemen
     deleteMutation.mutate(sale.id, { onSuccess: () => router.push("/today") });
   }
 
-  if (locked) {
+  if (isLocked) {
     return <LockedView sale={sale} />;
   }
 
@@ -102,7 +98,7 @@ export function SaleEditDialog({ sale }: SaleEditDialogProps): React.ReactElemen
         ))}
       </ul>
 
-      <Field label="수정 사유 (선택, 200자 이내)" error={undefined}>
+      <Field label="수정 사유 (선택, 200자 이내)">
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value.slice(0, 200))}
@@ -149,19 +145,17 @@ export function SaleEditDialog({ sale }: SaleEditDialogProps): React.ReactElemen
 }
 
 function DaysLeftHint({ daysLeft }: { daysLeft: number }): React.ReactElement {
-  const tone = daysLeft <= 1 ? "red" : daysLeft <= 3 ? "amber" : "ink-3";
   return (
-    <p
-      className={cn(
-        "text-caption",
-        tone === "red" && "text-red-deep",
-        tone === "amber" && "text-amber-deep",
-        tone === "ink-3" && "text-ink-3",
-      )}
-    >
+    <p className={cn("text-caption", daysLeftTone(daysLeft))}>
       편집 가능 기간 {daysLeft}일 남음 (저장 후 7일까지 수정 가능)
     </p>
   );
+}
+
+function daysLeftTone(daysLeft: number): string {
+  if (daysLeft <= 1) return "text-red-deep";
+  if (daysLeft <= 3) return "text-amber-deep";
+  return "text-ink-3";
 }
 
 function LockedView({ sale }: { sale: SaleWithItems }): React.ReactElement {
