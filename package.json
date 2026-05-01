@@ -19,6 +19,7 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
+    "lighthouse:sale": "npx --yes lighthouse@latest http://localhost:3000/sale --form-factor=mobile --screenEmulation.mobile=true --screenEmulation.width=375 --screenEmulation.height=667 --screenEmulation.deviceScaleFactor=2 --only-categories=performance,accessibility,best-practices,pwa --output=html --output-path=./lighthouse-sale.html --chrome-flags=--headless",
     "db:reset": "supabase db reset --linked",
     "db:gen-types": "supabase gen types typescript --linked"
   },
