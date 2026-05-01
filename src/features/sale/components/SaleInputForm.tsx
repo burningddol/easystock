@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMenus, type MenuRowWithRecipe } from "@/features/menu/hooks/useMenus";
 import { useSaleDraft } from "@/stores/sale-draft";
@@ -22,44 +22,42 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
   const router = useRouter();
   const { data: menus } = useMenus();
   const { data: favorites } = useFavoriteMenus();
-  const draft = useSaleDraft();
+  // Zustand selector를 슬라이스별로 분리 — 전체 store 구독 시 모든 mutation이 매 렌더 트리거.
+  const items = useSaleDraft((s) => s.items);
+  const draftDate = useSaleDraft((s) => s.draftDate);
+  const setDraftDate = useSaleDraft((s) => s.setDraftDate);
+  const setQuantity = useSaleDraft((s) => s.setQuantity);
+  const clearDraft = useSaleDraft((s) => s.clear);
   const submit = useSaleSubmit();
 
-  // 페이지 진입 시 draft에 날짜 묶기 — soldAt 바뀌면 갱신.
   useEffect(() => {
-    if (draft.draftDate !== soldAt) {
-      draft.setDraftDate(soldAt);
+    if (draftDate !== soldAt) {
+      setDraftDate(soldAt);
     }
-  }, [soldAt, draft]);
+  }, [soldAt, draftDate, setDraftDate]);
 
-  const sortedMenus = useMemo(
-    () => sortByFavorites(menus ?? [], favorites ?? []),
-    [menus, favorites],
-  );
+  // ~20개 메뉴 sort + Map 구성은 trivial, useMemo 오버헤드만 더함 → inline.
+  const sortedMenus = sortByFavorites(menus ?? [], favorites ?? []);
+  const draftMap = new Map(items.map((it) => [it.menuId, it.quantity]));
 
-  const draftMap = useMemo(
-    () => new Map(draft.items.map((it) => [it.menuId, it.quantity])),
-    [draft.items],
-  );
-
-  const preview = useMemo(() => {
-    if (!menus || menus.length === 0) return null;
-    return computeSnapshotPreview(
-      draft.items.filter((it) => it.quantity > 0),
-      menus.map(toSnapshotMenu),
-    );
-  }, [draft.items, menus]);
+  const preview =
+    menus && menus.length > 0
+      ? computeSnapshotPreview(
+          items.filter((it) => it.quantity > 0),
+          menus.map(toSnapshotMenu),
+        )
+      : null;
 
   function handleSubmit(): void {
     submit.mutate(
       {
         soldAt,
-        items: draft.items.filter((it) => it.quantity > 0),
+        items: items.filter((it) => it.quantity > 0),
         isFirstSale,
       },
       {
         onSuccess: () => {
-          draft.clear();
+          clearDraft();
           router.push("/today");
         },
       },
@@ -77,7 +75,7 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
     );
   }
 
-  const totalQuantity = draft.items.reduce((sum, it) => sum + it.quantity, 0);
+  const totalQuantity = items.reduce((sum, it) => sum + it.quantity, 0);
 
   return (
     <div className="flex flex-col gap-stack pb-44">
@@ -87,7 +85,7 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
             key={menu.id}
             menu={menu}
             quantity={draftMap.get(menu.id) ?? 0}
-            onChange={(next) => draft.setQuantity(menu.id, next)}
+            onChange={(next) => setQuantity(menu.id, next)}
           />
         ))}
       </ul>
