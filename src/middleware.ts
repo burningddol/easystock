@@ -7,7 +7,8 @@ type CookieMutation = { name: string; value: string; options: CookieOptions };
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/", "/manifest.webmanifest"];
+// `/`는 middleware에서 user 상태로 직접 redirect → root RSC 한 단계 제거.
+const PUBLIC_PATHS = ["/login", "/signup", "/manifest.webmanifest"];
 const STATIC_PREFIXES = ["/_next/", "/icons/", "/fonts/", "/sw.js"];
 
 function isPublicPath(pathname: string): boolean {
@@ -41,6 +42,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   const pathname = request.nextUrl.pathname;
 
+  // `/` 진입은 인증 상태에 따라 곧장 redirect — RSC root page 우회.
+  if (pathname === "/") {
+    const target = user ? "/today" : "/login";
+    const url = request.nextUrl.clone();
+    url.pathname = target;
+    return NextResponse.redirect(url);
+  }
+
   // 인증 안 된 사용자: protected route 접근 시 /login 리디렉션
   if (!user && !isPublicPath(pathname)) {
     const loginUrl = request.nextUrl.clone();
@@ -51,7 +60,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   // 인증된 사용자: grace period 진행 중이면 차단 + /login 안내
   // (contracts/auth.md: withdrawal_in_progress 에러)
-  if (user) {
+  //
+  // hot-path 최적화: withdrawal_requested_at은 grace period(다일) 단위라 페이지마다
+  // 확인할 필요 없음. cookie 존재 = 1분 내에 검사 완료. 매번 DB 왕복하던 것을
+  // 분당 최대 1회로 축소. withdrawal 발생 시 다음 1분 안에 차단되므로 UX 영향 없음.
+  if (user && !request.cookies.has(WITHDRAWAL_CHECK_COOKIE)) {
     const { data } = await supabase
       .from("users")
       .select("withdrawal_requested_at")
@@ -67,10 +80,20 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       loginUrl.searchParams.set("withdrawal_in_progress", "1");
       return NextResponse.redirect(loginUrl);
     }
+
+    response.cookies.set(WITHDRAWAL_CHECK_COOKIE, "1", {
+      maxAge: WITHDRAWAL_CACHE_SECONDS,
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+    });
   }
 
   return response;
 }
+
+const WITHDRAWAL_CHECK_COOKIE = "es-w-checked";
+const WITHDRAWAL_CACHE_SECONDS = 60;
 
 export const config = {
   matcher: [
