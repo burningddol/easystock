@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
 
 /**
  * 사용자 메뉴 + 레시피 + 재료 단가를 한 번에 fetch.
@@ -86,4 +87,14 @@ export function useMenus(): UseQueryResult<MenuRowWithRecipe[]> {
     queryKey: menuListQueryKey,
     queryFn: fetchMenus,
   });
+}
+
+/**
+ * 메뉴 mutation 후 호출 — 메뉴 자체 + 메뉴 마진을 표시하는 dashboard top3 / forecast 화면이
+ * 모두 ingredient 단가에 의존하므로 forecast 키도 함께 무효화. menu/sale/purchase mutation
+ * 어디서든 같은 패턴 일관 사용.
+ */
+export function invalidateMenuCaches(queryClient: ReturnType<typeof useQueryClient>): void {
+  void queryClient.invalidateQueries({ queryKey: menuListQueryKey });
+  void queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey });
 }

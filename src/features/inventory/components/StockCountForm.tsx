@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { Field } from "@/components/ui/field";
@@ -9,24 +9,21 @@ import { useApplyStockCount } from "../hooks/useApplyStockCount";
 import { StockCountResultCard } from "./StockCountResultCard";
 import type { ApplyStockCountResult } from "@/lib/supabase/rpc";
 
-const todayString = (): string => new Date().toISOString().slice(0, 10);
+const TODAY_ISO = new Date().toISOString().slice(0, 10);
 
 export function StockCountForm(): React.ReactElement {
   const router = useRouter();
   const { data: ingredients, isLoading } = useIngredients();
   const submit = useApplyStockCount();
 
-  const [countedAt, setCountedAt] = useState(todayString);
+  const [countedAt, setCountedAt] = useState(TODAY_ISO);
   const [actuals, setActuals] = useState<Map<string, number>>(new Map());
   const [result, setResult] = useState<ApplyStockCountResult | null>(null);
 
-  const items = useMemo(
-    () =>
-      Array.from(actuals.entries())
-        .filter(([, v]) => Number.isFinite(v))
-        .map(([ingredientId, actualStock]) => ({ ingredientId, actualStock })),
-    [actuals],
-  );
+  // actuals Map identity가 매 입력마다 바뀌어 useMemo가 skip 못 함 → inline.
+  const items = Array.from(actuals.entries())
+    .filter(([, v]) => Number.isFinite(v))
+    .map(([ingredientId, actualStock]) => ({ ingredientId, actualStock }));
 
   function handleSubmit(): void {
     if (items.length === 0) return;
@@ -50,12 +47,12 @@ export function StockCountForm(): React.ReactElement {
 
   return (
     <div className="flex flex-col gap-section pb-44">
-      <Field label="실사 날짜" error={undefined}>
+      <Field label="실사 날짜">
         <input
           type="date"
           value={countedAt}
           onChange={(e) => setCountedAt(e.target.value)}
-          max={todayString()}
+          max={TODAY_ISO}
           className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1 tabular-nums"
         />
       </Field>

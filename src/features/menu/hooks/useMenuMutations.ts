@@ -4,7 +4,7 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { createClient } from "@/lib/supabase/client";
 import { deleteMenu, editMenu } from "@/lib/supabase/rpc";
 import type { MenuInput } from "../schemas";
-import { menuListQueryKey } from "./useMenus";
+import { invalidateMenuCaches } from "./useMenus";
 
 interface EditMenuVariables {
   menuId: string;
@@ -27,9 +27,7 @@ export function useEditMenu(): UseMutationResult<string, Error, EditMenuVariable
       if (!row) throw new Error("edit_menu returned empty");
       return row.menu_id;
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: menuListQueryKey });
-    },
+    onSuccess: () => invalidateMenuCaches(queryClient),
   });
 }
 
@@ -41,8 +39,6 @@ export function useDeleteMenu(): UseMutationResult<void, Error, string> {
       const { error } = await deleteMenu(supabase, menuId);
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: menuListQueryKey });
-    },
+    onSuccess: () => invalidateMenuCaches(queryClient),
   });
 }

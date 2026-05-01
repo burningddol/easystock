@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { daysUntilDate, formatNumber } from "@/lib/utils/format";
 import type { DepletionStatus } from "@/lib/domain/forecast";
@@ -64,23 +63,17 @@ export function IngredientStatusList({ items }: IngredientStatusListProps): Reac
 function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactElement {
   const depletionLabel = formatDepletion(item);
   const deleteMutation = useDeleteIngredient();
-  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete(): Promise<void> {
     const confirmed = window.confirm(
       `"${item.name}" 재료를 삭제할까요?\n\n사용 중인 메뉴 + 단가 history는 보존되고 재료 목록에서만 사라져요.`,
     );
     if (!confirmed) return;
-    setError(null);
-    try {
-      const result = await deleteMutation.mutateAsync(item.ingredientId);
-      if (result.inUseMenuCount > 0) {
-        window.alert(
-          `삭제 완료. 이 재료를 쓰던 메뉴 ${result.inUseMenuCount}개는 그대로 남아있어요. 메뉴 페이지에서 다른 재료로 교체하거나 메뉴 자체를 삭제하세요.`,
-        );
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "삭제 실패");
+    const result = await deleteMutation.mutateAsync(item.ingredientId);
+    if (result.inUseMenuCount > 0) {
+      window.alert(
+        `삭제 완료. 이 재료를 쓰던 메뉴 ${result.inUseMenuCount}개는 그대로 남아있어요. 메뉴 페이지에서 다른 재료로 교체하거나 메뉴 자체를 삭제하세요.`,
+      );
     }
   }
 
@@ -112,20 +105,24 @@ function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactE
           </button>
         </div>
       </div>
-      {error && (
+      {deleteMutation.error && (
         <p role="alert" className="text-caption text-red">
-          {error}
+          {deleteMutation.error.message}
         </p>
       )}
     </li>
   );
 }
 
+const STATUS_TONE: Record<DepletionStatus, string> = {
+  critical: "text-red-deep",
+  order_needed: "text-amber-deep",
+  caution: "text-amber-deep",
+  safe: "text-ink-3",
+};
+
 function toneClass(status: DepletionStatus): string {
-  if (status === "critical") return "text-red-deep";
-  if (status === "order_needed") return "text-amber-deep";
-  if (status === "caution") return "text-amber-deep";
-  return "text-ink-3";
+  return STATUS_TONE[status];
 }
 
 function formatDepletion(item: IngredientForecastView): string {
