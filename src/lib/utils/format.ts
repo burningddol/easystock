@@ -16,13 +16,9 @@ export function formatNumber(value: number): string {
 const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 /**
- * "YYYY-MM-DD" 문자열을 한국어 한 글자 요일로 변환.
- * timezone 해석 회피 위해 date 부품을 직접 분해 (Date 생성자에 ISO 문자열 + Z 패스
- * 사용 시 호스트 tz에 따라 ±1일 오차 가능).
- */
-/**
  * "YYYY-MM-DD" 문자열을 로컬 시간 0시 Date로 변환. 호스트 tz 무관하게 캘린더 일자
- * 단위 비교에 사용. ISO 부분 분해 → Date 생성자 (UTC 해석 회피).
+ * 단위 비교에 사용 — Date 생성자에 ISO 문자열 + Z 패스를 그대로 넘기면 호스트 tz에
+ * 따라 ±1일 오차가 생길 수 있음.
  */
 export function parseLocalDateFromIso(iso: string): Date | null {
   const parts = iso.split("-").map(Number);

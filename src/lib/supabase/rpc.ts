@@ -78,6 +78,22 @@ interface SaveMenuRow {
   menu_id: string;
 }
 
+// 도메인 타입 → RPC payload 변환 어댑터 — saveMenu / editMenu / saveSale / editSale 4곳 공유.
+function mapRecipePayload(
+  recipe: SaveMenuArgs["recipe"],
+): Array<{ ingredient_id: string; quantity_per_serving: number }> {
+  return recipe.map((it) => ({
+    ingredient_id: it.ingredientId,
+    quantity_per_serving: it.quantityPerServing,
+  }));
+}
+
+function mapSaleItemsPayload(
+  items: ReadonlyArray<{ menuId: string; quantity: number }>,
+): Array<{ menu_id: string; quantity: number }> {
+  return items.map((it) => ({ menu_id: it.menuId, quantity: it.quantity }));
+}
+
 interface EditMenuArgs extends SaveMenuArgs {
   menuId: string;
 }
@@ -95,10 +111,7 @@ export function editMenu(
     p_menu_id: args.menuId,
     p_name: args.name,
     p_price: args.price,
-    p_recipe: args.recipe.map((it) => ({
-      ingredient_id: it.ingredientId,
-      quantity_per_serving: it.quantityPerServing,
-    })),
+    p_recipe: mapRecipePayload(args.recipe),
   });
 }
 
@@ -129,10 +142,7 @@ export function saveMenu(
   return callRpc(client, "save_menu", {
     p_name: args.name,
     p_price: args.price,
-    p_recipe: args.recipe.map((it) => ({
-      ingredient_id: it.ingredientId,
-      quantity_per_serving: it.quantityPerServing,
-    })),
+    p_recipe: mapRecipePayload(args.recipe),
   });
 }
 
@@ -152,7 +162,7 @@ interface SaveSaleArgs {
 export function saveSale(client: ClientLike, args: SaveSaleArgs): Promise<RpcResult<SaleRpcRow[]>> {
   return callRpc(client, "save_sale", {
     p_sold_at: args.soldAt,
-    p_items: args.items.map((it) => ({ menu_id: it.menuId, quantity: it.quantity })),
+    p_items: mapSaleItemsPayload(args.items),
   });
 }
 
@@ -165,12 +175,12 @@ interface EditSaleArgs {
 export function editSale(client: ClientLike, args: EditSaleArgs): Promise<RpcResult<SaleRpcRow[]>> {
   return callRpc(client, "edit_sale", {
     p_sale_id: args.saleId,
-    p_new_items: args.newItems.map((it) => ({ menu_id: it.menuId, quantity: it.quantity })),
+    p_new_items: mapSaleItemsPayload(args.newItems),
     p_reason: args.reason ?? null,
   });
 }
 
-export function deleteSale(client: ClientLike, saleId: string): Promise<RpcResult<unknown>> {
+export function deleteSale(client: ClientLike, saleId: string): Promise<RpcResult<null>> {
   return callRpc(client, "delete_sale", { p_sale_id: saleId });
 }
 
@@ -345,7 +355,7 @@ export function subscribePush(
   });
 }
 
-export function unsubscribePush(client: ClientLike, endpoint: string): Promise<RpcResult<unknown>> {
+export function unsubscribePush(client: ClientLike, endpoint: string): Promise<RpcResult<null>> {
   return callRpc(client, "unsubscribe_push", { p_endpoint: endpoint });
 }
 
@@ -407,10 +417,10 @@ export async function getCalendarMonth(
     p_year: args.year,
     p_month: args.month,
   });
-  if (result.error) {
+  if (result.error || !result.data) {
     return { data: null, error: result.error };
   }
-  const raw = result.data!;
+  const raw = result.data;
   return {
     data: {
       year: raw.year,
@@ -525,10 +535,10 @@ export async function getTodayDashboard(
   client: ClientLike,
 ): Promise<RpcResult<TodayDashboardData>> {
   const result = await callRpc<TodayDashboardRaw>(client, "get_today_dashboard");
-  if (result.error) {
+  if (result.error || !result.data) {
     return { data: null, error: result.error };
   }
-  const raw = result.data!;
+  const raw = result.data;
   return {
     data: {
       storeName: raw.store_name,
