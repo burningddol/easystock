@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useDepletionForecast } from "@/features/inventory/hooks/useDepletionForecast";
 import { IngredientStatusList } from "@/features/inventory/components/IngredientStatusList";
 import { ColdStartNotice } from "@/features/inventory/components/ColdStartNotice";
+import { AddIngredientForm } from "@/features/inventory/components/AddIngredientForm";
 
 export default function InventoryPage(): React.ReactElement {
   const { data, isLoading, error } = useDepletionForecast();
@@ -41,6 +42,8 @@ export default function InventoryPage(): React.ReactElement {
       {isAllColdStart && <ColdStartNotice />}
 
       {data && <IngredientStatusList items={data} />}
+
+      <AddIngredientForm />
     </section>
   );
 }

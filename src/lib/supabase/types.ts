@@ -705,7 +705,25 @@ export type Database = {
           menu_ids: string[]
         }[]
       }
+      delete_menu: {
+        Args: { p_menu_id: string }
+        Returns: {
+          menu_id: string
+          was_active: boolean
+        }[]
+      }
       delete_sale: { Args: { p_sale_id: string }; Returns: undefined }
+      edit_menu: {
+        Args: {
+          p_menu_id: string
+          p_name: string
+          p_price: number
+          p_recipe?: Json
+        }
+        Returns: {
+          menu_id: string
+        }[]
+      }
       edit_sale: {
         Args: { p_new_items: Json; p_reason?: string; p_sale_id: string }
         Returns: {
