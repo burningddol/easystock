@@ -5,6 +5,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { formatDateKoFromIso, formatWon, parseLocalDateFromIso } from "@/lib/utils/format";
 import { MARGIN_LABEL } from "@/lib/domain/margin";
+import { Metric } from "@/components/ui/metric";
 import type { EnrichedCalendarCell } from "../lib/consecutive-missing";
 
 interface CellDetailPanelProps {
@@ -127,20 +128,6 @@ function Notice({ tone, children }: NoticeProps): React.ReactElement {
       )}
     >
       {children}
-    </div>
-  );
-}
-
-interface MetricProps {
-  label: string;
-  value: string;
-}
-
-function Metric({ label, value }: MetricProps): React.ReactElement {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-micro text-ink-3">{label}</span>
-      <span className="text-metric-md tabular-nums text-ink-1">{value}</span>
     </div>
   );
 }
