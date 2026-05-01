@@ -1,8 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   cleanupTestUser,
   createTestUser,
-  hasSupabaseTestEnv,
+  describeIfSupabase,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
@@ -15,9 +15,7 @@ import type { Database } from "@/lib/supabase/types";
  * 사용자 가게에 복제. 같은 RPC를 두 번 호출해도 충돌 없이 idempotent.
  */
 
-const describeTpl = hasSupabaseTestEnv ? describe : describe.skip;
-
-describeTpl("clone_menu_template RPC", () => {
+describeIfSupabase("clone_menu_template RPC", () => {
   let user: TestUser;
   let client: SupabaseClient<Database>;
 

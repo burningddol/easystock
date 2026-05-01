@@ -1,9 +1,10 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   cleanupTestUser,
   createTestUser,
+  describeIfSupabase,
   getServiceRoleClient,
-  hasSupabaseTestEnv,
+  isoDate,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
@@ -20,9 +21,7 @@ import type { Database } from "@/lib/supabase/types";
  * - 메뉴 마진 자동 재계산 (재료 단가 변경 → 메뉴 원가 재계산은 클라이언트 측, 통합 검증 X)
  */
 
-const describePurchase = hasSupabaseTestEnv ? describe : describe.skip;
-
-describePurchase("save_purchase RPC + 가중 이동 평균법", () => {
+describeIfSupabase("save_purchase RPC + 가중 이동 평균법", () => {
   let user: TestUser;
   let client: SupabaseClient<Database>;
   let vendorId: string;
@@ -53,7 +52,7 @@ describePurchase("save_purchase RPC + 가중 이동 평균법", () => {
     if (user?.id) await cleanupTestUser(user.id);
   }, 30_000);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = isoDate();
 
   it("첫 매입 (stock=0): new_avg = amount/quantity, alerts 없음", async () => {
     // 1000g @ 50,000원 → unit_price = 50원/g
@@ -100,7 +99,7 @@ describePurchase("save_purchase RPC + 가중 이동 평균법", () => {
   });
 
   it("|change| < 5%이면 alerts에 안 들어감", async () => {
-    const dayBefore = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
+    const dayBefore = isoDate(-2);
     // 2000g @ avg 60 → +100g @ unit_price 62 = (2000×60 + 100×62) / 2100 ≈ 60.0952
     // change = (60.0952 - 60) / 60 × 100 ≈ 0.16%
     const { data, error } = await savePurchase(client, {

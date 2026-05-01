@@ -1,8 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   cleanupTestUser,
   createTestUser,
-  hasSupabaseTestEnv,
+  describeIfSupabase,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
@@ -18,9 +18,7 @@ import type { Database } from "@/lib/supabase/types";
  * - 단가 history는 cascade 보존
  */
 
-const describeIngredientDelete = hasSupabaseTestEnv ? describe : describe.skip;
-
-describeIngredientDelete("delete_ingredient RPC", () => {
+describeIfSupabase("delete_ingredient RPC", () => {
   let user: TestUser;
   let client: SupabaseClient<Database>;
 

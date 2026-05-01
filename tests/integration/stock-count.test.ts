@@ -1,9 +1,10 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   cleanupTestUser,
   createTestUser,
+  describeIfSupabase,
   getServiceRoleClient,
-  hasSupabaseTestEnv,
+  isoDate,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
@@ -18,9 +19,7 @@ import type { Database } from "@/lib/supabase/types";
  * - ingredient_price_history reason='stock_count_correction', new_avg = previous_avg
  */
 
-const describeStock = hasSupabaseTestEnv ? describe : describe.skip;
-
-describeStock("apply_stock_count RPC", () => {
+describeIfSupabase("apply_stock_count RPC", () => {
   let user: TestUser;
   let client: SupabaseClient<Database>;
   let beanId: string;
@@ -48,7 +47,7 @@ describeStock("apply_stock_count RPC", () => {
     if (user?.id) await cleanupTestUser(user.id);
   }, 30_000);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = isoDate();
 
   it("실재고 950g 보고 → current_stock=950, current_avg_price 50원 그대로 (FR-016)", async () => {
     const { data, error } = await applyStockCount(client, {
@@ -108,7 +107,7 @@ describeStock("apply_stock_count RPC", () => {
   });
 
   it("음수 actual_stock 거부", async () => {
-    const dayBefore = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
+    const dayBefore = isoDate(-2);
     const { error } = await applyStockCount(client, {
       countedAt: dayBefore,
       items: [{ ingredientId: beanId, actualStock: -10 }],

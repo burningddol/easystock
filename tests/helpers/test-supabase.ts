@@ -1,3 +1,4 @@
+import { describe } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 
@@ -78,6 +79,25 @@ export async function cleanupTestUser(userId: string): Promise<void> {
   if (error && !error.message.includes("not found")) {
     throw new Error(`cleanupTestUser failed: ${error.message}`);
   }
+}
+
+/** Supabase env이 있는 환경에서만 통합 테스트 suite 실행 — 9개 파일에서 반복되던 패턴. */
+export const describeIfSupabase = hasSupabaseTestEnv ? describe : describe.skip;
+
+/**
+ * UTC 기준 N일 오프셋 ISO date (YYYY-MM-DD).
+ * 로컬 setDate 변형은 DST 경계에서 ±1일 — 서버 current_date (UTC)와 일치시키려면 UTC.
+ */
+export function isoDate(offsetDays: number = 0): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+}
+
+/** 가입일 backdate — calendar/sale 테스트에서 과거 데이터 검증용. */
+export async function backdateSignup(userId: string, isoDateStr: string): Promise<void> {
+  const admin = getServiceRoleClient();
+  await admin.from("users").update({ signed_up_at: isoDateStr }).eq("id", userId);
 }
 
 export async function signInAs(user: TestUser): Promise<SupabaseClient<Database>> {
