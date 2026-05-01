@@ -56,17 +56,15 @@ function MenuListRow({ menu }: { menu: MenuRowWithRecipe }): React.ReactElement 
  * - green: 50%+, amber: 30~49%, red: <30%
  */
 function MarginChip({ rate }: { rate: number }): React.ReactElement {
-  const tone: "green" | "amber" | "red" = rate >= 50 ? "green" : rate >= 30 ? "amber" : "red";
   return (
-    <span
-      className={cn(
-        "rounded-full px-3 py-1 text-label tabular-nums",
-        tone === "green" && "bg-green-soft text-green-deep",
-        tone === "amber" && "bg-amber-soft text-amber-deep",
-        tone === "red" && "bg-red-soft text-red-deep",
-      )}
-    >
+    <span className={cn("rounded-full px-3 py-1 text-label tabular-nums", marginToneClass(rate))}>
       {rate.toFixed(0)}%
     </span>
   );
+}
+
+function marginToneClass(rate: number): string {
+  if (rate >= 50) return "bg-green-soft text-green-deep";
+  if (rate >= 30) return "bg-amber-soft text-amber-deep";
+  return "bg-red-soft text-red-deep";
 }
