@@ -31,7 +31,14 @@ test.describe("골든패스: 가입 → 메뉴 → 매입 → 판매 → 마진"
     if (user?.id) await cleanupTestUser(user.id);
   });
 
-  test("템플릿 → 매입(얼음 1000g @ 5000원) → 팥빙수 1개 판매 → 마진 ~83%", async ({ page }) => {
+  test("템플릿 → 매입(얼음 1000g @ 5000원) → 팥빙수 1개 판매 → 마진 ~83% (5분 이내)", async ({
+    page,
+  }) => {
+    // T169: 페르소나 골든패스 wall-clock 시간을 5분 이내로 제한 (SC-001/SC-007).
+    // E2E는 사람보다 훨씬 빠르므로 경고 임계로 충분 — 회귀 시 disconnect/retry 누적이
+    // 5분에 가까워지면 조기 알림.
+    const startedAt = Date.now();
+
     // 1) 로그인
     await page.goto("/login");
     await dismissConsentBanner(page);
@@ -103,5 +110,12 @@ test.describe("골든패스: 가입 → 메뉴 → 매입 → 판매 → 마진"
     await saveButton.scrollIntoViewIfNeeded();
     await saveButton.click();
     await expect(page).toHaveURL(/\/today/, { timeout: 10_000 });
+
+    // 7) 페르소나 시간 게이트 (T169, SC-001/SC-007)
+    const elapsedMs = Date.now() - startedAt;
+    expect(
+      elapsedMs,
+      `골든패스 5분 초과: ${(elapsedMs / 1000).toFixed(1)}s — 회귀로 사용자 마찰 누적 가능`,
+    ).toBeLessThan(5 * 60 * 1000);
   });
 });
