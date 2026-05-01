@@ -109,6 +109,19 @@ export function deleteMenu(
   return callRpc(client, "delete_menu", { p_menu_id: menuId });
 }
 
+interface DeleteIngredientRow {
+  ingredient_id: string;
+  was_active: boolean;
+  in_use_menu_count: number;
+}
+
+export function deleteIngredient(
+  client: ClientLike,
+  ingredientId: string,
+): Promise<RpcResult<DeleteIngredientRow[]>> {
+  return callRpc(client, "delete_ingredient", { p_ingredient_id: ingredientId });
+}
+
 export function saveMenu(
   client: ClientLike,
   args: SaveMenuArgs,
