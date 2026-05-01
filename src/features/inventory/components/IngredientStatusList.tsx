@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { daysUntilDate, formatNumber } from "@/lib/utils/format";
 import type { DepletionStatus } from "@/lib/domain/forecast";
+import { useDeleteIngredient } from "@/features/purchase/hooks/useIngredients";
 import type { IngredientForecastView } from "../hooks/useDepletionForecast";
 
 interface IngredientStatusListProps {
@@ -61,21 +63,60 @@ export function IngredientStatusList({ items }: IngredientStatusListProps): Reac
 
 function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactElement {
   const depletionLabel = formatDepletion(item);
+  const deleteMutation = useDeleteIngredient();
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDelete(): Promise<void> {
+    const confirmed = window.confirm(
+      `"${item.name}" 재료를 삭제할까요?\n\n사용 중인 메뉴 + 단가 history는 보존되고 재료 목록에서만 사라져요.`,
+    );
+    if (!confirmed) return;
+    setError(null);
+    try {
+      const result = await deleteMutation.mutateAsync(item.ingredientId);
+      if (result.inUseMenuCount > 0) {
+        window.alert(
+          `삭제 완료. 이 재료를 쓰던 메뉴 ${result.inUseMenuCount}개는 그대로 남아있어요. 메뉴 페이지에서 다른 재료로 교체하거나 메뉴 자체를 삭제하세요.`,
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "삭제 실패");
+    }
+  }
+
   return (
-    <li className="flex items-center justify-between rounded-lg border border-border bg-card px-tile py-stack">
-      <div className="flex flex-col gap-1">
-        <span className="text-body text-ink-1">{item.name}</span>
-        <span className="text-caption text-ink-3 tabular-nums">
-          현재 {formatNumber(item.currentStock)}
-          {item.unit}
-          <span className="text-ink-4"> · </span>
-          리드타임 {item.leadTimeDays}일
-        </span>
+    <li className="flex flex-col gap-1 rounded-lg border border-border bg-card px-tile py-stack">
+      <div className="flex items-center justify-between gap-stack">
+        <div className="flex flex-col gap-1">
+          <span className="text-body text-ink-1">{item.name}</span>
+          <span className="text-caption text-ink-3 tabular-nums">
+            현재 {formatNumber(item.currentStock)}
+            {item.unit}
+            <span className="text-ink-4"> · </span>
+            리드타임 {item.leadTimeDays}일
+          </span>
+        </div>
+        <div className="flex items-center gap-stack-tight">
+          <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
+            <span className={cn(toneClass(item.status))}>{depletionLabel}</span>
+            {item.trend !== "normal" && <TrendBadge trend={item.trend} />}
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleDelete()}
+            disabled={deleteMutation.isPending}
+            aria-label={`${item.name} 삭제`}
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-caption text-ink-3 hover:border-red hover:text-red disabled:opacity-50"
+          >
+            ×
+          </button>
+        </div>
       </div>
-      <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
-        <span className={cn(toneClass(item.status))}>{depletionLabel}</span>
-        {item.trend !== "normal" && <TrendBadge trend={item.trend} />}
-      </div>
+      {error && (
+        <p role="alert" className="text-caption text-red">
+          {error}
+        </p>
+      )}
     </li>
   );
 }

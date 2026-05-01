@@ -705,6 +705,14 @@ export type Database = {
           menu_ids: string[]
         }[]
       }
+      delete_ingredient: {
+        Args: { p_ingredient_id: string }
+        Returns: {
+          in_use_menu_count: number
+          ingredient_id: string
+          was_active: boolean
+        }[]
+      }
       delete_menu: {
         Args: { p_menu_id: string }
         Returns: {
