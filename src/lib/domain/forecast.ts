@@ -8,7 +8,8 @@ import { isRegularDayOff, weekdayOf, type Weekday } from "./regular-days-off";
  * 출력: 예상 소진일 + status + trend + 콜드스타트 여부.
  *
  * 핵심 로직:
- *  1. 콜드스타트 (가입 ≤ 7일) → 모든 항목 isColdStart=true, 예측 안 함
+ *  1. 콜드스타트 (가입 < 7일) → 모든 항목 isColdStart=true, 예측 안 함
+ *     (정확히 7일 경계는 cold가 아님 — `tests/unit/forecast.test.ts` 참고)
  *  2. 요일별 가중 평균 산정 (정기휴무 제외)
  *  3. 오늘부터 일별 시뮬레이션 (정기휴무는 소비 0)
  *  4. 리드타임 + 안전여유 1일 차감해 status 분류

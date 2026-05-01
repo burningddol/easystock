@@ -43,6 +43,7 @@ export function calculateMargin({ price, cost }: MarginInput): MarginResult {
   const priceDecimal = price instanceof Decimal ? price : new Decimal(price);
   const costDecimal = cost instanceof Decimal ? cost : new Decimal(cost);
   assertNonNegative(priceDecimal.toNumber(), "menu price");
+  assertNonNegative(costDecimal.toNumber(), "menu cost");
 
   if (priceDecimal.isZero()) {
     return { amount: costDecimal.negated(), rate: new Decimal(0), label: MARGIN_LABEL };

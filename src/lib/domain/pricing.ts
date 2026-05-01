@@ -26,6 +26,8 @@ export function computeNewWeightedAverage({
   newQuantity,
   newUnitPrice,
 }: WeightedAverageInput): Decimal {
+  assertNonNegative(currentStock, "currentStock");
+  assertNonNegative(currentAvg, "currentAvg");
   assertNonNegative(newQuantity, "newQuantity");
   assertNonNegative(newUnitPrice, "newUnitPrice");
 
