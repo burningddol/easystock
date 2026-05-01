@@ -13,7 +13,7 @@ export function formatNumber(value: number): string {
   return value.toLocaleString("ko-KR");
 }
 
-const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
+export const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 /**
  * "YYYY-MM-DD" 문자열을 로컬 시간 0시 Date로 변환. 호스트 tz 무관하게 캘린더 일자

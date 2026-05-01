@@ -1,8 +1,9 @@
 "use client";
 
+import { INTENSITY_LEVELS, INTENSITY_STEP_PCT } from "../lib/intensity";
+
 /**
- * 캘린더 범례 (patterns.md "캘린더 위계 #3 그리드 하단").
- * 인텐시티 5단계 + 매입/누락 도트 설명.
+ * 캘린더 범례 — 인텐시티 5단계 + 매입/누락 도트 설명.
  */
 export function CalendarLegend(): React.ReactElement {
   return (
@@ -23,14 +24,15 @@ export function CalendarLegend(): React.ReactElement {
 }
 
 function IntensityScale(): React.ReactElement {
+  const levels = Array.from({ length: INTENSITY_LEVELS + 1 }, (_, i) => i);
   return (
     <div className="flex items-center gap-1">
-      {[0, 1, 2, 3, 4].map((level) => (
+      {levels.map((level) => (
         <div
           key={level}
           className="h-3 w-3 rounded-sm"
           style={{
-            backgroundColor: `color-mix(in srgb, var(--ink-1) ${level * 3.5}%, var(--card))`,
+            backgroundColor: `color-mix(in srgb, var(--ink-1) ${level * INTENSITY_STEP_PCT}%, var(--card))`,
           }}
         />
       ))}

@@ -2,6 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/utils/format";
+import { MARGIN_LABEL } from "@/lib/domain/margin";
+import { marginTone } from "@/lib/ui/margin-tone";
 import type { DashboardLowMarginMenu, DashboardTopMenu } from "@/lib/supabase/rpc";
 
 interface MarginTop3CardProps {
@@ -34,7 +36,7 @@ export function MarginTop3Card({
               />
             ))}
           </ul>
-          <p className="text-micro text-ink-3">재료 원가 기준 (이동평균법)</p>
+          <p className="text-micro text-ink-3">{MARGIN_LABEL}</p>
         </div>
       )}
 
@@ -50,7 +52,7 @@ interface TopRowProps {
 }
 
 function TopRow({ rank, menu, isLast }: TopRowProps): React.ReactElement {
-  const tone = marginTone(menu.marginPercent);
+  const tone = marginToneText(menu.marginPercent);
   return (
     <li
       className={cn(
@@ -85,8 +87,13 @@ function LowMarginAlert({ menu }: LowMarginAlertProps): React.ReactElement {
   );
 }
 
-function marginTone(margin: number): string {
-  if (margin >= 50) return "text-green-deep";
-  if (margin >= 30) return "text-amber-deep";
-  return "text-red-deep";
+function marginToneText(rate: number): string {
+  switch (marginTone(rate)) {
+    case "green":
+      return "text-green-deep";
+    case "amber":
+      return "text-amber-deep";
+    case "red":
+      return "text-red-deep";
+  }
 }
