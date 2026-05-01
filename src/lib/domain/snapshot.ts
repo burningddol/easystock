@@ -1,5 +1,11 @@
 import { Decimal } from "./_decimal";
-import { calculateMargin, calculateMenuCost, MARGIN_LABEL, type MarginLabel } from "./margin";
+import {
+  calculateMargin,
+  calculateMenuCost,
+  MARGIN_LABEL,
+  type MarginLabel,
+  type RecipeItemForCost,
+} from "./margin";
 
 /**
  * 헌법 III: Sale 저장 시 메뉴 원가/판매가 스냅샷 영구 보존.
@@ -19,7 +25,7 @@ export interface MenuForSnapshot {
   id: string;
   name: string;
   price: number;
-  recipeItems: ReadonlyArray<{ quantity: number; avgPrice: number }>;
+  recipeItems: readonly RecipeItemForCost[];
 }
 
 export interface SaleItemInput {
@@ -55,7 +61,8 @@ export function computeSnapshotPreview(
   const totalRevenue = breakdown.reduce((sum, line) => sum.plus(line.lineRevenue), new Decimal(0));
   const totalCost = breakdown.reduce((sum, line) => sum.plus(line.lineCost), new Decimal(0));
 
-  const margin = calculateMargin({ price: totalRevenue.toNumber(), cost: totalCost });
+  // Decimal 그대로 전달 — number round-trip 시 큰 카트에서 소수 손실.
+  const margin = calculateMargin({ price: totalRevenue, cost: totalCost });
 
   return {
     totalRevenue,

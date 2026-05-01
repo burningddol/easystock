@@ -11,7 +11,7 @@ import DecimalBase from "decimal.js";
  * 내부 곱셈/나눗셈 라운딩 헤드룸) 일반 거래 단위(numeric(12,4)) 변환에 불필요
  * 하게 큰 메모리를 안 씀. 28은 decimal.js 기본값.
  */
-export const DOMAIN_DECIMAL_PRECISION = 28;
+const DOMAIN_DECIMAL_PRECISION = 28;
 
 export const Decimal = DecimalBase.clone({
   precision: DOMAIN_DECIMAL_PRECISION,
