@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { formatWon } from "@/lib/utils/format";
+import { marginTone } from "@/lib/ui/margin-tone";
 import { computeMenuMarginFromRow } from "../lib/compute-menu-margin";
 import type { MenuRowWithRecipe } from "../hooks/useMenus";
 
@@ -64,7 +65,12 @@ function MarginChip({ rate }: { rate: number }): React.ReactElement {
 }
 
 function marginToneClass(rate: number): string {
-  if (rate >= 50) return "bg-green-soft text-green-deep";
-  if (rate >= 30) return "bg-amber-soft text-amber-deep";
-  return "bg-red-soft text-red-deep";
+  switch (marginTone(rate)) {
+    case "green":
+      return "bg-green-soft text-green-deep";
+    case "amber":
+      return "bg-amber-soft text-amber-deep";
+    case "red":
+      return "bg-red-soft text-red-deep";
+  }
 }

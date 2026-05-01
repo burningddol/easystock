@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { formatWon, weekdayKoFromIso } from "@/lib/utils/format";
+import { MARGIN_LABEL } from "@/lib/domain/margin";
 import type { DashboardYesterday, DashboardWeeklyChartPoint } from "@/lib/supabase/rpc";
 
 interface YesterdayKpiCardProps {
@@ -42,7 +43,7 @@ export function YesterdayKpiCard({
         />
       </div>
 
-      <p className="text-micro text-ink-3">재료 원가 기준 (이동평균법)</p>
+      <p className="text-micro text-ink-3">{MARGIN_LABEL}</p>
 
       <WeeklyMiniChart data={weeklyChart} maxRevenue={maxRevenue} highlightKey={yesterday.soldAt} />
     </article>

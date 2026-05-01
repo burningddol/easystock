@@ -1,8 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { parseLocalDateFromIso } from "@/lib/utils/format";
+import { WEEKDAY_KO, parseLocalDateFromIso } from "@/lib/utils/format";
 import type { EnrichedCalendarCell } from "../lib/consecutive-missing";
+import { INTENSITY_LEVELS, INTENSITY_STEP_PCT } from "../lib/intensity";
 
 interface CalendarGridProps {
   year: number;
@@ -29,12 +30,9 @@ export function CalendarGrid({
   onSelect,
 }: CalendarGridProps): React.ReactElement {
   const maxRevenue = Math.max(0, ...cells.map((c) => c.revenue ?? 0));
-  // 1일이 어떤 요일에 시작하는지 계산 → 그리드 앞쪽 빈 칸 수
-  const firstDay = new Date(year, month - 1, 1);
-  const leadingBlanks = firstDay.getDay();
-  // 항상 6주 = 42칸 표시 (월 길이에 따른 trailing blanks 자동 채움)
-  const totalCells = 42;
-  const trailingBlanks = totalCells - leadingBlanks - cells.length;
+  // 1일 요일로 그리드 앞쪽 빈 칸 + 6주 42칸 고정 (월 길이 28~31에 따라 trailing blanks 자동).
+  const leadingBlanks = new Date(year, month - 1, 1).getDay();
+  const trailingBlanks = 42 - leadingBlanks - cells.length;
 
   return (
     <div className="flex flex-col gap-stack-tight">
@@ -53,7 +51,7 @@ export function CalendarGrid({
             onSelect={onSelect}
           />
         ))}
-        {Array.from({ length: Math.max(0, trailingBlanks) }, (_, i) => (
+        {Array.from({ length: trailingBlanks }, (_, i) => (
           <BlankCell key={`trail-${i}`} />
         ))}
       </div>
@@ -61,12 +59,10 @@ export function CalendarGrid({
   );
 }
 
-const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
-
 function WeekdayHeader(): React.ReactElement {
   return (
     <div className="grid grid-cols-7 gap-1">
-      {WEEKDAY_LABELS.map((label, idx) => (
+      {WEEKDAY_KO.map((label, idx) => (
         <span key={label} className={cn("text-center text-micro", weekdayTone(idx, false))}>
           {label}
         </span>
@@ -94,8 +90,10 @@ function DayCell({
   isToday,
   onSelect,
 }: DayCellProps): React.ReactElement {
-  const day = parseInt(cell.date.slice(8, 10), 10);
-  const weekday = parseLocalDateFromIso(cell.date)?.getDay() ?? 0;
+  // RPC가 ISO를 보장하지만 parseLocalDateFromIso 시그니처가 nullable — 정상 경로 fallback.
+  const date = parseLocalDateFromIso(cell.date) ?? new Date();
+  const day = date.getDate();
+  const weekday = date.getDay();
   const isInactive = cell.isFuture || cell.isBeforeSignup || cell.isRegularDayOff;
   const intensityPct = computeIntensityPercent(cell.revenue ?? 0, maxRevenue, isInactive);
   const isStrongMissing = cell.isMissing && cell.consecutiveMissingDays >= 2;
@@ -136,8 +134,6 @@ interface BottomLabelProps {
 }
 
 function BottomLabel({ cell, isStrongMissing }: BottomLabelProps): React.ReactElement | null {
-  // 누락 강조 라벨이 우선 — sale 없는 누락은 revenue도 없으므로 자연 mutual exclusion이지만
-  // 명시적으로 처리해 디자인 시스템 위계 (red 강조 > 매출 숫자) 보장.
   if (isStrongMissing) {
     return (
       <span className="absolute bottom-1 left-1 text-[9px] font-semibold text-red-deep">누락</span>
@@ -177,10 +173,9 @@ function weekdayTone(weekday: number, isInactive: boolean): string {
 
 function computeIntensityPercent(revenue: number, maxRevenue: number, isInactive: boolean): number {
   if (isInactive || revenue <= 0 || maxRevenue <= 0) return 0;
-  // 5단계 인텐시티 (0% / 3.5% / 7% / 10.5% / 14%)
   const ratio = revenue / maxRevenue;
-  const level = Math.min(4, Math.max(1, Math.ceil(ratio * 4)));
-  return level * 3.5;
+  const level = Math.min(INTENSITY_LEVELS, Math.max(1, Math.ceil(ratio * INTENSITY_LEVELS)));
+  return level * INTENSITY_STEP_PCT;
 }
 
 function cellAriaSummary(cell: EnrichedCalendarCell): string {

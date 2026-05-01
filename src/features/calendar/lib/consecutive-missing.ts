@@ -15,11 +15,7 @@ export interface EnrichedCalendarCell extends CalendarCell {
 export function withConsecutiveMissingDays(cells: readonly CalendarCell[]): EnrichedCalendarCell[] {
   let counter = 0;
   return cells.map((cell) => {
-    if (cell.isMissing) {
-      counter += 1;
-    } else {
-      counter = 0;
-    }
-    return { ...cell, consecutiveMissingDays: cell.isMissing ? counter : 0 };
+    counter = cell.isMissing ? counter + 1 : 0;
+    return { ...cell, consecutiveMissingDays: counter };
   });
 }

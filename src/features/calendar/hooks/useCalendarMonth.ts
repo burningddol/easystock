@@ -9,8 +9,12 @@ export interface CalendarMonthView extends Omit<CalendarMonthData, "cells"> {
   cells: EnrichedCalendarCell[];
 }
 
-export const calendarMonthQueryKey = (year: number, month: number) =>
-  ["calendar", "month", year, month] as const;
+export function calendarMonthQueryKey(
+  year: number,
+  month: number,
+): readonly ["calendar", "month", number, number] {
+  return ["calendar", "month", year, month] as const;
+}
 
 async function fetchCalendarMonth(year: number, month: number): Promise<CalendarMonthView> {
   const supabase = createClient();
@@ -26,10 +30,13 @@ export function useCalendarMonth(
 ): UseQueryResult<CalendarMonthView> {
   return useQuery({
     queryKey: calendarMonthQueryKey(year ?? 0, month ?? 0),
-    queryFn: () => fetchCalendarMonth(year as number, month as number),
-    // 월간 데이터는 변동이 적고 sale/purchase 변경 시 명시적 invalidate가 더 정확.
+    queryFn: () => {
+      // queryKey가 enabled 가드 통과 후에만 실행되므로 정상 경로에서 null 도달 불가.
+      // 단, queryFn 시그니처가 동기 narrow를 못 보므로 명시 throw로 type-narrow.
+      if (year === null || month === null) throw new Error("disabled");
+      return fetchCalendarMonth(year, month);
+    },
     staleTime: 5 * 60 * 1000,
-    // year/month가 mount 전에는 null이라 placeholder 쿼리(0,0)가 발사되지 않도록 차단.
     enabled: year !== null && month !== null,
   });
 }

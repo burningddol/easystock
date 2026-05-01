@@ -4,6 +4,7 @@ import Link from "next/link";
 import { differenceInCalendarDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { formatDateKoFromIso, formatWon, parseLocalDateFromIso } from "@/lib/utils/format";
+import { MARGIN_LABEL } from "@/lib/domain/margin";
 import type { EnrichedCalendarCell } from "../lib/consecutive-missing";
 
 interface CellDetailPanelProps {
@@ -78,7 +79,7 @@ function SaleSummary({ cell }: SaleSummaryProps): React.ReactElement {
         <Metric label="마진율" value={`${marginPercent.toFixed(1)}%`} />
         <Metric label="매입" value={cell.hasPurchase ? "있음" : "—"} />
       </div>
-      <p className="text-micro text-ink-3">재료 원가 기준 (이동평균법)</p>
+      <p className="text-micro text-ink-3">{MARGIN_LABEL}</p>
     </div>
   );
 }

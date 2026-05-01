@@ -97,12 +97,11 @@ function buildAlerts(
   // 1. 발주 (red) — critical + order_needed
   for (const item of depletionItems) {
     if (item.status !== "critical" && item.status !== "order_needed") continue;
-    const tone: AlertTone = item.status === "critical" ? "red" : "amber";
+    const isCritical = item.status === "critical";
     result.push({
       key: `depletion-${item.ingredientId}`,
-      tone,
-      title:
-        item.status === "critical" ? `${item.name} 곧 소진 — 즉시 발주` : `${item.name} 발주 권장`,
+      tone: isCritical ? "red" : "amber",
+      title: isCritical ? `${item.name} 곧 소진 — 즉시 발주` : `${item.name} 발주 권장`,
       body: depletionBody(item),
       href: "/inventory",
     });
