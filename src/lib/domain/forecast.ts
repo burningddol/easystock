@@ -77,6 +77,9 @@ export function computeWeekdayUsageAverage(
 /**
  * 오늘부터 하루씩 시뮬레이션. 정기휴무는 소비 0.
  * 1년 내 소진 안 하면 null (충분히 여유).
+ *
+ * 데이터 없는 요일은 영업일 평균으로 대체. 그렇지 않으면 가입 직후·드문 영업
+ * 요일에 over-forecast (실제보다 오래 버틴다고 잘못 안내) 위험.
  */
 export function predictDepletionDate({
   currentStock,
@@ -90,18 +93,26 @@ export function predictDepletionDate({
   daysOff: readonly Weekday[];
 }): Date | null {
   let stock = new Decimal(currentStock);
+  const fallback = overallWeekdayAverage(weekdayAvg);
 
   for (let offset = 1; offset <= MAX_FORECAST_DAYS; offset++) {
     const day = new Date(today.getTime() + offset * ONE_DAY_MS);
     if (isRegularDayOff(day, daysOff)) continue;
 
-    const usage = weekdayAvg.get(weekdayOf(day)) ?? new Decimal(0);
-    if (usage.isZero()) continue; // 데이터 없는 요일 → 소비 미정, 패스
+    const usage = weekdayAvg.get(weekdayOf(day)) ?? fallback;
+    if (usage.isZero()) continue; // 전체 데이터가 0 → 소비 미정, 패스
 
     stock = stock.minus(usage);
     if (stock.isNegative() || stock.isZero()) return day;
   }
   return null;
+}
+
+function overallWeekdayAverage(weekdayAvg: ReadonlyMap<Weekday, Decimal>): Decimal {
+  if (weekdayAvg.size === 0) return new Decimal(0);
+  let sum = new Decimal(0);
+  for (const v of weekdayAvg.values()) sum = sum.plus(v);
+  return sum.dividedBy(weekdayAvg.size);
 }
 
 /**

@@ -121,6 +121,35 @@ describe("predictDepletionDate", () => {
     });
     expect(result).toBeNull();
   });
+
+  it("데이터 없는 요일은 영업일 평균으로 대체 — over-forecast 방지", () => {
+    // 월·화만 데이터 (둘 다 10g/일). 영업일 평균 = 10g.
+    // fallback 없이는: 월·화만 소진 → 100/(10×2/7일) ≈ 35일 (실제보다 오래 버틴다고 잘못 안내).
+    // fallback 적용: 매일 10g → 10일 뒤 소진.
+    const weekdayAvg = new Map([
+      ["MON", new Decimal(10)],
+      ["TUE", new Decimal(10)],
+    ] as const);
+    const withFallback = predictDepletionDate({
+      currentStock: 100,
+      weekdayAvg,
+      today,
+      daysOff: [],
+    });
+    expect(withFallback).not.toBeNull();
+    const daysUntilDepletion = Math.round((withFallback!.getTime() - today.getTime()) / ONE_DAY);
+    expect(daysUntilDepletion).toBeLessThanOrEqual(11);
+  });
+
+  it("weekdayAvg 비어있으면 소진 예측 불가 (null)", () => {
+    const result = predictDepletionDate({
+      currentStock: 100,
+      weekdayAvg: new Map(),
+      today,
+      daysOff: [],
+    });
+    expect(result).toBeNull();
+  });
 });
 
 describe("classifyStatus (FR-013)", () => {
