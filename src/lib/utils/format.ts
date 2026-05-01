@@ -16,6 +16,18 @@ export function formatNumber(value: number): string {
 export const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 /**
+ * 로컬 타임존 기준 "YYYY-MM-DD". KST 자정~UTC 09:00 사이에는 `toISOString()`이
+ * 어제 날짜를 반환하므로 캘린더 today highlight·sale soldAt 비교가 어긋남 —
+ * `parseLocalDateFromIso`와 짝을 이루는 로컬 기반 포맷터로 통일.
+ */
+export function localIsoDate(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
  * "YYYY-MM-DD" 문자열을 로컬 시간 0시 Date로 변환. 호스트 tz 무관하게 캘린더 일자
  * 단위 비교에 사용 — Date 생성자에 ISO 문자열 + Z 패스를 그대로 넘기면 호스트 tz에
  * 따라 ±1일 오차가 생길 수 있음.

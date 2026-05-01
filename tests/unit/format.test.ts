@@ -5,6 +5,7 @@ import {
   formatNumber,
   formatTodayKo,
   formatWon,
+  localIsoDate,
   parseLocalDateFromIso,
   weekdayKoFromIso,
 } from "@/lib/utils/format";
@@ -21,6 +22,18 @@ describe("formatNumber", () => {
   it("천 단위 콤마, 소수점 보존", () => {
     expect(formatNumber(1234)).toBe("1,234");
     expect(formatNumber(12.5)).toBe("12.5");
+  });
+});
+
+describe("localIsoDate", () => {
+  it("로컬 tz 기준 YYYY-MM-DD (toISOString UTC와 다를 수 있음)", () => {
+    const date = new Date(2026, 4, 1, 23, 30); // 로컬 2026-05-01 23:30
+    expect(localIsoDate(date)).toBe("2026-05-01");
+  });
+
+  it("월/일 zero-pad", () => {
+    const date = new Date(2026, 0, 5);
+    expect(localIsoDate(date)).toBe("2026-01-05");
   });
 });
 
