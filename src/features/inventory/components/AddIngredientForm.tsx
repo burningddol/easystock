@@ -2,14 +2,10 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Field } from "@/components/ui/field";
 import { PrimaryButton } from "@/components/ui/primary-button";
-import {
-  INGREDIENT_UNIT_LABELS,
-  ingredientInputSchema,
-  type IngredientInput,
-} from "@/features/purchase/schemas";
+import { ingredientInputSchema, type IngredientInput } from "@/features/purchase/schemas";
 import { useCreateIngredient } from "@/features/purchase/hooks/useIngredients";
+import { IngredientFormFields } from "./IngredientFormFields";
 
 interface AddIngredientFormProps {
   onClose: () => void;
@@ -60,33 +56,13 @@ export function AddIngredientForm({ onClose }: AddIngredientFormProps): React.Re
         </button>
       </header>
 
-      <Field label="재료 이름" error={errors.name?.message}>
-        <input
-          {...register("name")}
-          type="text"
-          placeholder="예: 우유, 시럽, 컵"
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
-        />
-      </Field>
-
-      <Field label="단위 (등록 후 변경 불가)" error={errors.unit?.message}>
-        <select
-          {...register("unit")}
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
-        >
-          {Object.entries(INGREDIENT_UNIT_LABELS).map(([unit, label]) => (
-            <option key={unit} value={unit}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </Field>
-
-      {createMutation.error && (
-        <p role="alert" className="text-body-regular text-red">
-          {createMutation.error.message}
-        </p>
-      )}
+      <IngredientFormFields
+        register={register}
+        errors={errors}
+        unitLabel="단위 (등록 후 변경 불가)"
+        namePlaceholder="예: 우유, 시럽, 컵"
+        errorMessage={createMutation.error?.message}
+      />
 
       <PrimaryButton type="submit" disabled={submitting}>
         {submitting ? "등록 중…" : "등록"}

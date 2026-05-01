@@ -4,15 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
-import { saveMenu } from "@/lib/supabase/rpc";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { Field } from "@/components/ui/field";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { menuSchema, type MenuInput } from "../schemas";
-import { menuListQueryKey } from "../hooks/useMenus";
-import { useEditMenu } from "../hooks/useMenuMutations";
+import { useCreateMenu, useEditMenu } from "../hooks/useMenuMutations";
 
 interface IngredientOption {
   id: string;
@@ -31,8 +27,8 @@ interface MenuFormProps {
 
 export function MenuForm({ ingredients, mode }: MenuFormProps): React.ReactElement {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const createMutation = useCreateMenu();
   const editMutation = useEditMenu();
 
   const {
@@ -61,22 +57,17 @@ export function MenuForm({ ingredients, mode }: MenuFormProps): React.ReactEleme
       return;
     }
 
-    const supabase = createClient();
-    const { error } = await saveMenu(supabase, {
-      name: values.name,
-      price: values.price,
-      recipe: values.recipe,
-    });
-    if (error) {
-      setSubmitError(error.message);
+    try {
+      await createMutation.mutateAsync(values);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "저장 실패");
       return;
     }
     if (mode.isFirstMenu) trackEvent("first_menu_registered", {});
-    void queryClient.invalidateQueries({ queryKey: menuListQueryKey });
     router.push("/menu");
   }
 
-  const submitting = isSubmitting || editMutation.isPending;
+  const submitting = isSubmitting || editMutation.isPending || createMutation.isPending;
   const submitLabel = mode.kind === "edit" ? "수정 저장" : "저장";
 
   return (
