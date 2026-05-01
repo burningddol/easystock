@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 export function ServiceWorkerRegister(): null {
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    // useEffect는 클라이언트에서만 실행되므로 typeof window 가드 불필요.
     if (!("serviceWorker" in navigator)) return;
     if (process.env.NODE_ENV !== "production") return;
 

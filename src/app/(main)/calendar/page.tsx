@@ -36,19 +36,12 @@ export default function CalendarPage(): React.ReactElement {
 
   const query = useCalendarMonth(year, month);
 
-  // monthKey + operating_days만 dep으로 두면 같은 월의 refetch (참조만 다른 동일 데이터)에는
-  // 중복 발화하지 않음. 값이 실제로 변하는 경우에만 트래킹.
-  const monthKey = year !== null && month !== null ? `${year}-${month}` : null;
+  // primitive deps로 month 변경 + operating_days 변경에만 발화. 동일 데이터 refetch엔 skip.
   const operatingDays = query.data?.cumulative.operatingDays ?? null;
   useEffect(() => {
-    if (operatingDays === null || !monthKey) return;
-    const [y, m] = monthKey.split("-").map(Number);
-    trackEvent("calendar_viewed", {
-      year: y as number,
-      month: m as number,
-      operating_days: operatingDays,
-    });
-  }, [monthKey, operatingDays]);
+    if (year === null || month === null || operatingDays === null) return;
+    trackEvent("calendar_viewed", { year, month, operating_days: operatingDays });
+  }, [year, month, operatingDays]);
 
   function handleSelect(cell: EnrichedCalendarCell): void {
     setSelectedDate(cell.date);
@@ -93,8 +86,9 @@ export default function CalendarPage(): React.ReactElement {
     );
   }
 
-  const selectedCell =
-    selectedDate !== null ? (query.data.cells.find((c) => c.date === selectedDate) ?? null) : null;
+  const selectedCell = selectedDate
+    ? (query.data.cells.find((c) => c.date === selectedDate) ?? null)
+    : null;
 
   return (
     <section className="flex flex-col gap-section">
@@ -118,8 +112,6 @@ export default function CalendarPage(): React.ReactElement {
         onSelect={handleSelect}
       />
       <CalendarLegend />
-      {/* todayIso는 mount 후 채워짐 — null이면 CellDetailPanel의 daysFromToday 계산이
-          1970 fallback에 의존하게 되므로 명시적으로 null guard. */}
       {selectedCell && todayIso && <CellDetailPanel cell={selectedCell} todayIso={todayIso} />}
     </section>
   );

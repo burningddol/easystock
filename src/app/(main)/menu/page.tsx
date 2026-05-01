@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMenus } from "@/features/menu/hooks/useMenus";
 import { MenuList } from "@/features/menu/components/MenuList";
 import { TemplateLoadDialog } from "@/features/menu/components/TemplateLoadDialog";
+import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
 
 export default function MenuPage(): React.ReactElement {
   const { data, isLoading, error } = useMenus();
@@ -20,13 +21,8 @@ export default function MenuPage(): React.ReactElement {
         </Link>
       </header>
 
-      {isLoading && <p className="text-body-regular text-ink-3">불러오는 중…</p>}
-
-      {error && (
-        <p role="alert" className="text-body-regular text-red">
-          메뉴를 불러오지 못했어요: {error.message}
-        </p>
-      )}
+      {isLoading && <LoadingText />}
+      {error && <ErrorAlert prefix="메뉴를 불러오지 못했어요:" message={error.message} />}
 
       {data && data.length === 0 && <TemplateLoadDialog />}
 

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useMenus } from "@/features/menu/hooks/useMenus";
 import { MenuDetailCard } from "@/features/menu/components/MenuDetailCard";
 import { MenuActions } from "@/features/menu/components/MenuActions";
+import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
 
 export default function MenuDetailPage(): React.ReactElement {
   const { id } = useParams<{ id: string }>();
@@ -20,15 +21,9 @@ export default function MenuDetailPage(): React.ReactElement {
         </Link>
       </header>
 
-      {isLoading && <p className="text-body-regular text-ink-3">불러오는 중…</p>}
-
-      {error && (
-        <p role="alert" className="text-body-regular text-red">
-          {error.message}
-        </p>
-      )}
-
-      {data && !menu && <p className="text-body-regular text-ink-3">메뉴를 찾을 수 없습니다.</p>}
+      {isLoading && <LoadingText />}
+      {error && <ErrorAlert message={error.message} />}
+      {data && !menu && <LoadingText>메뉴를 찾을 수 없습니다.</LoadingText>}
 
       {menu && (
         <>
