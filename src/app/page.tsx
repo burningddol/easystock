@@ -1,11 +1,7 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 
-// 루트 라우트 — 로그인 상태면 /today, 아니면 /login. RSC redirect로 placeholder 노출 차단.
-export default async function RootPage(): Promise<never> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  redirect(user ? "/today" : "/login");
+// `/` 진입은 middleware가 user 상태에 따라 /today 또는 /login으로 redirect 함.
+// 이 RSC는 미들웨어 우회 시(매처 변경 등)에 대비한 안전망 — 기본적으로 /login.
+export default function RootPage(): never {
+  redirect("/login");
 }
