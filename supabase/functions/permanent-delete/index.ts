@@ -1,18 +1,10 @@
 /**
  * Edge Function — 만료된 탈퇴 사용자 영구 삭제 (FR-036).
- *
- * 트리거: pg_cron daily (별도 마이그레이션에서 등록)
- * 권한: service role
- *
- * 동작:
- *   permanent_delete_at <= now() AND withdrawal_requested_at IS NOT NULL
- *   인 사용자에 대해 auth.users 삭제 → public.users CASCADE 삭제 →
- *   ingredients/sales/etc. CASCADE 삭제.
- *
- * 멱등성: 이미 삭제된 사용자는 영향 없음 (조건이 0 row 반환).
+ * 트리거: pg_cron daily. permanent_delete_at <= now() + withdrawal_requested_at NOT NULL인
+ * auth.users를 삭제 → DB cascade (스키마 정의 참조). 멱등 — 0 row 시 no-op.
  */
 
-// @ts-expect-error: Deno runtime, deno.serve is global in Supabase Edge Functions.
+// @ts-expect-error: Deno runtime
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 interface DeletionResult {
@@ -21,12 +13,12 @@ interface DeletionResult {
   errors: Array<{ userId: string; message: string }>;
 }
 
-// @ts-expect-error: Deno global available at runtime in Supabase Edge.
+// @ts-expect-error: Deno global
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-// @ts-expect-error: Deno global available at runtime in Supabase Edge.
+// @ts-expect-error: Deno global
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-// @ts-expect-error: Deno.serve is global in Supabase Edge Functions.
+// @ts-expect-error: Deno.serve global
 Deno.serve(async (): Promise<Response> => {
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
     return Response.json({ success: false, error: "missing env" }, { status: 500 });
@@ -61,5 +53,10 @@ Deno.serve(async (): Promise<Response> => {
     result.deletedCount += 1;
   }
 
+  // 부분 실패가 cron 모니터(pg_net._http_response)에서 보이도록 207 multi-status.
+  if (result.errors.length > 0) {
+    result.success = false;
+    return Response.json(result, { status: 207 });
+  }
   return Response.json(result);
 });

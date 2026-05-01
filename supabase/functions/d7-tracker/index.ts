@@ -2,21 +2,11 @@
  * Edge Function — D7 retention tracker (Phase 8 / T166).
  * 트리거: pg_cron이 pg_net으로 HTTP POST (027_d7_tracker_cron.sql, 매일 KST 11:00).
  *
- * 로직:
- *  1) "가입 7일째" 코호트 — KST 기준 today - 7일에 가입한 사용자 (탈퇴 신청자 제외).
- *     UTC 단순 비교는 KST 저녁 가입자가 다음 UTC 날짜로 넘어가 누락되므로
- *     +09:00 offset 윈도우 사용.
- *  2) 그 중 sales.created_at >= now() - 24h 인 사용자 = "활성"
- *     (sale 입력은 핵심 가치 행위이므로 단순 로그인보다 신뢰성 높은 retention 신호).
- *     candidate 전원에 대해 단일 .in() 쿼리로 한 번에 조회 — N+1 회피.
- *  3) GA4 Measurement Protocol로 d7_active 이벤트 발화.
+ * 로직: "가입 7일째 + 24h 내 sale 입력" 코호트 → GA4 Measurement Protocol로 d7_active 발화.
+ * KST cohort window — UTC 단순 비교는 KST 저녁 가입자가 다음 UTC 날짜로 넘어가 누락.
+ * push-scheduler와 동일 GA4 secrets (GA4_MEASUREMENT_ID + GA4_API_SECRET) 공유 — 미설정 시 no-op.
  *
- * Secrets:
- *   GA4_MEASUREMENT_ID + GA4_API_SECRET (둘 다 등록되어야 발화)
- *   미설정 시 silent no-op (return success: true, sent_count: 0).
- *
- * 헌법 IV: service_role 사용 (RLS 우회). user.id는 GA4 client_id로 그대로 사용 —
- * UUIDv4는 외부 시스템에서 PII로 연결 불가능한 무작위 식별자.
+ * client_id로 user.id (UUIDv4) 그대로 사용 — 외부 시스템에서 PII로 연결 불가능한 무작위 식별자.
  */
 
 // @ts-expect-error: Deno runtime
@@ -51,7 +41,8 @@ async function reportD7Active(userId: string, signupDate: string): Promise<Ga4Re
       },
     );
     return { ok: res.ok };
-  } catch {
+  } catch (err) {
+    console.warn("ga4 dispatch failed", err);
     return { ok: false };
   }
 }
