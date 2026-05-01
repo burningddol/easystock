@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useDepletionForecast } from "@/features/inventory/hooks/useDepletionForecast";
 import { IngredientStatusList } from "@/features/inventory/components/IngredientStatusList";
@@ -8,12 +9,13 @@ import { AddIngredientForm } from "@/features/inventory/components/AddIngredient
 
 export default function InventoryPage(): React.ReactElement {
   const { data, isLoading, error } = useDepletionForecast();
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   const isAllColdStart = (data ?? []).length > 0 && (data ?? []).every((d) => d.isColdStart);
 
   return (
     <section className="flex flex-col gap-section">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-stack-tight">
         <h1 className="text-title-lg text-ink-1">재료</h1>
         <div className="flex gap-stack-tight">
           <Link
@@ -24,12 +26,22 @@ export default function InventoryPage(): React.ReactElement {
           </Link>
           <Link
             href="/purchase"
-            className="rounded-md bg-ink-1 px-stack py-stack-tight text-body-regular text-bg hover:opacity-90"
+            className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-2 hover:bg-card-hover"
           >
             + 매입
           </Link>
+          <button
+            type="button"
+            onClick={() => setIsAddOpen((v) => !v)}
+            aria-expanded={isAddOpen}
+            className="rounded-md bg-ink-1 px-stack py-stack-tight text-body-regular text-bg hover:opacity-90"
+          >
+            + 재료
+          </button>
         </div>
       </header>
+
+      {isAddOpen && <AddIngredientForm onClose={() => setIsAddOpen(false)} />}
 
       {isLoading && <p className="text-body-regular text-ink-3">불러오는 중…</p>}
 
@@ -42,8 +54,6 @@ export default function InventoryPage(): React.ReactElement {
       {isAllColdStart && <ColdStartNotice />}
 
       {data && <IngredientStatusList items={data} />}
-
-      <AddIngredientForm />
     </section>
   );
 }
