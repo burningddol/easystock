@@ -56,7 +56,7 @@ export default function MenuNewPage(): React.ReactElement {
       )}
 
       {!isLoading && !ingredientsError && (
-        <MenuForm ingredients={ingredients} isFirstMenu={isFirstMenu} />
+        <MenuForm ingredients={ingredients} mode={{ kind: "create", isFirstMenu }} />
       )}
     </section>
   );

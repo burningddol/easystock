@@ -12,6 +12,7 @@ import { Field } from "@/components/ui/field";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { menuSchema, type MenuInput } from "../schemas";
 import { menuListQueryKey } from "../hooks/useMenus";
+import { useEditMenu } from "../hooks/useMenuMutations";
 
 interface IngredientOption {
   id: string;
@@ -19,15 +20,20 @@ interface IngredientOption {
   unit: string;
 }
 
+type MenuFormMode =
+  | { kind: "create"; isFirstMenu: boolean }
+  | { kind: "edit"; menuId: string; initialValues: MenuInput };
+
 interface MenuFormProps {
   ingredients: readonly IngredientOption[];
-  isFirstMenu: boolean;
+  mode: MenuFormMode;
 }
 
-export function MenuForm({ ingredients, isFirstMenu }: MenuFormProps): React.ReactElement {
+export function MenuForm({ ingredients, mode }: MenuFormProps): React.ReactElement {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const editMutation = useEditMenu();
 
   const {
     register,
@@ -36,7 +42,7 @@ export function MenuForm({ ingredients, isFirstMenu }: MenuFormProps): React.Rea
     formState: { errors, isSubmitting },
   } = useForm<MenuInput>({
     resolver: zodResolver(menuSchema),
-    defaultValues: { name: "", price: 0, recipe: [] },
+    defaultValues: mode.kind === "edit" ? mode.initialValues : { name: "", price: 0, recipe: [] },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "recipe" });
@@ -44,25 +50,34 @@ export function MenuForm({ ingredients, isFirstMenu }: MenuFormProps): React.Rea
   async function onSubmit(values: MenuInput): Promise<void> {
     setSubmitError(null);
 
+    if (mode.kind === "edit") {
+      try {
+        await editMutation.mutateAsync({ menuId: mode.menuId, values });
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : "수정 실패");
+        return;
+      }
+      router.push(`/menu/${mode.menuId}`);
+      return;
+    }
+
     const supabase = createClient();
     const { error } = await saveMenu(supabase, {
       name: values.name,
       price: values.price,
       recipe: values.recipe,
     });
-
     if (error) {
       setSubmitError(error.message);
       return;
     }
-
-    if (isFirstMenu) {
-      trackEvent("first_menu_registered", {});
-    }
-
+    if (mode.isFirstMenu) trackEvent("first_menu_registered", {});
     void queryClient.invalidateQueries({ queryKey: menuListQueryKey });
     router.push("/menu");
   }
+
+  const submitting = isSubmitting || editMutation.isPending;
+  const submitLabel = mode.kind === "edit" ? "수정 저장" : "저장";
 
   return (
     <form
@@ -126,8 +141,8 @@ export function MenuForm({ ingredients, isFirstMenu }: MenuFormProps): React.Rea
         </p>
       )}
 
-      <PrimaryButton type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "저장 중…" : "저장"}
+      <PrimaryButton type="submit" disabled={submitting}>
+        {submitting ? "저장 중…" : submitLabel}
       </PrimaryButton>
     </form>
   );

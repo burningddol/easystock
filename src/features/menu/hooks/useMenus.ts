@@ -63,6 +63,7 @@ async function fetchMenus(): Promise<MenuRowWithRecipe[]> {
       )
     `,
     )
+    .eq("is_active", true)
     .order("name");
 
   if (error) {

@@ -78,6 +78,37 @@ interface SaveMenuRow {
   menu_id: string;
 }
 
+interface EditMenuArgs extends SaveMenuArgs {
+  menuId: string;
+}
+
+interface DeleteMenuRow {
+  menu_id: string;
+  was_active: boolean;
+}
+
+export function editMenu(
+  client: ClientLike,
+  args: EditMenuArgs,
+): Promise<RpcResult<SaveMenuRow[]>> {
+  return callRpc(client, "edit_menu", {
+    p_menu_id: args.menuId,
+    p_name: args.name,
+    p_price: args.price,
+    p_recipe: args.recipe.map((it) => ({
+      ingredient_id: it.ingredientId,
+      quantity_per_serving: it.quantityPerServing,
+    })),
+  });
+}
+
+export function deleteMenu(
+  client: ClientLike,
+  menuId: string,
+): Promise<RpcResult<DeleteMenuRow[]>> {
+  return callRpc(client, "delete_menu", { p_menu_id: menuId });
+}
+
 export function saveMenu(
   client: ClientLike,
   args: SaveMenuArgs,

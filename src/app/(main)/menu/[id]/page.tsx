@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMenus } from "@/features/menu/hooks/useMenus";
 import { MenuDetailCard } from "@/features/menu/components/MenuDetailCard";
+import { MenuActions } from "@/features/menu/components/MenuActions";
 
 export default function MenuDetailPage(): React.ReactElement {
   const { id } = useParams<{ id: string }>();
@@ -29,7 +30,12 @@ export default function MenuDetailPage(): React.ReactElement {
 
       {data && !menu && <p className="text-body-regular text-ink-3">메뉴를 찾을 수 없습니다.</p>}
 
-      {menu && <MenuDetailCard menu={menu} />}
+      {menu && (
+        <>
+          <MenuDetailCard menu={menu} />
+          <MenuActions menuId={menu.id} menuName={menu.name} />
+        </>
+      )}
     </section>
   );
 }
