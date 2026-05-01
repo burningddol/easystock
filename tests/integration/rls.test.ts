@@ -8,6 +8,7 @@ import {
   type TestUser,
 } from "../helpers/test-supabase";
 import { describeIfSupabase } from "../helpers/integration-describe";
+import { mustInsert } from "../helpers/fixtures";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 
@@ -41,105 +42,97 @@ describeIfSupabase("RLS user_id isolation", () => {
 
     const admin = getServiceRoleClient();
 
-    const ing = await admin
-      .from("ingredients")
-      .insert({ user_id: userB.id, name: "B 우유", unit: "ml" })
-      .select("id, user_id")
-      .single();
-    if (ing.error || !ing.data) {
-      throw new Error(`ingredient fixture failed: ${ing.error?.message ?? "no row"}`);
-    }
-    ingredientByB = ing.data;
+    ingredientByB = await mustInsert(
+      admin
+        .from("ingredients")
+        .insert({ user_id: userB.id, name: "B 우유", unit: "ml" })
+        .select("id, user_id")
+        .single(),
+      "ingredient",
+    );
 
-    const menu = await admin
-      .from("menus")
-      .insert({ user_id: userB.id, name: "B 라떼", price: 5000 })
-      .select("id")
-      .single();
-    if (menu.error || !menu.data) {
-      throw new Error(`menu fixture failed: ${menu.error?.message ?? "no row"}`);
-    }
-    menuByB = menu.data;
+    menuByB = await mustInsert(
+      admin
+        .from("menus")
+        .insert({ user_id: userB.id, name: "B 라떼", price: 5000 })
+        .select("id")
+        .single(),
+      "menu",
+    );
 
-    const recipe = await admin
-      .from("recipe_items")
-      .insert({
-        menu_id: menuByB.id,
-        user_id: userB.id,
-        ingredient_id: ingredientByB.id,
-        quantity_per_serving: 100,
-      })
-      .select("id")
-      .single();
-    if (recipe.error || !recipe.data) {
-      throw new Error(`recipe fixture failed: ${recipe.error?.message ?? "no row"}`);
-    }
-    recipeItemByB = recipe.data;
+    recipeItemByB = await mustInsert(
+      admin
+        .from("recipe_items")
+        .insert({
+          menu_id: menuByB.id,
+          user_id: userB.id,
+          ingredient_id: ingredientByB.id,
+          quantity_per_serving: 100,
+        })
+        .select("id")
+        .single(),
+      "recipe",
+    );
 
-    const sale = await admin
-      .from("sales")
-      .insert({
-        user_id: userB.id,
-        sold_at: isoDate(),
-        total_revenue: 5000,
-        total_cost_snapshot: 1000,
-      })
-      .select("id")
-      .single();
-    if (sale.error || !sale.data) {
-      throw new Error(`sale fixture failed: ${sale.error?.message ?? "no row"}`);
-    }
-    saleByB = sale.data;
+    saleByB = await mustInsert(
+      admin
+        .from("sales")
+        .insert({
+          user_id: userB.id,
+          sold_at: isoDate(),
+          total_revenue: 5000,
+          total_cost_snapshot: 1000,
+        })
+        .select("id")
+        .single(),
+      "sale",
+    );
 
-    const vendor = await admin
-      .from("vendors")
-      .insert({ user_id: userB.id, name: "B 도매상", lead_time_days: 1 })
-      .select("id")
-      .single();
-    if (vendor.error || !vendor.data) {
-      throw new Error(`vendor fixture failed: ${vendor.error?.message ?? "no row"}`);
-    }
-    vendorByB = vendor.data;
+    vendorByB = await mustInsert(
+      admin
+        .from("vendors")
+        .insert({ user_id: userB.id, name: "B 도매상", lead_time_days: 1 })
+        .select("id")
+        .single(),
+      "vendor",
+    );
 
-    const order = await admin
-      .from("purchase_orders")
-      .insert({
-        user_id: userB.id,
-        vendor_id: vendorByB.id,
-        purchased_at: isoDate(),
-        total_amount: 50000,
-      })
-      .select("id")
-      .single();
-    if (order.error || !order.data) {
-      throw new Error(`purchase order fixture failed: ${order.error?.message ?? "no row"}`);
-    }
-    purchaseOrderByB = order.data;
+    purchaseOrderByB = await mustInsert(
+      admin
+        .from("purchase_orders")
+        .insert({
+          user_id: userB.id,
+          vendor_id: vendorByB.id,
+          purchased_at: isoDate(),
+          total_amount: 50000,
+        })
+        .select("id")
+        .single(),
+      "purchase_order",
+    );
 
-    const stockCount = await admin
-      .from("daily_stock_counts")
-      .insert({ user_id: userB.id, counted_at: isoDate() })
-      .select("id")
-      .single();
-    if (stockCount.error || !stockCount.data) {
-      throw new Error(`stock_count fixture failed: ${stockCount.error?.message ?? "no row"}`);
-    }
-    stockCountByB = stockCount.data;
+    stockCountByB = await mustInsert(
+      admin
+        .from("daily_stock_counts")
+        .insert({ user_id: userB.id, counted_at: isoDate() })
+        .select("id")
+        .single(),
+      "stock_count",
+    );
 
-    const pushSub = await admin
-      .from("push_subscriptions")
-      .insert({
-        user_id: userB.id,
-        endpoint: `https://push.example.test/${userB.id}`,
-        keys_p256dh: "fake-p256dh",
-        keys_auth: "fake-auth",
-      })
-      .select("id")
-      .single();
-    if (pushSub.error || !pushSub.data) {
-      throw new Error(`push_sub fixture failed: ${pushSub.error?.message ?? "no row"}`);
-    }
-    pushSubByB = pushSub.data;
+    pushSubByB = await mustInsert(
+      admin
+        .from("push_subscriptions")
+        .insert({
+          user_id: userB.id,
+          endpoint: `https://push.example.test/${userB.id}`,
+          keys_p256dh: "fake-p256dh",
+          keys_auth: "fake-auth",
+        })
+        .select("id")
+        .single(),
+      "push_sub",
+    );
   }, 30_000);
 
   afterAll(async () => {

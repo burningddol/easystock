@@ -2,13 +2,13 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   cleanupTestUser,
   createTestUser,
-  getServiceRoleClient,
   isoDate,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
 import { describeIfSupabase } from "../helpers/integration-describe";
-import { cloneMenuTemplate, deleteSale, editSale, saveSale } from "@/lib/supabase/rpc";
+import { seedCafeWithBean } from "../helpers/fixtures";
+import { deleteSale, editSale, saveSale } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 
@@ -30,24 +30,10 @@ describeIfSupabase("edit_sale + delete_sale RPC", () => {
   beforeAll(async () => {
     user = await createTestUser({ storeType: "cafe" });
     client = await signInAs(user);
-
-    await cloneMenuTemplate(client, { storeType: "cafe" });
-
-    const menu = await client.from("menus").select("id").eq("name", "아메리카노").single();
-    menuId = menu.data!.id;
-
-    const admin = getServiceRoleClient();
-    const ing = await admin
-      .from("ingredients")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("name", "원두")
-      .single();
-    ingredientId = ing.data!.id;
-    await admin
-      .from("ingredients")
-      .update({ current_stock: 1000, current_avg_price: 50 })
-      .eq("id", ingredientId);
+    ({ menuId, ingredientId } = await seedCafeWithBean(client, user, {
+      stock: 1000,
+      avgPrice: 50,
+    }));
 
     const { data } = await saveSale(client, {
       soldAt: today,

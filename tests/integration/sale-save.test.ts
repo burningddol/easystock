@@ -2,13 +2,13 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   cleanupTestUser,
   createTestUser,
-  getServiceRoleClient,
   isoDate,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
 import { describeIfSupabase } from "../helpers/integration-describe";
-import { cloneMenuTemplate, saveSale } from "@/lib/supabase/rpc";
+import { seedCafeWithBean } from "../helpers/fixtures";
+import { saveSale } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 
@@ -30,30 +30,10 @@ describeIfSupabase("save_sale RPC", () => {
   beforeAll(async () => {
     user = await createTestUser({ storeType: "cafe" });
     client = await signInAs(user);
-
-    // cafe 템플릿 → menus + ingredients 생성
-    const cloneResult = await cloneMenuTemplate(client, { storeType: "cafe" });
-    expect(cloneResult.error).toBeNull();
-
-    // 아메리카노 + 그 재료 1개 가져오기 (가장 단순)
-    const menu = await client.from("menus").select("id").eq("name", "아메리카노").single();
-    expect(menu.error).toBeNull();
-    menuId = menu.data!.id;
-
-    // 재료에 단가 + 재고 부여 (admin client로 RLS 우회)
-    const admin = getServiceRoleClient();
-    const ing = await admin
-      .from("ingredients")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("name", "원두")
-      .single();
-    ingredientId = ing.data!.id;
-
-    await admin
-      .from("ingredients")
-      .update({ current_stock: 1000, current_avg_price: 50 })
-      .eq("id", ingredientId);
+    ({ menuId, ingredientId } = await seedCafeWithBean(client, user, {
+      stock: 1000,
+      avgPrice: 50,
+    }));
   }, 60_000);
 
   afterAll(async () => {

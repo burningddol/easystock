@@ -8,7 +8,8 @@ import {
   type TestUser,
 } from "../helpers/test-supabase";
 import { describeIfSupabase } from "../helpers/integration-describe";
-import { cloneMenuTemplate, getTodayDashboard } from "@/lib/supabase/rpc";
+import { seedCafeWithBean } from "../helpers/fixtures";
+import { getTodayDashboard } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 
@@ -29,25 +30,7 @@ describeIfSupabase("get_today_dashboard RPC", () => {
   beforeAll(async () => {
     user = await createTestUser({ storeType: "cafe", storeName: "지영카페" });
     client = await signInAs(user);
-
-    const cloneResult = await cloneMenuTemplate(client, { storeType: "cafe" });
-    expect(cloneResult.error).toBeNull();
-
-    const menu = await client.from("menus").select("id").eq("name", "아메리카노").single();
-    menuId = menu.data!.id;
-
-    const admin = getServiceRoleClient();
-    const ing = await admin
-      .from("ingredients")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("name", "원두")
-      .single();
-
-    await admin
-      .from("ingredients")
-      .update({ current_stock: 10000, current_avg_price: 50 })
-      .eq("id", ing.data!.id);
+    ({ menuId } = await seedCafeWithBean(client, user, { stock: 10000, avgPrice: 50 }));
   }, 60_000);
 
   afterAll(async () => {
