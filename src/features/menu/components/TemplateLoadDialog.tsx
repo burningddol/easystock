@@ -8,10 +8,11 @@ import { cn } from "@/lib/utils";
 
 type StoreType = (typeof STORE_TYPES)[number];
 
-const TEMPLATE_PREVIEWS: Record<StoreType, { count: number; samples: string[] }> = {
+// dessert_cafe는 아직 템플릿이 없음 — Partial로 두어 dead `count: 0` 항목을 두지 않음.
+// 호출 측은 lookup undefined를 "템플릿 없음"으로 해석.
+const TEMPLATE_PREVIEWS: Partial<Record<StoreType, { count: number; samples: string[] }>> = {
   bingsu_cafe: { count: 8, samples: ["팥빙수", "망고빙수", "딸기빙수"] },
   cafe: { count: 10, samples: ["아메리카노", "카페라떼", "카페모카"] },
-  dessert_cafe: { count: 0, samples: [] },
 };
 
 interface TemplateLoadDialogProps {
@@ -25,7 +26,7 @@ export function TemplateLoadDialog({
   const mutation = useCloneTemplate();
 
   const preview = TEMPLATE_PREVIEWS[selected];
-  const isDisabled = preview.count === 0 || mutation.isPending;
+  const isDisabled = !preview || mutation.isPending;
 
   return (
     <section className="flex flex-col gap-stack rounded-lg border border-border bg-card p-tile">
@@ -55,7 +56,7 @@ export function TemplateLoadDialog({
         ))}
       </div>
 
-      {preview.count > 0 ? (
+      {preview ? (
         <p className="text-caption text-ink-3">
           메뉴 {preview.count}개 ({preview.samples.join(" · ")} 등)
         </p>
