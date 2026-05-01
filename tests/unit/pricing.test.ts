@@ -142,5 +142,38 @@ describe("computeNewWeightedAverage", () => {
         }),
       ).toThrow();
     });
+
+    it("음수 currentStock 거부 (newQuantity=0 short-circuit으로 우회되지 않음)", () => {
+      expect(() =>
+        computeNewWeightedAverage({
+          currentStock: -1,
+          currentAvg: 50,
+          newQuantity: 0,
+          newUnitPrice: 0,
+        }),
+      ).toThrow();
+    });
+
+    it("음수 currentAvg 거부", () => {
+      expect(() =>
+        computeNewWeightedAverage({
+          currentStock: 1000,
+          currentAvg: -50,
+          newQuantity: 100,
+          newUnitPrice: 70,
+        }),
+      ).toThrow();
+    });
+
+    it("NaN은 거부 (Number(undefined) 등 silent 오염 방지)", () => {
+      expect(() =>
+        computeNewWeightedAverage({
+          currentStock: 1000,
+          currentAvg: 50,
+          newQuantity: Number.NaN,
+          newUnitPrice: 70,
+        }),
+      ).toThrow(/NaN/);
+    });
   });
 });

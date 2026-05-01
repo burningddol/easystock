@@ -6,6 +6,11 @@
  */
 
 export function assertNonNegative(value: number, label: string): void {
+  // `NaN < 0` is false → without an explicit guard, NaN slips through and
+  // contaminates Decimal arithmetic downstream.
+  if (Number.isNaN(value)) {
+    throw new Error(`${label} must be a number (got NaN)`);
+  }
   if (value < 0) {
     throw new Error(`${label} must be non-negative (got ${value})`);
   }

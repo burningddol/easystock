@@ -104,4 +104,14 @@ describe("calculateMargin", () => {
   it("음수 가격은 거부", () => {
     expect(() => calculateMargin({ price: -100, cost: new Decimal(50) })).toThrow();
   });
+
+  it("음수 원가는 거부 (price=0이어도 short-circuit으로 우회되지 않음)", () => {
+    expect(() => calculateMargin({ price: 0, cost: new Decimal(-1) })).toThrow();
+    expect(() => calculateMargin({ price: 5000, cost: new Decimal(-1) })).toThrow();
+  });
+
+  it("NaN 입력은 거부", () => {
+    expect(() => calculateMargin({ price: Number.NaN, cost: new Decimal(0) })).toThrow(/NaN/);
+    expect(() => calculateMargin({ price: 5000, cost: Number.NaN })).toThrow(/NaN/);
+  });
 });
