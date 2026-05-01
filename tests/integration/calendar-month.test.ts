@@ -8,7 +8,8 @@ import {
   type TestUser,
 } from "../helpers/test-supabase";
 import { describeIfSupabase } from "../helpers/integration-describe";
-import { cloneMenuTemplate, getCalendarMonth } from "@/lib/supabase/rpc";
+import { seedCafeWithBean } from "../helpers/fixtures";
+import { getCalendarMonth } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 
@@ -29,25 +30,9 @@ describeIfSupabase("get_calendar_month RPC", () => {
   beforeAll(async () => {
     user = await createTestUser({ storeType: "cafe", storeName: "달력카페" });
     client = await signInAs(user);
-
-    const cloneResult = await cloneMenuTemplate(client, { storeType: "cafe" });
-    expect(cloneResult.error).toBeNull();
-    const menu = await client.from("menus").select("id").eq("name", "아메리카노").single();
-    menuId = menu.data!.id;
-
+    ({ menuId } = await seedCafeWithBean(client, user, { stock: 10000, avgPrice: 50 }));
     // 1월 셀의 is_before_signup=false를 보장하려면 가입일이 1월 이전이어야 함.
     await backdateSignup(user.id, "2025-12-01");
-    const admin = getServiceRoleClient();
-    const ing = await admin
-      .from("ingredients")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("name", "원두")
-      .single();
-    await admin
-      .from("ingredients")
-      .update({ current_stock: 10000, current_avg_price: 50 })
-      .eq("id", ing.data!.id);
   }, 60_000);
 
   afterAll(async () => {
