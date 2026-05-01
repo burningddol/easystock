@@ -1,39 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { MenuForm } from "@/features/menu/components/MenuForm";
 import { useMenus } from "@/features/menu/hooks/useMenus";
+import { useActiveIngredients } from "@/features/menu/hooks/useActiveIngredients";
 import type { MenuInput } from "@/features/menu/schemas";
-
-interface IngredientOption {
-  id: string;
-  name: string;
-  unit: string;
-}
 
 export default function MenuEditPage(): React.ReactElement {
   const { id } = useParams<{ id: string }>();
   const { data: menus, isLoading: menusLoading, error: menusError } = useMenus();
-  const [ingredients, setIngredients] = useState<IngredientOption[]>([]);
-  const [ingredientsLoading, setIngredientsLoading] = useState(true);
-  const [ingredientsError, setIngredientsError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    void supabase
-      .from("ingredients")
-      .select("id, name, unit")
-      .eq("is_active", true)
-      .order("name")
-      .then(({ data, error }) => {
-        if (error) setIngredientsError(error.message);
-        else setIngredients(data ?? []);
-        setIngredientsLoading(false);
-      });
-  }, []);
+  const {
+    data: ingredients,
+    isLoading: ingredientsLoading,
+    error: ingredientsError,
+  } = useActiveIngredients();
 
   const menu = menus?.find((m) => m.id === id);
   const isLoading = menusLoading || ingredientsLoading;
@@ -51,7 +32,7 @@ export default function MenuEditPage(): React.ReactElement {
 
       {ingredientsError && (
         <p role="alert" className="text-body-regular text-red">
-          재료 목록을 불러오지 못했어요: {ingredientsError}
+          재료 목록을 불러오지 못했어요: {ingredientsError.message}
         </p>
       )}
 
@@ -67,7 +48,7 @@ export default function MenuEditPage(): React.ReactElement {
 
       {menu && !ingredientsError && (
         <MenuForm
-          ingredients={ingredients}
+          ingredients={ingredients ?? []}
           mode={{
             kind: "edit",
             menuId: menu.id,
