@@ -28,6 +28,7 @@ export function parseLocalDateFromIso(iso: string): Date | null {
   const parts = iso.split("-").map(Number);
   const [y, m, d] = parts;
   if (y === undefined || m === undefined || d === undefined) return null;
+  if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) return null;
   return new Date(y, m - 1, d);
 }
 
