@@ -1,4 +1,3 @@
-import { describe } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 
@@ -80,9 +79,6 @@ export async function cleanupTestUser(userId: string): Promise<void> {
     throw new Error(`cleanupTestUser failed: ${error.message}`);
   }
 }
-
-/** Supabase env이 있는 환경에서만 통합 테스트 suite 실행 — 9개 파일에서 반복되던 패턴. */
-export const describeIfSupabase = hasSupabaseTestEnv ? describe : describe.skip;
 
 /**
  * UTC 기준 N일 오프셋 ISO date (YYYY-MM-DD).

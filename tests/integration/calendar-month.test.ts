@@ -3,11 +3,11 @@ import {
   backdateSignup,
   cleanupTestUser,
   createTestUser,
-  describeIfSupabase,
   getServiceRoleClient,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
+import { describeIfSupabase } from "../helpers/integration-describe";
 import { cloneMenuTemplate, getCalendarMonth } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";

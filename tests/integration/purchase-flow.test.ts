@@ -2,12 +2,12 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 import {
   cleanupTestUser,
   createTestUser,
-  describeIfSupabase,
   getServiceRoleClient,
   isoDate,
   signInAs,
   type TestUser,
 } from "../helpers/test-supabase";
+import { describeIfSupabase } from "../helpers/integration-describe";
 import { savePurchase } from "@/lib/supabase/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
