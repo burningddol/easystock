@@ -4,6 +4,8 @@ import Link from "next/link";
 import { MenuForm } from "@/features/menu/components/MenuForm";
 import { useMenus } from "@/features/menu/hooks/useMenus";
 import { useActiveIngredients } from "@/features/menu/hooks/useActiveIngredients";
+import { PageHeader } from "@/components/ui/page-header";
+import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
 
 export default function MenuNewPage(): React.ReactElement {
   const { data: menus, isLoading: menusLoading } = useMenus();
@@ -14,20 +16,17 @@ export default function MenuNewPage(): React.ReactElement {
 
   return (
     <section className="flex flex-col gap-section">
-      <header className="flex items-center justify-between">
-        <h1 className="text-title-lg text-ink-1">메뉴 추가</h1>
-        <Link href="/menu" className="text-body-regular text-ink-3 hover:text-ink-2">
-          취소
-        </Link>
-      </header>
+      <PageHeader
+        title="메뉴 추가"
+        action={
+          <Link href="/menu" className="text-body-regular text-ink-3 hover:text-ink-2">
+            취소
+          </Link>
+        }
+      />
 
-      {isLoading && <p className="text-body-regular text-ink-3">불러오는 중…</p>}
-
-      {error && (
-        <p role="alert" className="text-body-regular text-red">
-          재료 목록을 불러오지 못했어요: {error.message}
-        </p>
-      )}
+      {isLoading && <LoadingText />}
+      {error && <ErrorAlert prefix="재료 목록을 불러오지 못했어요:" message={error.message} />}
 
       {!isLoading && !error && (
         <MenuForm ingredients={ingredients ?? []} mode={{ kind: "create", isFirstMenu }} />

@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { MenuForm } from "@/features/menu/components/MenuForm";
 import { useMenus } from "@/features/menu/hooks/useMenus";
 import { useActiveIngredients } from "@/features/menu/hooks/useActiveIngredients";
+import { PageHeader } from "@/components/ui/page-header";
+import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
 import type { MenuInput } from "@/features/menu/schemas";
 
 export default function MenuEditPage(): React.ReactElement {
@@ -21,26 +23,20 @@ export default function MenuEditPage(): React.ReactElement {
 
   return (
     <section className="flex flex-col gap-section">
-      <header className="flex items-center justify-between">
-        <h1 className="text-title-lg text-ink-1">메뉴 수정</h1>
-        <Link href={`/menu/${id}`} className="text-body-regular text-ink-3 hover:text-ink-2">
-          취소
-        </Link>
-      </header>
+      <PageHeader
+        title="메뉴 수정"
+        action={
+          <Link href={`/menu/${id}`} className="text-body-regular text-ink-3 hover:text-ink-2">
+            취소
+          </Link>
+        }
+      />
 
-      {isLoading && <p className="text-body-regular text-ink-3">불러오는 중…</p>}
-
+      {isLoading && <LoadingText />}
       {ingredientsError && (
-        <p role="alert" className="text-body-regular text-red">
-          재료 목록을 불러오지 못했어요: {ingredientsError.message}
-        </p>
+        <ErrorAlert prefix="재료 목록을 불러오지 못했어요:" message={ingredientsError.message} />
       )}
-
-      {menusError && (
-        <p role="alert" className="text-body-regular text-red">
-          {menusError.message}
-        </p>
-      )}
+      {menusError && <ErrorAlert message={menusError.message} />}
 
       {!isLoading && !ingredientsError && menus && !menu && (
         <p className="text-body-regular text-ink-3">메뉴를 찾을 수 없습니다.</p>

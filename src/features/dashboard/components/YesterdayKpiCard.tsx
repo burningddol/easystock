@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { formatWon, weekdayKoFromIso } from "@/lib/utils/format";
 import { MARGIN_LABEL } from "@/lib/domain/margin";
+import { Metric } from "@/components/ui/metric";
 import type { DashboardYesterday, DashboardWeeklyChartPoint } from "@/lib/supabase/rpc";
 
 interface YesterdayKpiCardProps {
@@ -36,8 +37,8 @@ export function YesterdayKpiCard({
       </div>
 
       <div className="grid grid-cols-2 gap-stack border-t border-border pt-stack">
-        <KpiSlot label="순수익" value={hasRevenue ? `${formatWon(yesterday.netProfit)}원` : "—"} />
-        <KpiSlot
+        <Metric label="순수익" value={hasRevenue ? `${formatWon(yesterday.netProfit)}원` : "—"} />
+        <Metric
           label="마진율"
           value={hasRevenue ? `${yesterday.marginPercent.toFixed(1)}%` : "—"}
         />
@@ -47,20 +48,6 @@ export function YesterdayKpiCard({
 
       <WeeklyMiniChart data={weeklyChart} maxRevenue={maxRevenue} highlightKey={yesterday.soldAt} />
     </article>
-  );
-}
-
-interface KpiSlotProps {
-  label: string;
-  value: string;
-}
-
-function KpiSlot({ label, value }: KpiSlotProps): React.ReactElement {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-micro text-ink-3">{label}</span>
-      <span className="text-metric-md tabular-nums text-ink-1">{value}</span>
-    </div>
   );
 }
 

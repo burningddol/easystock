@@ -6,6 +6,7 @@ import { SaleInputForm } from "@/features/sale/components/SaleInputForm";
 import { SaleEditDialog } from "@/features/sale/components/SaleEditDialog";
 import { useIsFirstSale } from "@/features/sale/hooks/useIsFirstSale";
 import { useSaleByDate } from "@/features/sale/hooks/useSaleByDate";
+import { LoadingText } from "@/components/ui/query-state";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -35,7 +36,7 @@ export default function RetroactiveSalePage(): React.ReactElement {
       {!isValid ? (
         <p className="text-body-regular text-red">잘못된 날짜 형식입니다.</p>
       ) : isLoading || isFirstSale === undefined ? (
-        <p className="text-body-regular text-ink-3">불러오는 중…</p>
+        <LoadingText />
       ) : existingSale ? (
         <SaleEditDialog sale={existingSale} />
       ) : (

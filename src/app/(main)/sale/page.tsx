@@ -2,6 +2,8 @@
 
 import { SaleInputForm } from "@/features/sale/components/SaleInputForm";
 import { useIsFirstSale } from "@/features/sale/hooks/useIsFirstSale";
+import { PageHeader } from "@/components/ui/page-header";
+import { LoadingText } from "@/components/ui/query-state";
 
 export default function SalePage(): React.ReactElement {
   const { data: isFirstSale, isLoading } = useIsFirstSale();
@@ -9,13 +11,13 @@ export default function SalePage(): React.ReactElement {
 
   return (
     <section className="flex flex-col gap-section">
-      <header className="flex items-center justify-between">
-        <h1 className="text-title-lg text-ink-1">오늘 판매 입력</h1>
-        <span className="text-caption text-ink-3 tabular-nums">{today}</span>
-      </header>
+      <PageHeader
+        title="오늘 판매 입력"
+        action={<span className="text-caption text-ink-3 tabular-nums">{today}</span>}
+      />
 
       {isLoading || isFirstSale === undefined ? (
-        <p className="text-body-regular text-ink-3">불러오는 중…</p>
+        <LoadingText />
       ) : (
         <SaleInputForm soldAt={today} isFirstSale={isFirstSale} />
       )}
