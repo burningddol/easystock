@@ -8,6 +8,10 @@ import { PrimaryButton } from "@/components/ui/primary-button";
 import { ingredientInputSchema, type IngredientInput } from "@/features/purchase/schemas";
 import { useCreateIngredient } from "@/features/purchase/hooks/useIngredients";
 
+interface AddIngredientFormProps {
+  onClose: () => void;
+}
+
 const UNIT_LABELS: Record<IngredientInput["unit"], string> = {
   g: "g (그램)",
   ml: "ml (밀리리터)",
@@ -15,14 +19,10 @@ const UNIT_LABELS: Record<IngredientInput["unit"], string> = {
 };
 
 /**
- * 재료 페이지 인라인 등록 폼.
- * 토글 형태 — 평소엔 "+ 재료 추가" 버튼, 클릭 시 펼쳐짐.
- *
- * unit은 등록 후 변경 불가 (data-model.md §2 — `reject_unit_change` 트리거).
- * 사용자가 명시적으로 인지하도록 라벨에 안내.
+ * 재료 등록 폼. 토글은 부모(InventoryPage)가 관리 — 헤더 버튼으로 열고 onClose로 닫음.
+ * unit은 등록 후 변경 불가 (data-model.md §2 reject_unit_change 트리거) — 라벨에 명시.
  */
-export function AddIngredientForm(): React.ReactElement {
-  const [isOpen, setIsOpen] = useState(false);
+export function AddIngredientForm({ onClose }: AddIngredientFormProps): React.ReactElement {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const createMutation = useCreateIngredient();
 
@@ -45,19 +45,7 @@ export function AddIngredientForm(): React.ReactElement {
       return;
     }
     reset();
-    setIsOpen(false);
-  }
-
-  if (!isOpen) {
-    return (
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="rounded-md border border-dashed border-border-strong px-stack py-stack-tight text-body-regular text-ink-3 hover:bg-card-hover"
-      >
-        + 재료 추가
-      </button>
-    );
+    onClose();
   }
 
   const submitting = isSubmitting || createMutation.isPending;
@@ -74,8 +62,8 @@ export function AddIngredientForm(): React.ReactElement {
           type="button"
           onClick={() => {
             reset();
-            setIsOpen(false);
             setSubmitError(null);
+            onClose();
           }}
           className="text-caption text-ink-3 hover:text-ink-2"
         >
