@@ -4,7 +4,12 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { requestPushPermissionAndSubscribe } from "@/lib/push/client";
-import { submitSale, type SubmitSaleInput, type SubmitSaleResult } from "@/lib/application/sale";
+import {
+  submitSale,
+  type SaleClient,
+  type SubmitSaleInput,
+  type SubmitSaleResult,
+} from "@/lib/application/sale";
 import { menuListQueryKey } from "@/features/menu/hooks/useMenus";
 import { ingredientListQueryKey } from "@/features/purchase/hooks/useIngredients";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
@@ -16,7 +21,7 @@ interface SubmitVariables extends SaveSaleInput {
 }
 
 async function submit(input: SubmitVariables): Promise<SubmitSaleResult> {
-  const supabase = createClient();
+  const supabase = createClient() as unknown as SaleClient;
   const payload: SubmitSaleInput = {
     soldAt: input.soldAt,
     items: input.items,

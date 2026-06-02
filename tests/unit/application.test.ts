@@ -374,6 +374,41 @@ describe("application layer", () => {
         totalCostSnapshot: 19000,
       });
     });
+
+    it("editSale translates negative_stock into an ingredient-friendly message", async () => {
+      rpcMocks.editSale.mockResolvedValue({
+        data: null,
+        error: {
+          message: "negative_stock: ingredient_id=5d012c91-f9a2-4b4f-bbec-a68f06a3efef",
+        },
+      });
+      const client = {
+        rpc: {},
+        from: vi.fn(() => ({
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: {
+                  name: "인절미",
+                  unit: "g",
+                  current_stock: 0,
+                },
+                error: null,
+              }),
+            })),
+          })),
+        })),
+      };
+
+      await expect(
+        editSale(client, {
+          saleId: "sale-1",
+          newItems: [{ menuId: "menu-1", quantity: 1 }],
+        }),
+      ).rejects.toThrow(
+        "인절미 재고가 부족해요. 현재 재고는 0g입니다. 먼저 매입 또는 재고실사로 재고를 채운 뒤 다시 저장해주세요.",
+      );
+    });
   });
 
   describe("menu", () => {

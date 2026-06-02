@@ -8,13 +8,14 @@ import {
   removeSale,
   type EditSaleInput as EditSaleUseCaseInput,
   type EditSaleResult,
+  type SaleClient,
 } from "@/lib/application/sale";
 import { ingredientListQueryKey } from "@/features/purchase/hooks/useIngredients";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
 import { salesQueryKey } from "./_keys";
 
 async function edit(input: EditSaleUseCaseInput): Promise<EditSaleResult> {
-  const supabase = createClient();
+  const supabase = createClient() as unknown as SaleClient;
   return editSaleUseCase(supabase, input);
 }
 
@@ -41,7 +42,7 @@ export function useSaleDelete(): UseMutationResult<void, Error, string> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (saleId) => {
-      const supabase = createClient();
+      const supabase = createClient() as unknown as SaleClient;
       return removeSale(supabase, saleId);
     },
     onSuccess: () => invalidateSaleAndIngredientCaches(queryClient),
