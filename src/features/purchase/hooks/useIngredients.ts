@@ -8,36 +8,18 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { loadIngredients, type IngredientRow, type LookupClient } from "@/lib/application/lookups";
 import { deleteIngredient, saveIngredient } from "@/lib/supabase/rpc";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
 import type { IngredientInput } from "../schemas";
 
-export interface IngredientRow {
-  id: string;
-  name: string;
-  unit: "g" | "ml" | "piece";
-  current_avg_price: number;
-}
+export type { IngredientRow } from "@/lib/application/lookups";
 
 export const ingredientListQueryKey = ["ingredients", "list"] as const;
 
 async function fetchIngredients(): Promise<IngredientRow[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("ingredients")
-    .select("id, name, unit, current_avg_price")
-    .eq("is_active", true)
-    .order("name");
-  if (error) throw new Error(error.message);
-  // supabase-js v2의 select 결과 타입 추론이 nested join + numeric 조합에서 흔들려
-  // 명시 캐스팅. numeric 컬럼은 PostgREST가 string으로 직렬화 → Number로 좁힘.
-  const rows = (data ?? []) as Array<
-    Omit<IngredientRow, "current_avg_price"> & { current_avg_price: string | number }
-  >;
-  return rows.map((row) => ({
-    ...row,
-    current_avg_price: Number(row.current_avg_price),
-  }));
+  const supabase = createClient() as unknown as LookupClient;
+  return loadIngredients(supabase);
 }
 
 export function useIngredients(): UseQueryResult<IngredientRow[]> {

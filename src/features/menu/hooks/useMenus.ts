@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { loadMenus, type MenuRowWithRecipe } from "@/lib/application/lookups";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
 
 /**
@@ -13,73 +14,13 @@ import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepleti
  * nullable로 잡지만 fetch 시점에 좁힌다.
  */
 
-interface RawIngredient {
-  id: string;
-  name: string;
-  unit: string;
-  current_avg_price: number;
-}
-
-interface RawRecipeItem {
-  id: string;
-  quantity_per_serving: number;
-  ingredient: RawIngredient | null;
-}
-
-export interface MenuRowWithRecipe {
-  id: string;
-  name: string;
-  price: number;
-  is_active: boolean;
-  recipe_items: Array<{
-    id: string;
-    quantity_per_serving: number;
-    ingredient: RawIngredient;
-  }>;
-}
+export type { MenuRowWithRecipe } from "@/lib/application/lookups";
 
 export const menuListQueryKey = ["menus", "list"] as const;
 
-interface RawMenuRow {
-  id: string;
-  name: string;
-  price: number;
-  is_active: boolean;
-  recipe_items: RawRecipeItem[];
-}
-
 async function fetchMenus(): Promise<MenuRowWithRecipe[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("menus")
-    .select(
-      `
-      id, name, price, is_active,
-      recipe_items (
-        id,
-        quantity_per_serving,
-        ingredient:ingredients (
-          id, name, unit, current_avg_price
-        )
-      )
-    `,
-    )
-    .eq("is_active", true)
-    .order("name");
-
-  if (error) {
-    throw new Error(error.message);
-  }
-  const rows = (data ?? []) as unknown as RawMenuRow[];
-  return rows.map((menu) => ({
-    id: menu.id,
-    name: menu.name,
-    price: menu.price,
-    is_active: menu.is_active,
-    recipe_items: menu.recipe_items.filter(
-      (item): item is RawRecipeItem & { ingredient: RawIngredient } => item.ingredient !== null,
-    ),
-  }));
+  const supabase = createClient() as unknown as import("@/lib/application/lookups").LookupClient;
+  return loadMenus(supabase);
 }
 
 export function useMenus(): UseQueryResult<MenuRowWithRecipe[]> {
