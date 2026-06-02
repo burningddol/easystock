@@ -8,7 +8,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { loadVendors, type VendorRow } from "@/lib/application/lookups";
+import { loadVendors, type LookupClient, type VendorRow } from "@/lib/application/lookups";
 import { saveVendor } from "@/lib/supabase/rpc";
 import type { VendorInput } from "../schemas";
 
@@ -17,7 +17,7 @@ export type { VendorRow } from "@/lib/application/lookups";
 export const vendorListQueryKey = ["vendors", "list"] as const;
 
 async function fetchVendors(): Promise<VendorRow[]> {
-  const supabase = createClient();
+  const supabase = createClient() as unknown as LookupClient;
   return loadVendors(supabase);
 }
 
