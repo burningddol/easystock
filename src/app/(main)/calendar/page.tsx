@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCalendarMonth } from "@/features/calendar/hooks/useCalendarMonth";
 import { MonthHeader } from "@/features/calendar/components/MonthHeader";
 import { MonthCumulativeCard } from "@/features/calendar/components/MonthCumulativeCard";
 import { CalendarGrid } from "@/features/calendar/components/CalendarGrid";
-import { CellDetailPanel } from "@/features/calendar/components/CellDetailPanel";
 import { CalendarLegend } from "@/features/calendar/components/CalendarLegend";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { useTodayIso } from "@/lib/utils/use-today-iso";
@@ -16,16 +16,16 @@ import type { EnrichedCalendarCell } from "@/features/calendar/lib/consecutive-m
  * 1) 헤더 (월 네비)
  * 2) 월 누적 KPI
  * 3) 7×6 그리드 + 범례
- * 4) 선택일 상세 (선택 시)
+ * 4) 날짜 클릭 시 상세 페이지 진입
  *
- * 셀 클릭 → 선택 셀 갱신 + 누락일이면 calendar_missing_day_clicked GA4 발화 (T165, D7 funnel 핵심).
+ * 셀 클릭 → /calendar/[date] 이동 + 누락일이면 calendar_missing_day_clicked GA4 발화 (T165, D7 funnel 핵심).
  * 페이지 mount → calendar_viewed GA4 발화 (T164).
  */
 export default function CalendarPage(): React.ReactElement {
+  const router = useRouter();
   const todayIso = useTodayIso();
   const [year, setYear] = useState<number | null>(null);
   const [month, setMonth] = useState<number | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // 초기 mount 시 클라이언트 시각으로 현재 연/월 세팅 (SSR/CSR drift 차단)
   useEffect(() => {
@@ -44,13 +44,13 @@ export default function CalendarPage(): React.ReactElement {
   }, [year, month, operatingDays]);
 
   function handleSelect(cell: EnrichedCalendarCell): void {
-    setSelectedDate(cell.date);
     if (cell.isMissing) {
       trackEvent("calendar_missing_day_clicked", {
         date: cell.date,
         consecutive_missing_days: cell.consecutiveMissingDays,
       });
     }
+    router.push(`/calendar/${cell.date}`);
   }
 
   function navigate(delta: number): void {
@@ -65,14 +65,12 @@ export default function CalendarPage(): React.ReactElement {
     } else {
       setMonth(nextRaw);
     }
-    setSelectedDate(null);
   }
 
   function jumpToday(): void {
     const now = new Date();
     setYear(now.getFullYear());
     setMonth(now.getMonth() + 1);
-    setSelectedDate(null);
   }
 
   if (year === null || month === null || query.isLoading) {
@@ -85,10 +83,6 @@ export default function CalendarPage(): React.ReactElement {
       </p>
     );
   }
-
-  const selectedCell = selectedDate
-    ? (query.data.cells.find((c) => c.date === selectedDate) ?? null)
-    : null;
 
   return (
     <section className="flex flex-col gap-section">
@@ -107,12 +101,11 @@ export default function CalendarPage(): React.ReactElement {
         year={year}
         month={month}
         cells={query.data.cells}
-        selectedDate={selectedDate}
+        selectedDate={null}
         todayIso={todayIso}
         onSelect={handleSelect}
       />
       <CalendarLegend />
-      {selectedCell && todayIso && <CellDetailPanel cell={selectedCell} todayIso={todayIso} />}
     </section>
   );
 }

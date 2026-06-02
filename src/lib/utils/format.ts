@@ -47,7 +47,7 @@ export function weekdayKoFromIso(iso: string): string {
 }
 
 /**
- * "YYYY-MM-DD" → "M월 D일 (요일)" 한국어 라벨. CellDetailPanel·캘린더 헤더 등 공유.
+ * "YYYY-MM-DD" → "M월 D일 (요일)" 한국어 라벨. 캘린더 헤더·날짜 상세 등 공유.
  */
 export function formatDateKoFromIso(iso: string): string {
   const date = parseLocalDateFromIso(iso);
