@@ -8,26 +8,17 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { loadVendors, type VendorRow } from "@/lib/application/lookups";
 import { saveVendor } from "@/lib/supabase/rpc";
 import type { VendorInput } from "../schemas";
 
-export interface VendorRow {
-  id: string;
-  name: string;
-  lead_time_days: number;
-}
+export type { VendorRow } from "@/lib/application/lookups";
 
 export const vendorListQueryKey = ["vendors", "list"] as const;
 
 async function fetchVendors(): Promise<VendorRow[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("vendors")
-    .select("id, name, lead_time_days")
-    .eq("is_active", true)
-    .order("name");
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  return loadVendors(supabase);
 }
 
 export function useVendors(): UseQueryResult<VendorRow[]> {
