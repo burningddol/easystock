@@ -2,8 +2,8 @@
 
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { deleteMenu, editMenu, saveMenu } from "@/lib/supabase/rpc";
 import type { MenuInput } from "../schemas";
+import { createMenu, removeMenu, updateMenu, type EditMenuInput } from "@/lib/application/menu";
 import { invalidateMenuCaches, menuListQueryKey } from "./useMenus";
 
 interface EditMenuVariables {
@@ -18,11 +18,7 @@ export function useCreateMenu(): UseMutationResult<string, Error, MenuInput> {
   return useMutation({
     mutationFn: async (values) => {
       const supabase = createClient();
-      const { data, error } = await saveMenu(supabase, values);
-      if (error) throw new Error(error.message);
-      const row = data?.[0];
-      if (!row) throw new Error("save_menu returned empty");
-      return row.menu_id;
+      return createMenu(supabase, values);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: menuListQueryKey }),
   });
@@ -33,16 +29,13 @@ export function useEditMenu(): UseMutationResult<string, Error, EditMenuVariable
   return useMutation({
     mutationFn: async ({ menuId, values }) => {
       const supabase = createClient();
-      const { data, error } = await editMenu(supabase, {
+      const payload: EditMenuInput = {
         menuId,
         name: values.name,
         price: values.price,
         recipe: values.recipe,
-      });
-      if (error) throw new Error(error.message);
-      const row = data?.[0];
-      if (!row) throw new Error("edit_menu returned empty");
-      return row.menu_id;
+      };
+      return updateMenu(supabase, payload);
     },
     onSuccess: () => invalidateMenuCaches(queryClient),
   });
@@ -53,8 +46,7 @@ export function useDeleteMenu(): UseMutationResult<void, Error, string> {
   return useMutation({
     mutationFn: async (menuId) => {
       const supabase = createClient();
-      const { error } = await deleteMenu(supabase, menuId);
-      if (error) throw new Error(error.message);
+      return removeMenu(supabase, menuId);
     },
     onSuccess: () => invalidateMenuCaches(queryClient),
   });
