@@ -2,7 +2,7 @@
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { loadSaleByDate, type SaleWithItems } from "@/lib/application/lookups";
+import { loadSaleByDate, type LookupClient, type SaleWithItems } from "@/lib/application/lookups";
 
 /**
  * 특정 날짜의 사용자 sale + items + 메뉴 join.
@@ -12,7 +12,7 @@ import { loadSaleByDate, type SaleWithItems } from "@/lib/application/lookups";
 export type { SaleWithItems } from "@/lib/application/lookups";
 
 async function fetchSaleByDate(date: string): Promise<SaleWithItems | null> {
-  const supabase = createClient();
+  const supabase = createClient() as unknown as LookupClient;
   return loadSaleByDate(supabase, date);
 }
 
