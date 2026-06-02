@@ -19,7 +19,7 @@ export type { MenuRowWithRecipe } from "@/lib/application/lookups";
 export const menuListQueryKey = ["menus", "list"] as const;
 
 async function fetchMenus(): Promise<MenuRowWithRecipe[]> {
-  const supabase = createClient();
+  const supabase = createClient() as unknown as import("@/lib/application/lookups").LookupClient;
   return loadMenus(supabase);
 }
 
