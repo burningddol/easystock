@@ -1,79 +1,15 @@
 import type { Database } from "./types";
+import {
+  callRpc,
+  callRpcMapped,
+  callRpcSingleRow,
+  numeric,
+  type ClientLike,
+  type RpcResult,
+} from "./rpc-core";
 
 type Weekday = Database["public"]["Enums"]["weekday"];
 type StoreType = Database["public"]["Enums"]["store_type"];
-
-/**
- * 타입 있는 RPC 래퍼.
- *
- * Supabase v2 rpc() 제네릭이 자동 생성 Database 타입과 일부 추론 충돌이 있어
- * 런타임 결과를 명시 타입으로 단언한다 (이 wrapping이 unsafe-cast 지점).
- * 또한 분리된 변수에 rpc를 대입하면 `this` 바인딩이 끊겨 Supabase 내부
- * fetcher가 깨지므로 `Reflect.apply`로 client를 receiver로 유지.
- */
-
-interface RpcResult<T> {
-  data: T | null;
-  error: { message: string; code?: string } | null;
-}
-
-interface ClientLike {
-  rpc: unknown;
-}
-
-async function callRpc<T>(
-  client: ClientLike,
-  fn: string,
-  args?: Record<string, unknown>,
-): Promise<RpcResult<T>> {
-  const rpcFn = client.rpc as (...rest: unknown[]) => PromiseLike<RpcResult<T>>;
-  const result = await Reflect.apply(rpcFn, client, args === undefined ? [fn] : [fn, args]);
-  return result;
-}
-
-/**
- * PostgREST가 numeric(p,s) 컬럼을 string으로 직렬화하므로 number 변환 필요.
- * 단순 `Number()`는 NaN을 silent 통과 → 명시적 가드를 둔 단일 출처 헬퍼.
- */
-function numeric(value: string | number | null | undefined): number {
-  if (value === null || value === undefined) return 0;
-  const n = Number(value);
-  if (Number.isNaN(n)) {
-    throw new Error(`numeric() received non-numeric value: ${value}`);
-  }
-  return n;
-}
-
-/**
- * 첫 행만 사용하는 RPC 래퍼 — `apply_stock_count` / `save_purchase`처럼 SETOF 1건을
- * 반환하지만 호출 측은 단일 객체로 다루는 패턴 단일 출처. data[0]이 없으면 null.
- */
-async function callRpcSingleRow<TRaw, TOut>(
-  client: ClientLike,
-  fn: string,
-  args: Record<string, unknown>,
-  mapRow: (row: TRaw) => TOut,
-): Promise<RpcResult<TOut>> {
-  const result = await callRpc<TRaw[]>(client, fn, args);
-  if (result.error || !result.data?.[0]) {
-    return { data: null, error: result.error };
-  }
-  return { data: mapRow(result.data[0]), error: null };
-}
-
-/** 단일 row payload(객체 1개)를 반환하는 RPC 래퍼 — `get_today_dashboard` 등. */
-async function callRpcMapped<TRaw, TOut>(
-  client: ClientLike,
-  fn: string,
-  args: Record<string, unknown> | undefined,
-  map: (raw: TRaw) => TOut,
-): Promise<RpcResult<TOut>> {
-  const result = await callRpc<TRaw>(client, fn, args);
-  if (result.error || !result.data) {
-    return { data: null, error: result.error };
-  }
-  return { data: map(result.data), error: null };
-}
 
 interface UpdateRegularDaysOffArgs {
   p_days_off: readonly Weekday[];
