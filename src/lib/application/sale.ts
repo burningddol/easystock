@@ -127,6 +127,9 @@ async function toSaleErrorMessage(client: SaleClient, message: string): Promise<
 }
 
 function toBasicSaleErrorMessage(message: string): string {
+  if (message.includes("duplicate_sale")) {
+    return "이미 이 날짜의 판매가 입력되어 있어요. 캘린더 날짜 상세 또는 판매 수정 화면에서 기존 기록을 수정해주세요.";
+  }
   if (message.includes("sale_locked")) {
     return "저장 후 7일이 지나 수정할 수 없는 판매 기록이에요.";
   }

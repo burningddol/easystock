@@ -16,13 +16,17 @@ async function fetchSaleByDate(date: string): Promise<SaleWithItems | null> {
   return loadSaleByDate(supabase, date);
 }
 
-export function saleByDateQueryKey(date: string): readonly unknown[] {
-  return ["sales", "by-date", date] as const;
+export function saleByDateQueryKey(date: string | null): readonly unknown[] {
+  return ["sales", "by-date", date ?? ""] as const;
 }
 
-export function useSaleByDate(date: string): UseQueryResult<SaleWithItems | null> {
+export function useSaleByDate(date: string | null): UseQueryResult<SaleWithItems | null> {
   return useQuery({
     queryKey: saleByDateQueryKey(date),
-    queryFn: () => fetchSaleByDate(date),
+    queryFn: () => {
+      if (!date) throw new Error("disabled");
+      return fetchSaleByDate(date);
+    },
+    enabled: Boolean(date),
   });
 }

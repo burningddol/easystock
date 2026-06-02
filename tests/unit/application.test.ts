@@ -409,6 +409,25 @@ describe("application layer", () => {
         "인절미 재고가 부족해요. 현재 재고는 0g입니다. 먼저 매입 또는 재고실사로 재고를 채운 뒤 다시 저장해주세요.",
       );
     });
+
+    it("submitSale translates duplicate_sale into an edit-friendly message", async () => {
+      rpcMocks.saveSale.mockResolvedValue({
+        data: null,
+        error: { message: "duplicate_sale" },
+      });
+
+      await expect(
+        submitSale(
+          { rpc: {} },
+          {
+            soldAt: "2026-06-02",
+            items: [{ menuId: "menu-1", quantity: 1 }],
+          },
+        ),
+      ).rejects.toThrow(
+        "이미 이 날짜의 판매가 입력되어 있어요. 캘린더 날짜 상세 또는 판매 수정 화면에서 기존 기록을 수정해주세요.",
+      );
+    });
   });
 
   describe("menu", () => {
