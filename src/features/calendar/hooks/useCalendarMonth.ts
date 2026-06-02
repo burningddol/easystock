@@ -2,12 +2,7 @@
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { getCalendarMonth, type CalendarMonthData } from "@/lib/supabase/rpc";
-import { withConsecutiveMissingDays, type EnrichedCalendarCell } from "../lib/consecutive-missing";
-
-export interface CalendarMonthView extends Omit<CalendarMonthData, "cells"> {
-  cells: EnrichedCalendarCell[];
-}
+import { loadCalendarMonth, type CalendarMonthView } from "@/lib/application/calendar";
 
 export function calendarMonthQueryKey(
   year: number,
@@ -18,10 +13,7 @@ export function calendarMonthQueryKey(
 
 async function fetchCalendarMonth(year: number, month: number): Promise<CalendarMonthView> {
   const supabase = createClient();
-  const { data, error } = await getCalendarMonth(supabase, { year, month });
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("calendar data missing");
-  return { ...data, cells: withConsecutiveMissingDays(data.cells) };
+  return loadCalendarMonth(supabase, year, month);
 }
 
 export function useCalendarMonth(
