@@ -2,9 +2,9 @@
 
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { saveSale } from "@/lib/supabase/rpc";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { requestPushPermissionAndSubscribe } from "@/lib/push/client";
+import { submitSale, type SubmitSaleInput, type SubmitSaleResult } from "@/lib/application/sale";
 import { menuListQueryKey } from "@/features/menu/hooks/useMenus";
 import { ingredientListQueryKey } from "@/features/purchase/hooks/useIngredients";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
@@ -15,33 +15,16 @@ interface SubmitVariables extends SaveSaleInput {
   isFirstSale: boolean;
 }
 
-interface SubmitResult {
-  saleId: string;
-  totalRevenue: number;
-  totalCostSnapshot: number;
-  totalNetProfit: number;
-  marginPercent: number;
-}
-
-async function submit(input: SubmitVariables): Promise<SubmitResult> {
+async function submit(input: SubmitVariables): Promise<SubmitSaleResult> {
   const supabase = createClient();
-  const { data, error } = await saveSale(supabase, {
+  const payload: SubmitSaleInput = {
     soldAt: input.soldAt,
-    items: input.items.map((it) => ({ menuId: it.menuId, quantity: it.quantity })),
-  });
-  if (error) throw new Error(error.message);
-  const row = data?.[0];
-  if (!row) throw new Error("save_sale: no row returned");
-  return {
-    saleId: row.sale_id,
-    totalRevenue: Number(row.total_revenue),
-    totalCostSnapshot: Number(row.total_cost_snapshot),
-    totalNetProfit: Number(row.total_net_profit),
-    marginPercent: Number(row.margin_percent),
+    items: input.items,
   };
+  return submitSale(supabase, payload);
 }
 
-export function useSaleSubmit(): UseMutationResult<SubmitResult, Error, SubmitVariables> {
+export function useSaleSubmit(): UseMutationResult<SubmitSaleResult, Error, SubmitVariables> {
   const queryClient = useQueryClient();
 
   return useMutation({

@@ -2,38 +2,20 @@
 
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { editSale, deleteSale } from "@/lib/supabase/rpc";
 import { trackEvent } from "@/lib/analytics/ga4";
+import {
+  editSale as editSaleUseCase,
+  removeSale,
+  type EditSaleInput as EditSaleUseCaseInput,
+  type EditSaleResult,
+} from "@/lib/application/sale";
 import { ingredientListQueryKey } from "@/features/purchase/hooks/useIngredients";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
 import { salesQueryKey } from "./_keys";
-import type { EditSaleInput } from "../schemas";
 
-interface EditResult {
-  totalRevenue: number;
-  totalCostSnapshot: number;
-}
-
-async function edit(input: EditSaleInput): Promise<EditResult> {
+async function edit(input: EditSaleUseCaseInput): Promise<EditSaleResult> {
   const supabase = createClient();
-  const { data, error } = await editSale(supabase, {
-    saleId: input.saleId,
-    newItems: input.newItems.map((it) => ({ menuId: it.menuId, quantity: it.quantity })),
-    reason: input.reason,
-  });
-  if (error) throw new Error(error.message);
-  const row = data?.[0];
-  if (!row) throw new Error("edit_sale: no row");
-  return {
-    totalRevenue: Number(row.total_revenue),
-    totalCostSnapshot: Number(row.total_cost_snapshot),
-  };
-}
-
-async function remove(saleId: string): Promise<void> {
-  const supabase = createClient();
-  const { error } = await deleteSale(supabase, saleId);
-  if (error) throw new Error(error.message);
+  return editSaleUseCase(supabase, input);
 }
 
 // sale 편집/삭제도 재료 재고 보정 + price_history insert를 RPC가 수행하므로 sale 키
@@ -44,7 +26,7 @@ function invalidateSaleAndIngredientCaches(queryClient: ReturnType<typeof useQue
   void queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey });
 }
 
-export function useSaleEdit(): UseMutationResult<EditResult, Error, EditSaleInput> {
+export function useSaleEdit(): UseMutationResult<EditSaleResult, Error, EditSaleUseCaseInput> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: edit,
@@ -58,7 +40,10 @@ export function useSaleEdit(): UseMutationResult<EditResult, Error, EditSaleInpu
 export function useSaleDelete(): UseMutationResult<void, Error, string> {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: remove,
+    mutationFn: async (saleId) => {
+      const supabase = createClient();
+      return removeSale(supabase, saleId);
+    },
     onSuccess: () => invalidateSaleAndIngredientCaches(queryClient),
   });
 }
