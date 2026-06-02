@@ -1,4 +1,8 @@
-import { deleteMenu as deleteMenuRpc, editMenu as editMenuRpc, saveMenu as saveMenuRpc } from "@/lib/supabase/rpc";
+import {
+  deleteMenu as deleteMenuRpc,
+  editMenu as editMenuRpc,
+  saveMenu as saveMenuRpc,
+} from "@/lib/supabase/rpc";
 
 interface RpcClient {
   rpc: unknown;

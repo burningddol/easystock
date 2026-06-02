@@ -1,4 +1,8 @@
-import { deleteSale as deleteSaleRpc, editSale as editSaleRpc, saveSale as saveSaleRpc } from "@/lib/supabase/rpc";
+import {
+  deleteSale as deleteSaleRpc,
+  editSale as editSaleRpc,
+  saveSale as saveSaleRpc,
+} from "@/lib/supabase/rpc";
 
 interface RpcClient {
   rpc: unknown;
@@ -58,7 +62,10 @@ function mapEditRow(row: SaleRpcRow): EditSaleResult {
   };
 }
 
-export async function submitSale(client: RpcClient, input: SubmitSaleInput): Promise<SubmitSaleResult> {
+export async function submitSale(
+  client: RpcClient,
+  input: SubmitSaleInput,
+): Promise<SubmitSaleResult> {
   const { data, error } = await saveSaleRpc(client, {
     soldAt: input.soldAt,
     items: input.items,
