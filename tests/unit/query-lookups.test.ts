@@ -137,6 +137,7 @@ describe("query lookups", () => {
             {
               id: "si-1",
               menu_id: "menu-1",
+              menu: { name: "아메리카노" },
               quantity: 3,
               unit_price: "15000",
               menu_cost_snapshot: "6000",
@@ -157,6 +158,7 @@ describe("query lookups", () => {
         {
           id: "si-1",
           menu_id: "menu-1",
+          menu_name: "아메리카노",
           quantity: 3,
           unit_price: 15000,
           menu_cost_snapshot: 6000,

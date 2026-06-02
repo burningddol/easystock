@@ -80,6 +80,7 @@ export interface SaleWithItems {
   items: Array<{
     id: string;
     menu_id: string;
+    menu_name: string | null;
     quantity: number;
     unit_price: number;
     menu_cost_snapshot: number;
@@ -95,6 +96,7 @@ interface RawSaleRow {
   sale_items: Array<{
     id: string;
     menu_id: string;
+    menu: { name: string } | null;
     quantity: number;
     unit_price: string | number;
     menu_cost_snapshot: string | number;
@@ -189,7 +191,10 @@ export async function loadSaleByDate(
     .select(
       `
       id, sold_at, created_at, total_revenue, total_cost_snapshot,
-      sale_items (id, menu_id, quantity, unit_price, menu_cost_snapshot)
+      sale_items (
+        id, menu_id, quantity, unit_price, menu_cost_snapshot,
+        menu:menus (name)
+      )
     `,
     )
     .eq("sold_at", date)
@@ -207,6 +212,7 @@ export async function loadSaleByDate(
     items: row.sale_items.map((si) => ({
       id: si.id,
       menu_id: si.menu_id,
+      menu_name: si.menu?.name ?? null,
       quantity: si.quantity,
       unit_price: Number(si.unit_price),
       menu_cost_snapshot: Number(si.menu_cost_snapshot),

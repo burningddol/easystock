@@ -374,6 +374,60 @@ describe("application layer", () => {
         totalCostSnapshot: 19000,
       });
     });
+
+    it("editSale translates negative_stock into an ingredient-friendly message", async () => {
+      rpcMocks.editSale.mockResolvedValue({
+        data: null,
+        error: {
+          message: "negative_stock: ingredient_id=5d012c91-f9a2-4b4f-bbec-a68f06a3efef",
+        },
+      });
+      const client = {
+        rpc: {},
+        from: vi.fn(() => ({
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: {
+                  name: "인절미",
+                  unit: "g",
+                  current_stock: 0,
+                },
+                error: null,
+              }),
+            })),
+          })),
+        })),
+      };
+
+      await expect(
+        editSale(client, {
+          saleId: "sale-1",
+          newItems: [{ menuId: "menu-1", quantity: 1 }],
+        }),
+      ).rejects.toThrow(
+        "인절미 재고가 부족해요. 현재 재고는 0g입니다. 먼저 매입 또는 재고실사로 재고를 채운 뒤 다시 저장해주세요.",
+      );
+    });
+
+    it("submitSale translates duplicate_sale into an edit-friendly message", async () => {
+      rpcMocks.saveSale.mockResolvedValue({
+        data: null,
+        error: { message: "duplicate_sale" },
+      });
+
+      await expect(
+        submitSale(
+          { rpc: {} },
+          {
+            soldAt: "2026-06-02",
+            items: [{ menuId: "menu-1", quantity: 1 }],
+          },
+        ),
+      ).rejects.toThrow(
+        "이미 이 날짜의 판매가 입력되어 있어요. 캘린더 날짜 상세 또는 판매 수정 화면에서 기존 기록을 수정해주세요.",
+      );
+    });
   });
 
   describe("menu", () => {
