@@ -8,7 +8,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { loadIngredients, type IngredientRow } from "@/lib/application/lookups";
+import { loadIngredients, type IngredientRow, type LookupClient } from "@/lib/application/lookups";
 import { deleteIngredient, saveIngredient } from "@/lib/supabase/rpc";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
 import type { IngredientInput } from "../schemas";
@@ -18,7 +18,8 @@ export type { IngredientRow } from "@/lib/application/lookups";
 export const ingredientListQueryKey = ["ingredients", "list"] as const;
 
 async function fetchIngredients(): Promise<IngredientRow[]> {
-  return loadIngredients(createClient() as any);
+  const supabase = createClient() as unknown as LookupClient;
+  return loadIngredients(supabase);
 }
 
 export function useIngredients(): UseQueryResult<IngredientRow[]> {

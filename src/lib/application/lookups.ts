@@ -1,3 +1,6 @@
+type LookupRow = Record<string, never>;
+export type LookupClient = SupabaseLike;
+
 interface SupabaseLike {
   from: (table: string) => {
     select: (query: string) => {
@@ -7,8 +10,11 @@ interface SupabaseLike {
       ) => {
         order: (
           column: string,
-        ) => PromiseLike<{ data: unknown[] | null; error: { message: string } | null }>;
-        maybeSingle: () => PromiseLike<{ data: unknown | null; error: { message: string } | null }>;
+        ) => PromiseLike<{ data: LookupRow[] | null; error: { message: string } | null }>;
+        maybeSingle: () => PromiseLike<{
+          data: LookupRow | null;
+          error: { message: string } | null;
+        }>;
       };
     };
   };
@@ -114,7 +120,7 @@ export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe
     .order("name");
 
   if (error) throw new Error(error.message);
-  const rows = (data ?? []) as RawMenuRow[];
+  const rows = (data ?? []) as unknown as RawMenuRow[];
   return rows.map((menu) => ({
     id: menu.id,
     name: menu.name,
@@ -145,7 +151,9 @@ export async function loadVendors(client: SupabaseLike): Promise<VendorRow[]> {
     .order("name");
   if (error) throw new Error(error.message);
   return (
-    (data ?? []) as Array<Omit<VendorRow, "lead_time_days"> & { lead_time_days: string | number }>
+    (data ?? []) as unknown as Array<
+      Omit<VendorRow, "lead_time_days"> & { lead_time_days: string | number }
+    >
   ).map((row) => ({
     id: row.id,
     name: row.name,
@@ -161,7 +169,7 @@ export async function loadIngredients(client: SupabaseLike): Promise<IngredientR
     .order("name");
   if (error) throw new Error(error.message);
   return (
-    (data ?? []) as Array<
+    (data ?? []) as unknown as Array<
       Omit<IngredientRow, "current_avg_price"> & { current_avg_price: string | number }
     >
   ).map((row) => ({
@@ -189,7 +197,7 @@ export async function loadSaleByDate(
 
   if (error) throw new Error(error.message);
   if (!data) return null;
-  const row = data as RawSaleRow;
+  const row = data as unknown as RawSaleRow;
   return {
     id: row.id,
     sold_at: row.sold_at,
