@@ -2,16 +2,14 @@
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { getTodayDashboard, type TodayDashboardData } from "@/lib/supabase/rpc";
+import { loadTodayDashboard } from "@/lib/application/dashboard";
+import type { TodayDashboardData } from "@/lib/supabase/rpc";
 
 export const todayDashboardQueryKey = ["dashboard", "today"] as const;
 
 async function fetchTodayDashboard(): Promise<TodayDashboardData> {
   const supabase = createClient();
-  const { data, error } = await getTodayDashboard(supabase);
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("dashboard data missing");
-  return data;
+  return loadTodayDashboard(supabase);
 }
 
 export function useTodayDashboard(): UseQueryResult<TodayDashboardData> {
