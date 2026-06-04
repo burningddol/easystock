@@ -76,6 +76,7 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
   return (
     <div className="flex flex-col gap-stack pb-44">
       <DaysLeftHint daysLeft={daysUntilLock(createdAt)} />
+      <CostBasisNotice />
 
       <ul className="flex flex-col gap-stack-tight">
         {menus.map((menu) => (
@@ -131,6 +132,14 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
         }
       />
     </div>
+  );
+}
+
+function CostBasisNotice(): React.ReactElement {
+  return (
+    <p className="rounded-md bg-bg p-stack text-caption text-ink-3">
+      수정 저장 시 원가와 마진은 현재 재료 평균단가 기준으로 다시 계산됩니다.
+    </p>
   );
 }
 
