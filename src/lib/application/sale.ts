@@ -1,4 +1,5 @@
 import {
+  applySaleSnapshotRewrite as applySaleSnapshotRewriteRpc,
   deleteSale as deleteSaleRpc,
   editSale as editSaleRpc,
   saveSale as saveSaleRpc,
@@ -110,6 +111,31 @@ export async function editSale(client: SaleClient, input: EditSaleInput): Promis
 export async function removeSale(client: SaleClient, saleId: string): Promise<void> {
   const { error } = await deleteSaleRpc(client, saleId);
   if (error) throw new Error(toBasicSaleErrorMessage(error.message));
+}
+
+export interface ApplySaleSnapshotRewriteInput {
+  fromDate: string;
+  note?: string;
+}
+
+export interface ApplySaleSnapshotRewriteResult {
+  replayRunId: string;
+  affectedSaleCount: number;
+  affectedItemCount: number;
+  totalCostDelta: number;
+}
+
+export async function applySaleSnapshotRewrite(
+  client: SaleClient,
+  input: ApplySaleSnapshotRewriteInput,
+): Promise<ApplySaleSnapshotRewriteResult> {
+  const { data, error } = await applySaleSnapshotRewriteRpc(client, {
+    fromDate: input.fromDate,
+    note: input.note,
+  });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("apply_sale_snapshot_rewrite: no row returned");
+  return data;
 }
 
 async function toSaleErrorMessage(client: SaleClient, message: string): Promise<string> {

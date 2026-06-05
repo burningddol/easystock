@@ -322,6 +322,45 @@ export function applyInventoryReplay(
   );
 }
 
+interface ApplySaleSnapshotRewriteArgs {
+  fromDate: string;
+  note?: string;
+}
+
+export interface ApplySaleSnapshotRewriteResult {
+  replayRunId: string;
+  affectedSaleCount: number;
+  affectedItemCount: number;
+  totalCostDelta: number;
+}
+
+interface ApplySaleSnapshotRewriteRawRow {
+  replay_run_id: string;
+  affected_sale_count: number;
+  affected_item_count: number;
+  total_cost_delta: number;
+}
+
+export function applySaleSnapshotRewrite(
+  client: ClientLike,
+  args: ApplySaleSnapshotRewriteArgs,
+): Promise<RpcResult<ApplySaleSnapshotRewriteResult>> {
+  return callRpcSingleRow<ApplySaleSnapshotRewriteRawRow, ApplySaleSnapshotRewriteResult>(
+    client,
+    "apply_sale_snapshot_rewrite",
+    {
+      p_from_date: args.fromDate,
+      p_note: args.note ?? null,
+    },
+    (row) => ({
+      replayRunId: row.replay_run_id,
+      affectedSaleCount: Number(row.affected_sale_count),
+      affectedItemCount: Number(row.affected_item_count),
+      totalCostDelta: numeric(row.total_cost_delta),
+    }),
+  );
+}
+
 interface SubscribePushArgs {
   endpoint: string;
   keysP256dh: string;
