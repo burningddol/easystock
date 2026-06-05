@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMenus, type MenuRowWithRecipe } from "@/features/menu/hooks/useMenus";
 import { useSaleDraft } from "@/stores/sale-draft";
 import { computeSnapshotPreview } from "@/lib/domain/snapshot";
+import { localIsoDate } from "@/lib/utils/format";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { MenuRow } from "./MenuRow";
 import { StickyTotalCard } from "./StickyTotalCard";
@@ -76,9 +77,16 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
   }
 
   const totalQuantity = items.reduce((sum, it) => sum + it.quantity, 0);
+  const isRetroactive = soldAt < localIsoDate();
 
   return (
     <div className="flex flex-col gap-stack pb-44">
+      {isRetroactive && (
+        <p className="rounded-md bg-bg p-stack text-caption text-ink-3">
+          과거 날짜 판매를 저장하면 이 날짜 이후 7일 범위의 재고와 원가 스냅샷이 다시 계산됩니다.
+        </p>
+      )}
+
       <ul className="flex flex-col gap-stack-tight">
         {sortedMenus.map((menu) => (
           <MenuRow

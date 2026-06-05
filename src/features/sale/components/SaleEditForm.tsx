@@ -138,7 +138,7 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
 function CostBasisNotice(): React.ReactElement {
   return (
     <p className="rounded-md bg-bg p-stack text-caption text-ink-3">
-      수정 저장 시 원가와 마진은 현재 재료 평균단가 기준으로 다시 계산됩니다.
+      수정 저장 후 이 날짜 이후 7일 범위의 재고와 원가 스냅샷이 다시 계산됩니다.
     </p>
   );
 }
