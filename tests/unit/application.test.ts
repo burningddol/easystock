@@ -5,6 +5,7 @@ const rpcMocks = vi.hoisted(() => ({
   getTodayDashboard: vi.fn(),
   getDepletionForecast: vi.fn(),
   applyInventoryReplay: vi.fn(),
+  applySaleSnapshotRewrite: vi.fn(),
   savePurchase: vi.fn(),
   saveSale: vi.fn(),
   editSale: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock("@/lib/supabase/rpc", () => ({
   getTodayDashboard: rpcMocks.getTodayDashboard,
   getDepletionForecast: rpcMocks.getDepletionForecast,
   applyInventoryReplay: rpcMocks.applyInventoryReplay,
+  applySaleSnapshotRewrite: rpcMocks.applySaleSnapshotRewrite,
   savePurchase: rpcMocks.savePurchase,
   saveSale: rpcMocks.saveSale,
   editSale: rpcMocks.editSale,
@@ -46,7 +48,7 @@ import { loadTodayDashboard } from "@/lib/application/dashboard";
 import { loadCalendarMonth, withConsecutiveMissingDays } from "@/lib/application/calendar";
 import { applyInventoryReplay, loadDepletionForecast } from "@/lib/application/inventory";
 import { submitPurchase } from "@/lib/application/purchase";
-import { editSale, submitSale } from "@/lib/application/sale";
+import { applySaleSnapshotRewrite, editSale, submitSale } from "@/lib/application/sale";
 
 describe("application layer", () => {
   beforeEach(() => {
@@ -456,6 +458,33 @@ describe("application layer", () => {
       ).rejects.toThrow(
         "이미 이 날짜의 판매가 입력되어 있어요. 캘린더 날짜 상세 또는 판매 수정 화면에서 기존 기록을 수정해주세요.",
       );
+    });
+
+    it("applySaleSnapshotRewrite returns rewrite summary", async () => {
+      rpcMocks.applySaleSnapshotRewrite.mockResolvedValue({
+        data: {
+          replayRunId: "run-2",
+          affectedSaleCount: 3,
+          affectedItemCount: 8,
+          totalCostDelta: 4200.5,
+        },
+        error: null,
+      });
+
+      await expect(
+        applySaleSnapshotRewrite(
+          { rpc: {} },
+          {
+            fromDate: "2026-05-01",
+            note: "원가 스냅샷 재작성",
+          },
+        ),
+      ).resolves.toEqual({
+        replayRunId: "run-2",
+        affectedSaleCount: 3,
+        affectedItemCount: 8,
+        totalCostDelta: 4200.5,
+      });
     });
   });
 
