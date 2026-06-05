@@ -283,6 +283,45 @@ export function applyStockCount(
   );
 }
 
+interface ApplyInventoryReplayArgs {
+  fromDate: string;
+  note?: string;
+}
+
+export interface ApplyInventoryReplayResult {
+  replayRunId: string;
+  affectedIngredientCount: number;
+  stockDeltaTotal: number;
+  avgPriceDeltaTotal: number;
+}
+
+interface ApplyInventoryReplayRawRow {
+  replay_run_id: string;
+  affected_ingredient_count: number;
+  stock_delta_total: number;
+  avg_price_delta_total: number;
+}
+
+export function applyInventoryReplay(
+  client: ClientLike,
+  args: ApplyInventoryReplayArgs,
+): Promise<RpcResult<ApplyInventoryReplayResult>> {
+  return callRpcSingleRow<ApplyInventoryReplayRawRow, ApplyInventoryReplayResult>(
+    client,
+    "apply_inventory_replay",
+    {
+      p_from_date: args.fromDate,
+      p_note: args.note ?? null,
+    },
+    (row) => ({
+      replayRunId: row.replay_run_id,
+      affectedIngredientCount: Number(row.affected_ingredient_count),
+      stockDeltaTotal: numeric(row.stock_delta_total),
+      avgPriceDeltaTotal: numeric(row.avg_price_delta_total),
+    }),
+  );
+}
+
 interface SubscribePushArgs {
   endpoint: string;
   keysP256dh: string;

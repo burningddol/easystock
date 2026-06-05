@@ -4,6 +4,7 @@ const rpcMocks = vi.hoisted(() => ({
   getCalendarMonth: vi.fn(),
   getTodayDashboard: vi.fn(),
   getDepletionForecast: vi.fn(),
+  applyInventoryReplay: vi.fn(),
   savePurchase: vi.fn(),
   saveSale: vi.fn(),
   editSale: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock("@/lib/supabase/rpc", () => ({
   getCalendarMonth: rpcMocks.getCalendarMonth,
   getTodayDashboard: rpcMocks.getTodayDashboard,
   getDepletionForecast: rpcMocks.getDepletionForecast,
+  applyInventoryReplay: rpcMocks.applyInventoryReplay,
   savePurchase: rpcMocks.savePurchase,
   saveSale: rpcMocks.saveSale,
   editSale: rpcMocks.editSale,
@@ -42,7 +44,7 @@ vi.mock("@/lib/domain/forecast", async () => {
 import { createMenu, removeMenu, updateMenu } from "@/lib/application/menu";
 import { loadTodayDashboard } from "@/lib/application/dashboard";
 import { loadCalendarMonth, withConsecutiveMissingDays } from "@/lib/application/calendar";
-import { loadDepletionForecast } from "@/lib/application/inventory";
+import { applyInventoryReplay, loadDepletionForecast } from "@/lib/application/inventory";
 import { submitPurchase } from "@/lib/application/purchase";
 import { editSale, submitSale } from "@/lib/application/sale";
 
@@ -269,6 +271,33 @@ describe("application layer", () => {
         daysOff: ["SUN"],
         signupDate: new Date("2026-05-20T00:00:00.000Z"),
         today: expect.any(Date),
+      });
+    });
+
+    it("applyInventoryReplay returns applied replay summary", async () => {
+      rpcMocks.applyInventoryReplay.mockResolvedValue({
+        data: {
+          replayRunId: "run-1",
+          affectedIngredientCount: 2,
+          stockDeltaTotal: -120,
+          avgPriceDeltaTotal: 15.5,
+        },
+        error: null,
+      });
+
+      await expect(
+        applyInventoryReplay(
+          { rpc: {} },
+          {
+            fromDate: "2026-06-01",
+            note: "관리자 재계산",
+          },
+        ),
+      ).resolves.toEqual({
+        replayRunId: "run-1",
+        affectedIngredientCount: 2,
+        stockDeltaTotal: -120,
+        avgPriceDeltaTotal: 15.5,
       });
     });
   });
