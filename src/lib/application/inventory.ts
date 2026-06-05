@@ -3,7 +3,11 @@ import {
   type DailyConsumption,
   type ForecastResult,
 } from "@/lib/domain/forecast";
-import { getDepletionForecast } from "@/lib/supabase/rpc";
+import {
+  applyInventoryReplay as applyInventoryReplayRpc,
+  getDepletionForecast,
+  type ApplyInventoryReplayResult,
+} from "@/lib/supabase/rpc";
 
 interface RpcClient {
   rpc: unknown;
@@ -44,4 +48,19 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       ...forecast,
     };
   });
+}
+
+export interface ApplyInventoryReplayInput {
+  fromDate: string;
+  note?: string;
+}
+
+export async function applyInventoryReplay(
+  client: RpcClient,
+  input: ApplyInventoryReplayInput,
+): Promise<ApplyInventoryReplayResult> {
+  const { data, error } = await applyInventoryReplayRpc(client, input);
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("apply_inventory_replay: no row returned");
+  return data;
 }
