@@ -88,7 +88,32 @@ describe("sale stock guard", () => {
     ]);
 
     expect(message).toBe(
-      "인절미 재고가 60g 부족해요. 현재 사용 가능한 재고는 0g이고, 입력한 판매에는 60g이 필요해요.",
+      "재고가 부족한 재료가 있어요. 인절미: 사용 가능 0g, 필요 60g, 부족 60g. 먼저 매입 또는 재고실사로 재고를 채워주세요.",
+    );
+  });
+
+  it("lists every shortage in the message", () => {
+    const message = formatStockShortageMessage([
+      {
+        ingredientId: "ing-1",
+        name: "인절미",
+        unit: "g",
+        available: 0,
+        required: 60,
+        shortage: 60,
+      },
+      {
+        ingredientId: "ing-2",
+        name: "팥",
+        unit: "g",
+        available: 10,
+        required: 40,
+        shortage: 30,
+      },
+    ]);
+
+    expect(message).toBe(
+      "재고가 부족한 재료가 있어요. 인절미: 사용 가능 0g, 필요 60g, 부족 60g / 팥: 사용 가능 10g, 필요 40g, 부족 30g. 먼저 매입 또는 재고실사로 재고를 채워주세요.",
     );
   });
 });

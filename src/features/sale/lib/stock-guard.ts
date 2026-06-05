@@ -95,13 +95,14 @@ export function findSaleStockShortages({
 }
 
 export function formatStockShortageMessage(shortages: readonly StockShortage[]): string {
-  const top = shortages[0];
-  if (!top) return "";
+  if (shortages.length === 0) return "";
 
-  const first = `${top.name} 재고가 ${formatStockAmount(top.shortage)}${top.unit} 부족해요. 현재 사용 가능한 재고는 ${formatStockAmount(top.available)}${top.unit}이고, 입력한 판매에는 ${formatStockAmount(top.required)}${top.unit}이 필요해요.`;
-  if (shortages.length === 1) return first;
+  const details = shortages.map(
+    (item) =>
+      `${item.name}: 사용 가능 ${formatStockAmount(item.available)}${item.unit}, 필요 ${formatStockAmount(item.required)}${item.unit}, 부족 ${formatStockAmount(item.shortage)}${item.unit}`,
+  );
 
-  return `${first} 외 ${shortages.length - 1}개 재료도 부족해요. 먼저 매입 또는 재고실사로 재고를 채워주세요.`;
+  return `재고가 부족한 재료가 있어요. ${details.join(" / ")}. 먼저 매입 또는 재고실사로 재고를 채워주세요.`;
 }
 
 function formatStockAmount(value: number): string {
