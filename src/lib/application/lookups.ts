@@ -32,6 +32,7 @@ export interface MenuRowWithRecipe {
       id: string;
       name: string;
       unit: string;
+      current_stock: number;
       current_avg_price: number;
     };
   }>;
@@ -41,6 +42,7 @@ interface RawIngredient {
   id: string;
   name: string;
   unit: string;
+  current_stock: string | number;
   current_avg_price: string | number;
 }
 
@@ -113,7 +115,7 @@ export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe
         id,
         quantity_per_serving,
         ingredient:ingredients (
-          id, name, unit, current_avg_price
+          id, name, unit, current_stock, current_avg_price
         )
       )
     `,
@@ -139,6 +141,7 @@ export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe
           id: item.ingredient.id,
           name: item.ingredient.name,
           unit: item.ingredient.unit,
+          current_stock: Number(item.ingredient.current_stock),
           current_avg_price: Number(item.ingredient.current_avg_price),
         },
       })),

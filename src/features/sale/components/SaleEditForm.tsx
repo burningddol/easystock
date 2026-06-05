@@ -8,6 +8,7 @@ import { Field } from "@/components/ui/field";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { cn } from "@/lib/utils";
 import { useSaleEdit, useSaleDelete } from "../hooks/useSaleEdit";
+import { findSaleStockShortages, formatStockShortageMessage } from "../lib/stock-guard";
 import { toSnapshotMenu } from "../lib/to-snapshot-menu";
 import type { SaleWithItems } from "../hooks/useSaleByDate";
 import { MenuRow } from "./MenuRow";
@@ -40,6 +41,18 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
     menus && menus.length > 0 && items.length > 0
       ? computeSnapshotPreview(items, menus.map(toSnapshotMenu))
       : null;
+  const shortages =
+    menus && menus.length > 0
+      ? findSaleStockShortages({
+          items,
+          menus,
+          existingItems: sale.items.map((item) => ({
+            menu_id: item.menu_id,
+            quantity: item.quantity,
+          })),
+        })
+      : [];
+  const stockGuardMessage = formatStockShortageMessage(shortages);
 
   function setQuantity(menuId: string, next: number): void {
     setQuantities((prev) => {
@@ -54,6 +67,8 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
   }
 
   function handleSave(): void {
+    if (shortages.length > 0) return;
+
     editMutation.mutate(
       { saleId: sale.id, newItems: items, reason: reason.trim() || undefined },
       { onSuccess: () => router.push("/today") },
@@ -72,6 +87,7 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
 
   const totalQuantity = items.reduce((sum, it) => sum + it.quantity, 0);
   const isPending = editMutation.isPending || deleteMutation.isPending;
+  const isBlockedByStock = shortages.length > 0;
 
   return (
     <div className="flex flex-col gap-stack pb-44">
@@ -99,9 +115,9 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
         />
       </Field>
 
-      {(editMutation.error || deleteMutation.error) && (
+      {(stockGuardMessage || editMutation.error || deleteMutation.error) && (
         <p role="alert" className="text-caption text-red">
-          {editMutation.error?.message ?? deleteMutation.error?.message}
+          {stockGuardMessage ?? editMutation.error?.message ?? deleteMutation.error?.message}
         </p>
       )}
 
@@ -125,7 +141,7 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
           <PrimaryButton
             type="button"
             onClick={handleSave}
-            disabled={totalQuantity === 0 || isPending}
+            disabled={totalQuantity === 0 || isPending || isBlockedByStock}
           >
             {editMutation.isPending ? "저장 중…" : "수정 저장"}
           </PrimaryButton>

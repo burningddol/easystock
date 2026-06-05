@@ -12,6 +12,7 @@ import { StickyTotalCard } from "./StickyTotalCard";
 import { SaleSaveBar } from "./SaleSaveBar";
 import { useSaleSubmit } from "../hooks/useSaleSubmit";
 import { useFavoriteMenus } from "../hooks/useFavoriteMenus";
+import { findSaleStockShortages, formatStockShortageMessage } from "../lib/stock-guard";
 import { toSnapshotMenu } from "../lib/to-snapshot-menu";
 
 interface SaleInputFormProps {
@@ -48,8 +49,12 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
           menus.map(toSnapshotMenu),
         )
       : null;
+  const shortages = menus && menus.length > 0 ? findSaleStockShortages({ items, menus }) : [];
+  const stockGuardMessage = formatStockShortageMessage(shortages);
 
   function handleSubmit(): void {
+    if (shortages.length > 0) return;
+
     submit.mutate(
       {
         soldAt,
@@ -78,6 +83,7 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
 
   const totalQuantity = items.reduce((sum, it) => sum + it.quantity, 0);
   const isRetroactive = soldAt < localIsoDate();
+  const isBlockedByStock = shortages.length > 0;
 
   return (
     <div className="flex flex-col gap-stack pb-44">
@@ -102,9 +108,9 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
 
       <SaleSaveBar
         left={
-          submit.isError && (
+          (stockGuardMessage || submit.isError) && (
             <p role="alert" className="flex-1 text-caption text-red">
-              {submit.error.message}
+              {stockGuardMessage || submit.error?.message}
             </p>
           )
         }
@@ -112,7 +118,7 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
           <PrimaryButton
             type="button"
             onClick={handleSubmit}
-            disabled={totalQuantity === 0 || submit.isPending}
+            disabled={totalQuantity === 0 || submit.isPending || isBlockedByStock}
           >
             {submit.isPending ? "저장 중…" : `${totalQuantity}개 저장`}
           </PrimaryButton>
