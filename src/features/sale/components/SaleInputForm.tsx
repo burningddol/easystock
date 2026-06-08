@@ -109,7 +109,7 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
       <SaleSaveBar
         left={
           (stockGuardMessage || submit.isError) && (
-            <p role="alert" className="flex-1 text-caption text-red">
+            <p role="alert" className="flex-1 whitespace-pre-line text-caption text-red">
               {stockGuardMessage || submit.error?.message}
             </p>
           )

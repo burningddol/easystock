@@ -116,7 +116,7 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
       </Field>
 
       {(stockGuardMessage || editMutation.error || deleteMutation.error) && (
-        <p role="alert" className="text-caption text-red">
+        <p role="alert" className="whitespace-pre-line text-caption text-red">
           {stockGuardMessage ?? editMutation.error?.message ?? deleteMutation.error?.message}
         </p>
       )}

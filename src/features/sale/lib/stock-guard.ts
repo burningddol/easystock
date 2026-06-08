@@ -99,10 +99,10 @@ export function formatStockShortageMessage(shortages: readonly StockShortage[]):
 
   const details = shortages.map(
     (item) =>
-      `${item.name}: 사용 가능 ${formatStockAmount(item.available)}${item.unit}, 필요 ${formatStockAmount(item.required)}${item.unit}, 부족 ${formatStockAmount(item.shortage)}${item.unit}`,
+      `- ${item.name}: 사용 가능 ${formatStockAmount(item.available)}${item.unit}, 필요 ${formatStockAmount(item.required)}${item.unit}, 부족 ${formatStockAmount(item.shortage)}${item.unit}`,
   );
 
-  return `재고가 부족한 재료가 있어요. ${details.join(" / ")}. 먼저 매입 또는 재고실사로 재고를 채워주세요.`;
+  return `재고가 부족한 재료가 있어요.\n${details.join("\n")}\n먼저 매입 또는 재고실사로 재고를 채워주세요.`;
 }
 
 function formatStockAmount(value: number): string {
