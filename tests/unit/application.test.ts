@@ -238,6 +238,7 @@ describe("application layer", () => {
             unit: "g",
             currentStock: 1200,
             leadTimeDays: 3,
+            safetyBufferDays: 2,
             consumptionSamples: [{ date: "2026-06-01", amount: 80 }],
             signedUpAt: "2026-05-20T00:00:00.000Z",
             regularDaysOff: ["SUN"],
@@ -259,6 +260,7 @@ describe("application layer", () => {
           unit: "g",
           currentStock: 1200,
           leadTimeDays: 3,
+          safetyBufferDays: 2,
           expectedDepletionDate: new Date("2026-06-10T00:00:00.000Z"),
           status: "caution",
           trend: "rising",
@@ -269,6 +271,7 @@ describe("application layer", () => {
       expect(forecastMocks.forecastIngredient).toHaveBeenCalledWith({
         currentStock: 1200,
         leadTimeDays: 3,
+        safetyBufferDays: 2,
         consumptionSamples: [{ date: new Date("2026-06-01"), amount: 80 }],
         daysOff: ["SUN"],
         signupDate: new Date("2026-05-20T00:00:00.000Z"),

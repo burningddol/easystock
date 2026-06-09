@@ -2,7 +2,8 @@
 -- Spec: contracts/domain-rpc.md L215-241
 --
 -- 분류 자체는 클라이언트 forecast.ts가 담당. 서버는 ingredient + 30일 sale 소비
--- 샘플 + lead_time(첫 거래처 또는 기본 1일) + signed_up_at + regular_days_off만 반환.
+-- 샘플 + lead_time(첫 거래처 또는 기본 1일) + safety_buffer_days + signed_up_at
+-- + regular_days_off만 반환.
 -- "raw 데이터 + 클라이언트 분류" 결정 (tasks.md T124의 latter 방식): 테스트 단순화 +
 -- 클라이언트가 forecast.ts 그대로 재사용.
 
@@ -13,6 +14,7 @@ returns table (
   unit public.ingredient_unit,
   current_stock numeric,
   lead_time_days integer,
+  safety_buffer_days integer,
   consumption_samples jsonb,
   signed_up_at timestamptz,
   regular_days_off public.weekday[]
@@ -48,6 +50,7 @@ begin
        limit 1),
       1
     ) as lead_time_days,
+    u.safety_buffer_days,
     -- 30일치 일별 소비량: sale_items.quantity × recipe_items.quantity_per_serving 합산
     coalesce(
       (select jsonb_agg(jsonb_build_object('date', day, 'amount', total))

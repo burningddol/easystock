@@ -107,7 +107,7 @@ specs/001-mvp-core/        spec.md / data-model.md / contracts / tasks.md
 
 1. **서버에서 raw 데이터 수집**
    - [021_get_depletion_forecast_rpc.sql](/Users/yamon/Desktop/projects/ezstock/supabase/migrations/021_get_depletion_forecast_rpc.sql)
-   - 각 재료별로 `current_stock`, `signed_up_at`, `regular_days_off`, 최근 30일 `consumption_samples`를 반환합니다.
+   - 각 재료별로 `current_stock`, `signed_up_at`, `regular_days_off`, `safety_buffer_days`, 최근 30일 `consumption_samples`를 반환합니다.
    - `consumption_samples`는 `sale_items.quantity × recipe_items.quantity_per_serving`를 날짜별로 합산한 값입니다.
    - 거래처 리드타임은 해당 재료에 대해 **가장 자주 사용한 vendor의 리드타임**을 쓰고, 이력이 없으면 기본 `1일`을 사용합니다.
 
@@ -130,7 +130,8 @@ specs/001-mvp-core/        spec.md / data-model.md / contracts / tasks.md
 
 5. **리드타임 + 안전여유 1일로 상태 분류**
    - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
-   - 소진일까지 남은 일수에서 `거래처 리드타임 + 안전여유 1일`을 뺀 `buffer`로 상태를 나눕니다.
+   - 소진일까지 남은 일수에서 `거래처 리드타임 + 설정된 안전여유일`을 뺀 `buffer`로 상태를 나눕니다.
+   - 기본값은 `안전여유 1일`이고, 설정 화면에서 `0~7일` 범위로 조정할 수 있습니다.
    - `critical`: buffer ≤ 1
    - `order_needed`: buffer = 2
    - `caution`: buffer 3~4

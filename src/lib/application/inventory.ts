@@ -19,6 +19,7 @@ export interface IngredientForecastView extends ForecastResult {
   unit: "g" | "ml" | "piece";
   currentStock: number;
   leadTimeDays: number;
+  safetyBufferDays: number;
 }
 
 export async function loadDepletionForecast(client: RpcClient): Promise<IngredientForecastView[]> {
@@ -34,6 +35,7 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
     const forecast = forecastIngredient({
       currentStock: row.currentStock,
       leadTimeDays: row.leadTimeDays,
+      safetyBufferDays: row.safetyBufferDays,
       consumptionSamples: samples,
       daysOff: row.regularDaysOff,
       signupDate: new Date(row.signedUpAt),
@@ -45,6 +47,7 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       unit: row.unit,
       currentStock: row.currentStock,
       leadTimeDays: row.leadTimeDays,
+      safetyBufferDays: row.safetyBufferDays,
       ...forecast,
     };
   });

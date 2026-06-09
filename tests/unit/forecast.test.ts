@@ -154,36 +154,42 @@ describe("predictDepletionDate", () => {
 
 describe("classifyStatus (FR-013)", () => {
   it("데이터 부족(depletionDate=null) → safe", () => {
-    expect(classifyStatus(null, 1, today)).toBe("safe");
+    expect(classifyStatus(null, 1, 1, today)).toBe("safe");
   });
 
   it("buffer ≤ 1 → critical", () => {
     // 소진 1일 후, 리드타임 0, 안전여유 1 → buffer = 0 → critical
     const date = new Date(today.getTime() + 1 * ONE_DAY);
-    expect(classifyStatus(date, 0, today)).toBe("critical");
+    expect(classifyStatus(date, 0, 1, today)).toBe("critical");
   });
 
   it("buffer == 2 → order_needed", () => {
     // 소진 4일 후, 리드타임 1, 안전여유 1 → buffer = 2 → order_needed
     const date = new Date(today.getTime() + 4 * ONE_DAY);
-    expect(classifyStatus(date, 1, today)).toBe("order_needed");
+    expect(classifyStatus(date, 1, 1, today)).toBe("order_needed");
   });
 
   it("buffer 3~4 → caution", () => {
     // 소진 6일 후, 리드타임 1, 안전여유 1 → buffer = 4 → caution
     const date = new Date(today.getTime() + 6 * ONE_DAY);
-    expect(classifyStatus(date, 1, today)).toBe("caution");
+    expect(classifyStatus(date, 1, 1, today)).toBe("caution");
   });
 
   it("buffer ≥ 5 → safe", () => {
     const date = new Date(today.getTime() + 10 * ONE_DAY);
-    expect(classifyStatus(date, 1, today)).toBe("safe");
+    expect(classifyStatus(date, 1, 1, today)).toBe("safe");
   });
 
   it("리드타임 긴 거래처는 더 빨리 critical", () => {
     // 소진 5일 후, 리드타임 5 → buffer = -1 → critical
     const date = new Date(today.getTime() + 5 * ONE_DAY);
-    expect(classifyStatus(date, 5, today)).toBe("critical");
+    expect(classifyStatus(date, 5, 1, today)).toBe("critical");
+  });
+
+  it("안전여유일이 커질수록 더 빨리 위험 단계로 간다", () => {
+    const date = new Date(today.getTime() + 6 * ONE_DAY);
+    expect(classifyStatus(date, 1, 1, today)).toBe("caution");
+    expect(classifyStatus(date, 1, 3, today)).toBe("order_needed");
   });
 });
 
@@ -230,6 +236,7 @@ describe("forecastIngredient (합성)", () => {
     const result = forecastIngredient({
       currentStock: 100,
       leadTimeDays: 1,
+      safetyBufferDays: 1,
       consumptionSamples: baseSamples(),
       daysOff: [],
       signupDate: daysAgo(3),
@@ -245,6 +252,7 @@ describe("forecastIngredient (합성)", () => {
     const result = forecastIngredient({
       currentStock: 50,
       leadTimeDays: 1,
+      safetyBufferDays: 1,
       consumptionSamples: baseSamples(),
       daysOff: [],
       signupDate: daysAgo(60),
@@ -260,6 +268,7 @@ describe("forecastIngredient (합성)", () => {
     const noOffDay = forecastIngredient({
       currentStock: 100,
       leadTimeDays: 1,
+      safetyBufferDays: 1,
       consumptionSamples: baseSamples(),
       daysOff: [],
       signupDate: daysAgo(60),
@@ -268,6 +277,7 @@ describe("forecastIngredient (합성)", () => {
     const oneOffDay = forecastIngredient({
       currentStock: 100,
       leadTimeDays: 1,
+      safetyBufferDays: 1,
       consumptionSamples: baseSamples(),
       daysOff: ["SUN"],
       signupDate: daysAgo(60),

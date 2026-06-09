@@ -22,6 +22,7 @@ async function fetchDepletionForecast(): Promise<
       unit: "g" | "ml" | "piece";
       currentStock: number;
       leadTimeDays: number;
+      safetyBufferDays: number;
     } & ForecastResult
   >
 > {

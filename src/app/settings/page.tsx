@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { STORE_TYPE_LABELS } from "@/features/auth/schemas";
 import { LogoutButton } from "@/features/settings/components/LogoutButton";
 import { RegularDaysOffEditor } from "@/features/settings/components/RegularDaysOffEditor";
+import { SafetyBufferEditor } from "@/features/settings/components/SafetyBufferEditor";
 import { StoreNameEditor } from "@/features/settings/components/StoreNameEditor";
 import type { Weekday } from "@/lib/domain/regular-days-off";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
@@ -22,7 +23,7 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
 
   const { data } = await supabase
     .from("users")
-    .select("store_name, store_type, regular_days_off")
+    .select("store_name, store_type, regular_days_off, safety_buffer_days")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -30,8 +31,10 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
     store_name: string;
     store_type: StoreType;
     regular_days_off: Weekday[];
+    safety_buffer_days: number;
   } | null;
   const initialDaysOff: Weekday[] = profile?.regular_days_off ?? [];
+  const safetyBufferDays = profile?.safety_buffer_days ?? 1;
   const storeName = profile?.store_name ?? "내 가게";
   const storeType = profile?.store_type ?? "cafe";
 
@@ -77,17 +80,15 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
         <RegularDaysOffEditor initialDaysOff={initialDaysOff} />
 
         <div className="grid gap-stack-tight border-t border-border pt-stack">
+          <SafetyBufferEditor initialSafetyBufferDays={safetyBufferDays} userId={user.id} />
           <SettingRow
             label="거래처 리드타임"
-            value="각 재료 예측은 가장 자주 쓰는 거래처 리드타임을 사용합니다."
+            value={`각 재료 예측은 가장 자주 쓰는 거래처 리드타임 + 안전여유 ${safetyBufferDays}일을 기준으로 상태를 나눕니다.`}
           />
           <div className="flex flex-wrap gap-stack-tight">
             <Link href="/purchase" className={SECONDARY_BUTTON_CLASSES}>
               거래처 관리로 이동
             </Link>
-            <button type="button" disabled className={`${SECONDARY_BUTTON_CLASSES} opacity-50`}>
-              안전여유일 설정
-            </button>
           </div>
         </div>
       </section>
