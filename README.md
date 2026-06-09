@@ -99,6 +99,55 @@ specs/001-mvp-core/        spec.md / data-model.md / contracts / tasks.md
 
 상세는 [.specify/memory/constitution.md](.specify/memory/constitution.md).
 
+## 재료 소진 예측 알고리즘
+
+이지스톡의 소진 예측은 단순 최근 7일 평균이 아니라, **실제 판매 이력에서 재료별 일일 소비량을 만들고, 정기휴무와 거래처 리드타임까지 반영한 뒤 하루씩 시뮬레이션**하는 방식입니다. 스펙 기준은 `FR-012`, `FR-013`, `FR-018`, `FR-025`, `FR-042`이고, 실제 구현 단일 출처는 [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)입니다.
+
+핵심 흐름은 이렇습니다.
+
+1. **서버에서 raw 데이터 수집**
+   - [021_get_depletion_forecast_rpc.sql](/Users/yamon/Desktop/projects/ezstock/supabase/migrations/021_get_depletion_forecast_rpc.sql)
+   - 각 재료별로 `current_stock`, `signed_up_at`, `regular_days_off`, 최근 30일 `consumption_samples`를 반환합니다.
+   - `consumption_samples`는 `sale_items.quantity × recipe_items.quantity_per_serving`를 날짜별로 합산한 값입니다.
+   - 거래처 리드타임은 해당 재료에 대해 **가장 자주 사용한 vendor의 리드타임**을 쓰고, 이력이 없으면 기본 `1일`을 사용합니다.
+
+2. **가입 후 7일은 콜드스타트로 예측 중지**
+   - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
+   - 가입 후 `7일 미만`이면 `isColdStart=true`로 처리하고, 소진일 예측은 돌리지 않습니다.
+   - 그래서 재료 화면에는 “데이터 수집 중” 안내가 먼저 뜹니다.
+
+3. **정기휴무를 제외한 요일별 평균 소비량 계산**
+   - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
+   - 같은 요일의 sample들을 평균내서 `월/화/수...`별 평균 소비량을 만듭니다.
+   - 정기휴무일은 평균 산정에서 제외합니다.
+   - 어떤 요일 데이터가 비어 있으면 그 요일을 0으로 두지 않고, **전체 영업일 평균**으로 대체해서 실제보다 지나치게 낙관적인 예측을 막습니다.
+
+4. **오늘부터 하루씩 재고 소진 시뮬레이션**
+   - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
+   - 내일부터 최대 365일까지 하루씩 진행하면서, 영업일이면 그 요일 평균 소비량만큼 재고를 차감합니다.
+   - 정기휴무는 소비 0으로 건너뜁니다.
+   - 재고가 `0 이하`가 되는 첫 날짜를 예상 소진일로 잡습니다.
+
+5. **리드타임 + 안전여유 1일로 상태 분류**
+   - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
+   - 소진일까지 남은 일수에서 `거래처 리드타임 + 안전여유 1일`을 뺀 `buffer`로 상태를 나눕니다.
+   - `critical`: buffer ≤ 1
+   - `order_needed`: buffer = 2
+   - `caution`: buffer 3~4
+   - `safe`: buffer ≥ 5
+
+6. **최근 사용량 급증/급감 감지**
+   - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
+   - 최근 7일 평균과 30일 평균을 비교합니다.
+   - 비율 차이가 `±20%`를 넘으면 `rising` 또는 `falling`으로 분류합니다.
+
+중요한 구현 포인트:
+
+- 서버 RPC는 **raw 데이터만** 만들고, 최종 `status/trend/isColdStart` 분류는 클라이언트 도메인 함수에서 수행합니다.
+  - [useDepletionForecast.ts](/Users/yamon/Desktop/projects/ezstock/src/features/inventory/hooks/useDepletionForecast.ts)
+- 즉, 예측 규칙의 단일 출처는 SQL이 아니라 TypeScript 도메인 모듈이며, 단위 테스트도 여기에 집중되어 있습니다.
+  - [forecast.test.ts](/Users/yamon/Desktop/projects/ezstock/tests/unit/forecast.test.ts)
+
 ## 디자인 시스템
 
 `.claude/skills/easystock-design-system/` — 토큰·컴포넌트·6개 화면 패턴 단일 진실 공급원. 색·spacing은 [tokens.ts](.claude/skills/easystock-design-system/tokens.ts)에서 import (하드코딩 금지). Pretendard 폰트 강제. PWA manifest의 `theme_color`/`background_color`만 hex literal 예외.
