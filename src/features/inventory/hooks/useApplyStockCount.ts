@@ -14,7 +14,14 @@ async function submit(input: ApplyStockCountInput): Promise<ApplyStockCountResul
     countedAt: input.countedAt,
     items: input.items,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === "23505" && error.message.includes("stock_counts_one_per_day_per_user")) {
+      throw new Error(
+        "같은 날짜 재고 실사가 이미 저장되어 있어요. 현재 환경 DB에 수정용 마이그레이션이 아직 적용되지 않았을 수 있습니다.",
+      );
+    }
+    throw new Error(error.message);
+  }
   if (!data) throw new Error("apply_stock_count: empty response");
   return data;
 }

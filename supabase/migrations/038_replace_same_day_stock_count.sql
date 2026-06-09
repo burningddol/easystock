@@ -1,6 +1,5 @@
--- Migration: apply_stock_count RPC (재고 실사 적용)
--- Spec: contracts/domain-rpc.md L177-213, FR-015/016/017/028
--- 헌법 III: 단가 불변 (FR-016) — current_avg_price는 절대 변경 안 함
+-- Migration: 같은 날짜 재고 실사는 기존 실사를 교체
+-- 기존 unique 제약은 유지하되, apply_stock_count가 same-day save를 edit처럼 처리한다.
 
 create or replace function public.apply_stock_count(
   p_counted_at date,
@@ -105,12 +104,9 @@ begin
     end if;
 
     v_system_stock := coalesce(v_previous_system_stock, v_ingredient.current_stock);
-
-    -- 차이 = system - actual. 양수면 손실, 음수면 발견(over).
     v_diff := v_system_stock - v_actual;
     v_loss := v_diff * v_ingredient.current_avg_price;
 
-    -- stock_count_items 명세 INSERT (system_stock_at_count = 실사 시점 스냅샷)
     insert into public.stock_count_items (
       stock_count_id, user_id, ingredient_id,
       actual_stock, system_stock_at_count, weekly_loss_amount
@@ -119,13 +115,11 @@ begin
       v_actual, v_system_stock, v_loss
     );
 
-    -- ingredients.current_stock = actual (단가는 그대로!)
     update public.ingredients
     set current_stock = v_actual,
         updated_at = now()
     where id = v_ingredient.id;
 
-    -- price_history (reason='stock_count_correction', new_avg = previous_avg)
     insert into public.ingredient_price_history (
       user_id, ingredient_id, previous_avg_price, new_avg_price,
       previous_stock, new_stock, reason, reference_id
@@ -161,7 +155,4 @@ end;
 $$;
 
 comment on function public.apply_stock_count(date, jsonb) is
-  '재고 실사 적용 (FR-015). 수량만 보정, 단가 불변 (FR-016, 헌법 III). 손실액 합계 반환.';
-
-revoke all on function public.apply_stock_count(date, jsonb) from public;
-grant execute on function public.apply_stock_count(date, jsonb) to authenticated;
+  '재고 실사 적용. 같은 날짜 재저장은 기존 실사를 교체하고 필요 시 inventory replay를 다시 적용한다.';
