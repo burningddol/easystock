@@ -12,13 +12,12 @@ import { isRegularDayOff, weekdayOf, type Weekday } from "./regular-days-off";
  *     (정확히 7일 경계는 cold가 아님 — `tests/unit/forecast.test.ts` 참고)
  *  2. 요일별 가중 평균 산정 (정기휴무 제외)
  *  3. 오늘부터 일별 시뮬레이션 (정기휴무는 소비 0)
- *  4. 리드타임 + 안전여유 1일 차감해 status 분류
+ *  4. 리드타임 + 안전여유일 설정값 차감해 status 분류
  *  5. trend는 7일 평균 vs 30일 평균 ±20% 비교
  */
 
 const COLD_START_DAYS = 7;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-const SAFETY_BUFFER_DAYS = 1;
 const MAX_FORECAST_DAYS = 365;
 const TREND_THRESHOLD = 0.2;
 
@@ -33,6 +32,7 @@ export interface DailyConsumption {
 export interface ForecastInput {
   currentStock: number;
   leadTimeDays: number;
+  safetyBufferDays: number;
   consumptionSamples: readonly DailyConsumption[];
   daysOff: readonly Weekday[];
   signupDate: Date;
@@ -117,7 +117,7 @@ function overallWeekdayAverage(weekdayAvg: ReadonlyMap<Weekday, Decimal>): Decim
 }
 
 /**
- * 리드타임 + 안전여유 1일 빼고 남은 buffer일 수로 status 분류 (FR-013).
+ * 리드타임 + 안전여유일을 빼고 남은 buffer일 수로 status 분류 (FR-013).
  * - buffer ≤ 1: critical (당일/익일 소진 임박)
  * - buffer == 2: order_needed (지금 발주해야)
  * - buffer 3~4: caution
@@ -128,6 +128,7 @@ function overallWeekdayAverage(weekdayAvg: ReadonlyMap<Weekday, Decimal>): Decim
 export function classifyStatus(
   depletionDate: Date | null,
   leadTimeDays: number,
+  safetyBufferDays: number,
   today: Date,
 ): DepletionStatus {
   if (!depletionDate) return "safe";
@@ -136,7 +137,7 @@ export function classifyStatus(
     0,
     Math.floor((depletionDate.getTime() - today.getTime()) / ONE_DAY_MS),
   );
-  const buffer = daysUntilDepletion - leadTimeDays - SAFETY_BUFFER_DAYS;
+  const buffer = daysUntilDepletion - leadTimeDays - safetyBufferDays;
 
   if (buffer <= 1) return "critical";
   if (buffer === 2) return "order_needed";
@@ -198,7 +199,7 @@ export function forecastIngredient(input: ForecastInput): ForecastResult {
 
   return {
     expectedDepletionDate: depletionDate,
-    status: classifyStatus(depletionDate, input.leadTimeDays, input.today),
+    status: classifyStatus(depletionDate, input.leadTimeDays, input.safetyBufferDays, input.today),
     trend: detectTrend(input.consumptionSamples, input.today),
     isColdStart: false,
   };

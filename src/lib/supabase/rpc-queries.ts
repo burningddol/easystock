@@ -6,6 +6,7 @@ export interface DepletionForecastRow {
   unit: "g" | "ml" | "piece";
   currentStock: number;
   leadTimeDays: number;
+  safetyBufferDays: number;
   consumptionSamples: Array<{ date: string; amount: number }>;
   signedUpAt: string;
   regularDaysOff: ReadonlyArray<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
@@ -17,6 +18,7 @@ interface DepletionForecastRawRow {
   unit: "g" | "ml" | "piece";
   current_stock: number;
   lead_time_days: number;
+  safety_buffer_days: number;
   consumption_samples: Array<{ date: string; amount: number }>;
   signed_up_at: string;
   regular_days_off: Array<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
@@ -248,6 +250,7 @@ export async function getDepletionForecast(
       unit: row.unit,
       currentStock: numeric(row.current_stock),
       leadTimeDays: row.lead_time_days,
+      safetyBufferDays: row.safety_buffer_days,
       consumptionSamples: row.consumption_samples ?? [],
       signedUpAt: row.signed_up_at,
       regularDaysOff: row.regular_days_off ?? [],

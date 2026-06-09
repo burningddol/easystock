@@ -23,6 +23,11 @@ interface UpdateRegularDaysOffInput {
   daysOff: readonly Weekday[];
 }
 
+interface UpdateSafetyBufferDaysInput {
+  userId: string;
+  safetyBufferDays: number;
+}
+
 export async function invalidateSettingsRelatedQueries(queryClient: QueryClient): Promise<void> {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: todayDashboardQueryKey }),
@@ -57,6 +62,22 @@ async function persistRegularDaysOff(
   return data?.[0]?.days_off ?? input.daysOff;
 }
 
+async function updateSafetyBufferDays(input: UpdateSafetyBufferDaysInput): Promise<number> {
+  const supabase = createClient() as unknown as SupabaseClient<Database>;
+  const { data, error } = await supabase
+    .from("users")
+    .update({ safety_buffer_days: input.safetyBufferDays })
+    .eq("id", input.userId)
+    .select("safety_buffer_days")
+    .single();
+
+  if (error) throw new Error(error.message);
+  if (typeof data?.safety_buffer_days !== "number") {
+    throw new Error("안전여유일 저장 결과가 비어 있습니다.");
+  }
+  return data.safety_buffer_days;
+}
+
 export function useUpdateStoreName(): UseMutationResult<string, Error, UpdateStoreNameInput> {
   const queryClient = useQueryClient();
   return useMutation({
@@ -75,6 +96,20 @@ export function useUpdateRegularDaysOff(): UseMutationResult<
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: persistRegularDaysOff,
+    onSuccess: async () => {
+      await invalidateSettingsRelatedQueries(queryClient);
+    },
+  });
+}
+
+export function useUpdateSafetyBufferDays(): UseMutationResult<
+  number,
+  Error,
+  UpdateSafetyBufferDaysInput
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateSafetyBufferDays,
     onSuccess: async () => {
       await invalidateSettingsRelatedQueries(queryClient);
     },

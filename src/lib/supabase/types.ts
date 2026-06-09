@@ -613,6 +613,7 @@ export type Database = {
           id: string
           permanent_delete_at: string | null
           regular_days_off: Database["public"]["Enums"]["weekday"][]
+          safety_buffer_days: number
           signed_up_at: string
           store_name: string
           store_type: Database["public"]["Enums"]["store_type"]
@@ -626,6 +627,7 @@ export type Database = {
           id: string
           permanent_delete_at?: string | null
           regular_days_off?: Database["public"]["Enums"]["weekday"][]
+          safety_buffer_days?: number
           signed_up_at?: string
           store_name: string
           store_type: Database["public"]["Enums"]["store_type"]
@@ -639,6 +641,7 @@ export type Database = {
           id?: string
           permanent_delete_at?: string | null
           regular_days_off?: Database["public"]["Enums"]["weekday"][]
+          safety_buffer_days?: number
           signed_up_at?: string
           store_name?: string
           store_type?: Database["public"]["Enums"]["store_type"]
@@ -755,6 +758,7 @@ export type Database = {
           lead_time_days: number
           name: string
           regular_days_off: Database["public"]["Enums"]["weekday"][]
+          safety_buffer_days: number
           signed_up_at: string
           unit: Database["public"]["Enums"]["ingredient_unit"]
         }[]
