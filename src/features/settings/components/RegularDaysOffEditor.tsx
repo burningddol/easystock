@@ -1,9 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { updateRegularDaysOff } from "@/lib/supabase/rpc";
 import { WEEKDAYS, WEEKDAY_LABELS } from "@/features/auth/schemas";
+import { useUpdateRegularDaysOff } from "@/features/settings/hooks/useSettingsMutations";
 import type { Weekday } from "@/lib/domain/regular-days-off";
 import { cn } from "@/lib/utils";
 
@@ -16,9 +16,11 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 export function RegularDaysOffEditor({
   initialDaysOff,
 }: RegularDaysOffEditorProps): React.ReactElement {
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<Weekday>>(() => new Set(initialDaysOff));
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const mutation = useUpdateRegularDaysOff();
 
   // 빠른 연속 토글 시 늦게 도착한 응답이 최신 상태를 덮어쓰지 않도록 monotonic id로 가드.
   const latestRequestId = useRef(0);
@@ -40,17 +42,19 @@ export function RegularDaysOffEditor({
     setErrorMessage(null);
 
     const payload = WEEKDAYS.filter((d) => next.has(d));
-    const supabase = createClient();
-    const { error } = await updateRegularDaysOff(supabase, { p_days_off: payload });
+    try {
+      await mutation.mutateAsync({ daysOff: payload });
+    } catch (error) {
+      if (requestId !== latestRequestId.current) return;
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "알 수 없는 오류");
+      return;
+    }
 
     if (requestId !== latestRequestId.current) return;
 
-    if (error) {
-      setStatus("error");
-      setErrorMessage(error.message);
-      return;
-    }
     setStatus("saved");
+    router.refresh();
   }
 
   return (

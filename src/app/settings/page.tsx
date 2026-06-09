@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { STORE_TYPE_LABELS } from "@/features/auth/schemas";
+import { LogoutButton } from "@/features/settings/components/LogoutButton";
 import { RegularDaysOffEditor } from "@/features/settings/components/RegularDaysOffEditor";
+import { StoreNameEditor } from "@/features/settings/components/StoreNameEditor";
 import type { Weekday } from "@/lib/domain/regular-days-off";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
 
@@ -53,14 +55,11 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
           </p>
         </header>
 
-        <SettingRow label="가게 이름" value={storeName} />
+        <StoreNameEditor initialStoreName={storeName} userId={user.id} />
         <SettingRow label="가게 유형" value={STORE_TYPE_LABELS[storeType]} />
         <SettingRow label="로그인 이메일" value={user.email ?? "이메일 없음"} />
 
         <div className="flex flex-wrap gap-stack-tight pt-2">
-          <button type="button" disabled className={`${SECONDARY_BUTTON_CLASSES} opacity-50`}>
-            가게 이름 변경
-          </button>
           <button type="button" disabled className={`${SECONDARY_BUTTON_CLASSES} opacity-50`}>
             가게 유형 관리
           </button>
@@ -103,8 +102,9 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
 
         <SettingRow
           label="로그아웃"
-          value="다음 단계에서 현재 기기 로그아웃과 세션 정리를 연결합니다."
+          value="현재 기기 세션을 종료하고 로그인 화면으로 돌아갑니다."
         />
+        <LogoutButton />
         <SettingRow
           label="푸시 알림"
           value="주문 알림과 마감 리마인더를 받을 기기 설정을 여기에 붙일 예정입니다."
