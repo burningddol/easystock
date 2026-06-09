@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMenus, type MenuRowWithRecipe } from "@/features/menu/hooks/useMenus";
-import { useSaleDraft } from "@/stores/sale-draft";
+import { EMPTY_SALE_DRAFT_ITEMS, sanitizeSaleDraftItems, useSaleDraft } from "@/stores/sale-draft";
 import { computeSnapshotPreview } from "@/lib/domain/snapshot";
 import { localIsoDate } from "@/lib/utils/format";
 import { PrimaryButton } from "@/components/ui/primary-button";
@@ -24,22 +24,27 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
   const router = useRouter();
   const { data: menus } = useMenus();
   const { data: favorites } = useFavoriteMenus();
-  // Zustand selector를 슬라이스별로 분리 — 전체 store 구독 시 모든 mutation이 매 렌더 트리거.
-  const items = useSaleDraft((s) => s.items);
-  const draftDate = useSaleDraft((s) => s.draftDate);
-  const setDraftDate = useSaleDraft((s) => s.setDraftDate);
+  const draftItems = useSaleDraft((s) => s.draftsByDate[soldAt] ?? EMPTY_SALE_DRAFT_ITEMS);
   const setQuantity = useSaleDraft((s) => s.setQuantity);
-  const clearDraft = useSaleDraft((s) => s.clear);
+  const clearDraftDate = useSaleDraft((s) => s.clearDate);
+  const replaceDraftItems = useSaleDraft((s) => s.replaceDateItems);
   const submit = useSaleSubmit();
 
   useEffect(() => {
-    if (draftDate !== soldAt) {
-      setDraftDate(soldAt);
+    if (!menus) return;
+
+    const validMenuIds = new Set(menus.map((menu) => menu.id));
+    const filtered = draftItems.filter((item) => validMenuIds.has(item.menuId));
+
+    if (filtered.length !== draftItems.length) {
+      replaceDraftItems(soldAt, filtered);
     }
-  }, [soldAt, draftDate, setDraftDate]);
+  }, [draftItems, menus, replaceDraftItems, soldAt]);
 
   // ~20개 메뉴 sort + Map 구성은 trivial, useMemo 오버헤드만 더함 → inline.
   const sortedMenus = sortByFavorites(menus ?? [], favorites ?? []);
+  const validMenuIds = menus ? new Set(menus.map((menu) => menu.id)) : null;
+  const items = validMenuIds ? sanitizeSaleDraftItems(draftItems, validMenuIds) : draftItems;
   const draftMap = new Map(items.map((it) => [it.menuId, it.quantity]));
 
   const preview =
@@ -63,7 +68,7 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
       },
       {
         onSuccess: () => {
-          clearDraft();
+          clearDraftDate(soldAt);
           router.push("/today");
         },
       },
@@ -99,7 +104,7 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
             key={menu.id}
             menu={menu}
             quantity={draftMap.get(menu.id) ?? 0}
-            onChange={(next) => setQuantity(menu.id, next)}
+            onChange={(next) => setQuantity(soldAt, menu.id, next)}
           />
         ))}
       </ul>

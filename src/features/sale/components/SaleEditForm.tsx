@@ -36,15 +36,22 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
   const items = Array.from(quantities.entries())
     .filter(([, qty]) => qty > 0)
     .map(([menuId, quantity]) => ({ menuId, quantity }));
+  const activeMenuIds = menus ? new Set(menus.map((menu) => menu.id)) : null;
+  const editableItems = activeMenuIds
+    ? items.filter((item) => activeMenuIds.has(item.menuId))
+    : items;
+  const missingSaleItems = activeMenuIds
+    ? sale.items.filter((item) => !activeMenuIds.has(item.menu_id))
+    : [];
 
   const preview =
-    menus && menus.length > 0 && items.length > 0
-      ? computeSnapshotPreview(items, menus.map(toSnapshotMenu))
+    menus && menus.length > 0 && editableItems.length > 0
+      ? computeSnapshotPreview(editableItems, menus.map(toSnapshotMenu))
       : null;
   const shortages =
     menus && menus.length > 0
       ? findSaleStockShortages({
-          items,
+          items: editableItems,
           menus,
           existingItems: sale.items.map((item) => ({
             menu_id: item.menu_id,
@@ -67,10 +74,10 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
   }
 
   function handleSave(): void {
-    if (shortages.length > 0) return;
+    if (shortages.length > 0 || missingSaleItems.length > 0) return;
 
     editMutation.mutate(
-      { saleId: sale.id, newItems: items, reason: reason.trim() || undefined },
+      { saleId: sale.id, newItems: editableItems, reason: reason.trim() || undefined },
       { onSuccess: () => router.push("/today") },
     );
   }
@@ -85,9 +92,20 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
     return <p className="text-body-regular text-ink-3">메뉴를 불러오는 중…</p>;
   }
 
-  const totalQuantity = items.reduce((sum, it) => sum + it.quantity, 0);
+  const totalQuantity = editableItems.reduce((sum, it) => sum + it.quantity, 0);
   const isPending = editMutation.isPending || deleteMutation.isPending;
   const isBlockedByStock = shortages.length > 0;
+  const isBlockedByMissingMenus = missingSaleItems.length > 0;
+  const missingMenuMessage =
+    missingSaleItems.length > 0
+      ? [
+          "이 판매에는 지금 비활성화되었거나 삭제된 메뉴가 포함되어 있어 수정 저장을 진행할 수 없어요.",
+          ...missingSaleItems.map(
+            (item) => `- ${item.menu_name ?? "알 수 없는 메뉴"} ${item.quantity}개`,
+          ),
+          "메뉴를 다시 활성화한 뒤 수정하거나, 필요하면 이 판매 기록을 삭제 후 다시 입력해 주세요.",
+        ].join("\n")
+      : null;
 
   return (
     <div className="flex flex-col gap-stack pb-44">
@@ -115,9 +133,12 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
         />
       </Field>
 
-      {(stockGuardMessage || editMutation.error || deleteMutation.error) && (
+      {(missingMenuMessage || stockGuardMessage || editMutation.error || deleteMutation.error) && (
         <p role="alert" className="whitespace-pre-line text-caption text-red">
-          {stockGuardMessage ?? editMutation.error?.message ?? deleteMutation.error?.message}
+          {missingMenuMessage ??
+            stockGuardMessage ??
+            editMutation.error?.message ??
+            deleteMutation.error?.message}
         </p>
       )}
 
@@ -141,7 +162,7 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
           <PrimaryButton
             type="button"
             onClick={handleSave}
-            disabled={totalQuantity === 0 || isPending || isBlockedByStock}
+            disabled={totalQuantity === 0 || isPending || isBlockedByStock || isBlockedByMissingMenus}
           >
             {editMutation.isPending ? "저장 중…" : "수정 저장"}
           </PrimaryButton>
