@@ -136,7 +136,12 @@ function depletionBody(item: IngredientForecastView): string {
   const days = daysUntilDate(item.expectedDepletionDate);
   if (days === null) return `현재 ${item.currentStock}${item.unit}`;
   const prefix = days === 0 ? "오늘 소진 예상" : `${days}일 후 소진`;
-  return `${prefix} · 리드타임 ${item.leadTimeDays}일`;
+  const leadTimeSource = item.isDefaultLeadTime
+    ? "기본 1일"
+    : item.leadTimeVendorName
+      ? `${item.leadTimeVendorName} 기준`
+      : "거래처 이력 기준";
+  return `${prefix} · 리드타임 ${item.leadTimeDays}일 (${leadTimeSource})`;
 }
 
 function expiryLabel(days: number): string {

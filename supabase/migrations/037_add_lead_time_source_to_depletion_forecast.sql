@@ -1,11 +1,5 @@
--- Migration: get_depletion_forecast RPC (재고 예측 raw 데이터)
--- Spec: contracts/domain-rpc.md L215-241
---
--- 분류 자체는 클라이언트 forecast.ts가 담당. 서버는 ingredient + 30일 sale 소비
--- 샘플 + lead_time(첫 거래처 또는 기본 1일) + lead_time 출처 +
--- safety_buffer_days + signed_up_at + regular_days_off만 반환.
--- "raw 데이터 + 클라이언트 분류" 결정 (tasks.md T124의 latter 방식): 테스트 단순화 +
--- 클라이언트가 forecast.ts 그대로 재사용.
+-- Migration: get_depletion_forecast RPC에 리드타임 출처 정보 추가
+-- 예측 UI에서 "기본 1일" fallback인지, 어느 거래처 기준인지 바로 설명할 수 있게 한다.
 
 create or replace function public.get_depletion_forecast()
 returns table (
@@ -66,7 +60,6 @@ begin
     vc.vendor_name as lead_time_vendor_name,
     (vc.lead_time_days is null) as is_default_lead_time,
     u.safety_buffer_days,
-    -- 30일치 일별 소비량: sale_items.quantity × recipe_items.quantity_per_serving 합산
     coalesce(
       (select jsonb_agg(jsonb_build_object('date', day, 'amount', total))
        from (
@@ -88,13 +81,11 @@ begin
   from public.ingredients i
   join public.users u on u.id = i.user_id
   left join vendor_choice vc on vc.ingredient_id = i.id
-  where i.user_id = v_user_id and i.is_active = true
+  where i.user_id = v_user_id
+    and i.is_active = true
   order by i.name;
 end;
 $$;
 
 comment on function public.get_depletion_forecast() is
-  '재고 예측 raw 데이터 반환. 분류(status/trend)는 클라이언트 src/lib/domain/forecast.ts가 담당.';
-
-revoke all on function public.get_depletion_forecast() from public;
-grant execute on function public.get_depletion_forecast() to authenticated;
+  '재고 예측 raw 데이터 반환. 리드타임 일수와 출처(거래처명/기본값)까지 포함하며, 분류(status/trend)는 클라이언트 src/lib/domain/forecast.ts가 담당.';

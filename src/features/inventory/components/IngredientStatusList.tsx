@@ -86,8 +86,10 @@ function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactE
             현재 {formatNumber(item.currentStock)}
             {item.unit}
             <span className="text-ink-4"> · </span>
-            리드타임 {item.leadTimeDays}일
+            리드타임 {item.leadTimeDays}일<span className="text-ink-4"> · </span>
+            안전여유 {item.safetyBufferDays}일
           </span>
+          <span className="text-caption text-ink-3">{formatLeadTimeSource(item)}</span>
         </div>
         <div className="flex items-center gap-stack-tight">
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
@@ -112,6 +114,15 @@ function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactE
       )}
     </li>
   );
+}
+
+function formatLeadTimeSource(item: IngredientForecastView): string {
+  if (item.isDefaultLeadTime) {
+    return "구매 이력이 없어 기본 1일 리드타임을 사용 중";
+  }
+  return item.leadTimeVendorName
+    ? `${item.leadTimeVendorName} 거래처 이력 기준 리드타임 적용`
+    : "최근 가장 자주 쓴 거래처 기준 리드타임 적용";
 }
 
 const STATUS_TONE: Record<DepletionStatus, string> = {

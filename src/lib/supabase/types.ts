@@ -755,7 +755,9 @@ export type Database = {
           consumption_samples: Json
           current_stock: number
           ingredient_id: string
+          is_default_lead_time: boolean
           lead_time_days: number
+          lead_time_vendor_name: string | null
           name: string
           regular_days_off: Database["public"]["Enums"]["weekday"][]
           safety_buffer_days: number

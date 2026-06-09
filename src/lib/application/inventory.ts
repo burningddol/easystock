@@ -19,6 +19,8 @@ export interface IngredientForecastView extends ForecastResult {
   unit: "g" | "ml" | "piece";
   currentStock: number;
   leadTimeDays: number;
+  leadTimeVendorName: string | null;
+  isDefaultLeadTime: boolean;
   safetyBufferDays: number;
 }
 
@@ -32,10 +34,11 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       date: new Date(s.date),
       amount: Number(s.amount),
     }));
+    const safetyBufferDays = Number.isFinite(row.safetyBufferDays) ? row.safetyBufferDays : 1;
     const forecast = forecastIngredient({
       currentStock: row.currentStock,
       leadTimeDays: row.leadTimeDays,
-      safetyBufferDays: row.safetyBufferDays,
+      safetyBufferDays,
       consumptionSamples: samples,
       daysOff: row.regularDaysOff,
       signupDate: new Date(row.signedUpAt),
@@ -47,7 +50,9 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       unit: row.unit,
       currentStock: row.currentStock,
       leadTimeDays: row.leadTimeDays,
-      safetyBufferDays: row.safetyBufferDays,
+      leadTimeVendorName: row.leadTimeVendorName,
+      isDefaultLeadTime: row.isDefaultLeadTime,
+      safetyBufferDays,
       ...forecast,
     };
   });
