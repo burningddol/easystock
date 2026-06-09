@@ -34,10 +34,11 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       date: new Date(s.date),
       amount: Number(s.amount),
     }));
+    const safetyBufferDays = Number.isFinite(row.safetyBufferDays) ? row.safetyBufferDays : 1;
     const forecast = forecastIngredient({
       currentStock: row.currentStock,
       leadTimeDays: row.leadTimeDays,
-      safetyBufferDays: row.safetyBufferDays,
+      safetyBufferDays,
       consumptionSamples: samples,
       daysOff: row.regularDaysOff,
       signupDate: new Date(row.signedUpAt),
@@ -51,7 +52,7 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       leadTimeDays: row.leadTimeDays,
       leadTimeVendorName: row.leadTimeVendorName,
       isDefaultLeadTime: row.isDefaultLeadTime,
-      safetyBufferDays: row.safetyBufferDays,
+      safetyBufferDays,
       ...forecast,
     };
   });

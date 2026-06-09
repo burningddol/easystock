@@ -283,6 +283,45 @@ describe("application layer", () => {
       });
     });
 
+    it("loadDepletionForecast falls back to safety buffer 1 when rpc field is missing", async () => {
+      rpcMocks.getDepletionForecast.mockResolvedValue({
+        data: [
+          {
+            ingredientId: "ing-1",
+            name: "녹차파우더",
+            unit: "g",
+            currentStock: 30,
+            leadTimeDays: 1,
+            leadTimeVendorName: "가루상회",
+            isDefaultLeadTime: false,
+            safetyBufferDays: undefined,
+            consumptionSamples: [{ date: "2026-06-01", amount: 10 }],
+            signedUpAt: "2026-05-20T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+      forecastMocks.forecastIngredient.mockReturnValue({
+        expectedDepletionDate: new Date("2026-06-10T00:00:00.000Z"),
+        status: "critical",
+        trend: "falling",
+        isColdStart: false,
+      });
+
+      await loadDepletionForecast({ rpc: {} });
+
+      expect(forecastMocks.forecastIngredient).toHaveBeenCalledWith({
+        currentStock: 30,
+        leadTimeDays: 1,
+        safetyBufferDays: 1,
+        consumptionSamples: [{ date: new Date("2026-06-01"), amount: 10 }],
+        daysOff: [],
+        signupDate: new Date("2026-05-20T00:00:00.000Z"),
+        today: expect.any(Date),
+      });
+    });
+
     it("applyInventoryReplay returns applied replay summary", async () => {
       rpcMocks.applyInventoryReplay.mockResolvedValue({
         data: {
