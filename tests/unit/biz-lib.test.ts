@@ -16,6 +16,7 @@ const baseMenu = (overrides?: Partial<MenuRowWithRecipe>): MenuRowWithRecipe => 
         id: "ing-1",
         name: "원두",
         unit: "g",
+        current_stock: 1000,
         current_avg_price: 50,
       },
     },
