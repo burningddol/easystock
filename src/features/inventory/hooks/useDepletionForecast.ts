@@ -22,6 +22,8 @@ async function fetchDepletionForecast(): Promise<
       unit: "g" | "ml" | "piece";
       currentStock: number;
       leadTimeDays: number;
+      leadTimeVendorName: string | null;
+      isDefaultLeadTime: boolean;
       safetyBufferDays: number;
     } & ForecastResult
   >
