@@ -73,21 +73,41 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
         <header className="flex flex-col gap-1">
           <h2 className="text-title-md text-ink-1">예측 · 운영 설정</h2>
           <p className="text-caption text-ink-3">
-            소진 예측과 운영 알림에 직접 영향을 주는 값입니다.
+            소진 예측은 최근 소비 흐름을 바탕으로, 정기휴무·거래처 리드타임·안전여유일을 함께 반영해
+            계산합니다.
           </p>
         </header>
+
+        <div className="grid gap-stack-tight md:grid-cols-3">
+          <RuleCard
+            title="정기휴무"
+            body="선택한 요일은 미래 시뮬레이션에서 소비 0으로 보고, 과거 평균 계산에서도 제외합니다."
+          />
+          <RuleCard
+            title="거래처 리드타임"
+            body="재료별 최근 구매 이력에서 가장 자주 연결된 거래처 리드타임을 씁니다. 구매 이력이 없으면 1일을 기본값으로 사용합니다."
+          />
+          <RuleCard
+            title="안전여유일"
+            body={`현재 ${safetyBufferDays}일로 설정되어 있습니다. 리드타임 뒤에 추가 버퍼를 더해 위험 단계를 더 보수적으로 잡습니다.`}
+          />
+        </div>
 
         <RegularDaysOffEditor initialDaysOff={initialDaysOff} />
 
         <div className="grid gap-stack-tight border-t border-border pt-stack">
           <SafetyBufferEditor initialSafetyBufferDays={safetyBufferDays} userId={user.id} />
           <SettingRow
-            label="거래처 리드타임"
-            value={`각 재료 예측은 가장 자주 쓰는 거래처 리드타임 + 안전여유 ${safetyBufferDays}일을 기준으로 상태를 나눕니다.`}
+            label="리드타임 기준"
+            value={`각 재료는 구매 이력에서 가장 자주 연결된 거래처 리드타임을 따로 사용합니다. 거래처가 아직 없거나 구매 이력이 없으면 기본 1일로 계산합니다.`}
+          />
+          <SettingRow
+            label="위험 단계 계산"
+            value={`소진 예상일까지 남은 일수에서 거래처 리드타임과 안전여유 ${safetyBufferDays}일을 함께 빼서 safe / caution / order_needed / critical 단계를 정합니다.`}
           />
           <div className="flex flex-wrap gap-stack-tight">
             <Link href="/purchase" className={SECONDARY_BUTTON_CLASSES}>
-              거래처 관리로 이동
+              거래처 리드타임 관리로 이동
             </Link>
           </div>
         </div>
@@ -151,6 +171,15 @@ function SettingRow({
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+function RuleCard({ title, body }: { title: string; body: string }): React.ReactElement {
+  return (
+    <div className="rounded-md border border-border bg-bg px-stack py-stack-tight">
+      <p className="text-label text-ink-2">{title}</p>
+      <p className="mt-1 text-caption text-ink-3">{body}</p>
     </div>
   );
 }
