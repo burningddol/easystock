@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { loadTodayDashboard } from "@/lib/application/dashboard";
 import type { TodayDashboardData } from "@/lib/supabase/rpc";
 
+export const dashboardQueryKey = ["dashboard"] as const;
 export const todayDashboardQueryKey = ["dashboard", "today"] as const;
 
 async function fetchTodayDashboard(): Promise<TodayDashboardData> {

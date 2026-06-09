@@ -4,6 +4,8 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { loadCalendarMonth, type CalendarMonthView } from "@/lib/application/calendar";
 
+export const calendarQueryKey = ["calendar"] as const;
+
 export function calendarMonthQueryKey(
   year: number,
   month: number,

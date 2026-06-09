@@ -10,6 +10,8 @@ import {
   type SubmitSaleInput,
   type SubmitSaleResult,
 } from "@/lib/application/sale";
+import { calendarQueryKey } from "@/features/calendar/hooks/useCalendarMonth";
+import { dashboardQueryKey } from "@/features/dashboard/hooks/useTodayDashboard";
 import { menuListQueryKey } from "@/features/menu/hooks/useMenus";
 import { ingredientListQueryKey } from "@/features/purchase/hooks/useIngredients";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
@@ -55,6 +57,8 @@ export function useSaleSubmit(): UseMutationResult<SubmitSaleResult, Error, Subm
       void queryClient.invalidateQueries({ queryKey: ingredientListQueryKey });
       void queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey });
       void queryClient.invalidateQueries({ queryKey: salesQueryKey });
+      void queryClient.invalidateQueries({ queryKey: calendarQueryKey });
+      void queryClient.invalidateQueries({ queryKey: dashboardQueryKey });
     },
   });
 }

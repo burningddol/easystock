@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { submitPurchase, type SubmitPurchaseInput } from "@/lib/application/purchase";
 import type { SavePurchaseResult } from "@/lib/supabase/rpc";
+import { calendarQueryKey } from "@/features/calendar/hooks/useCalendarMonth";
 import { menuListQueryKey } from "@/features/menu/hooks/useMenus";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
 import { ingredientListQueryKey } from "./useIngredients";
@@ -39,10 +40,11 @@ export function usePurchaseSubmit(): UseMutationResult<SavePurchaseResult, Error
         });
       }
       // 매입은 가중 이동 평균법으로 ingredient 단가 + 재고 갱신 → 소진 예측 / 메뉴
-      // 마진 / 재료 목록 모두 stale. 일관 무효화.
+      // 마진 / 재료 목록 / 캘린더의 hasPurchase 표시 모두 stale. 일관 무효화.
       void queryClient.invalidateQueries({ queryKey: ingredientListQueryKey });
       void queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey });
       void queryClient.invalidateQueries({ queryKey: menuListQueryKey });
+      void queryClient.invalidateQueries({ queryKey: calendarQueryKey });
     },
   });
 }

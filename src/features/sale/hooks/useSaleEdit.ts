@@ -3,6 +3,8 @@
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics/ga4";
+import { calendarQueryKey } from "@/features/calendar/hooks/useCalendarMonth";
+import { dashboardQueryKey } from "@/features/dashboard/hooks/useTodayDashboard";
 import {
   editSale as editSaleUseCase,
   removeSale,
@@ -25,6 +27,8 @@ function invalidateSaleAndIngredientCaches(queryClient: ReturnType<typeof useQue
   void queryClient.invalidateQueries({ queryKey: salesQueryKey });
   void queryClient.invalidateQueries({ queryKey: ingredientListQueryKey });
   void queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey });
+  void queryClient.invalidateQueries({ queryKey: calendarQueryKey });
+  void queryClient.invalidateQueries({ queryKey: dashboardQueryKey });
 }
 
 export function useSaleEdit(): UseMutationResult<EditSaleResult, Error, EditSaleUseCaseInput> {
