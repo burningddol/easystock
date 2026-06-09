@@ -42,10 +42,7 @@ export function upsertSaleDraftItems(
   };
 }
 
-export function clearSaleDraftDate(
-  draftsByDate: SaleDraftsByDate,
-  date: string,
-): SaleDraftsByDate {
+export function clearSaleDraftDate(draftsByDate: SaleDraftsByDate, date: string): SaleDraftsByDate {
   if (!(date in draftsByDate)) return draftsByDate;
   const next = { ...draftsByDate };
   delete next[date];

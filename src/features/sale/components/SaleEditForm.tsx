@@ -162,7 +162,9 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
           <PrimaryButton
             type="button"
             onClick={handleSave}
-            disabled={totalQuantity === 0 || isPending || isBlockedByStock || isBlockedByMissingMenus}
+            disabled={
+              totalQuantity === 0 || isPending || isBlockedByStock || isBlockedByMissingMenus
+            }
           >
             {editMutation.isPending ? "저장 중…" : "수정 저장"}
           </PrimaryButton>
