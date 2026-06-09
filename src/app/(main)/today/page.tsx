@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Settings } from "lucide-react";
 import { useTodayDashboard } from "@/features/dashboard/hooks/useTodayDashboard";
 import { useDepletionForecast } from "@/features/inventory/hooks/useDepletionForecast";
 import { YesterdayKpiCard } from "@/features/dashboard/components/YesterdayKpiCard";
@@ -10,6 +11,7 @@ import { MarginTop3Card } from "@/features/dashboard/components/MarginTop3Card";
 import { MissingSaleBadge } from "@/features/dashboard/components/MissingSaleBadge";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { formatTodayKo } from "@/lib/utils/format";
+import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
 
 /**
  * 홈 (오늘) 대시보드 — patterns.md "홈" 위계 순서대로 렌더.
@@ -61,7 +63,19 @@ export default function TodayPage(): React.ReactElement {
           <h1 className="text-title-lg text-ink-1">{data.storeName}</h1>
           <p className="text-caption text-ink-3">{todayLabel}</p>
         </div>
-        {data.missingYesterdaySale && <MissingSaleBadge yesterdaySoldAt={data.yesterday.soldAt} />}
+        <div className="flex items-center gap-stack-tight">
+          {data.missingYesterdaySale && (
+            <MissingSaleBadge yesterdaySoldAt={data.yesterday.soldAt} />
+          )}
+          <Link
+            href="/settings"
+            aria-label="가게 설정"
+            title="가게 설정"
+            className={`${SECONDARY_BUTTON_CLASSES} flex h-11 w-11 items-center justify-center px-0`}
+          >
+            <Settings size={18} aria-hidden="true" />
+          </Link>
+        </div>
       </header>
 
       <YesterdayKpiCard yesterday={data.yesterday} weeklyChart={data.weeklyChart} />
