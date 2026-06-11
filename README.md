@@ -101,13 +101,13 @@ specs/001-mvp-core/        spec.md / data-model.md / contracts / tasks.md
 
 ## 재료 소진 예측 알고리즘
 
-이지스톡의 소진 예측은 단순 최근 7일 평균이 아니라, **실제 판매 이력에서 재료별 일일 소비량을 만들고, 정기휴무와 거래처 리드타임까지 반영한 뒤 하루씩 시뮬레이션**하는 방식입니다. 스펙 기준은 `FR-012`, `FR-013`, `FR-018`, `FR-025`, `FR-042`이고, 실제 구현 단일 출처는 [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)입니다.
+이지스톡의 소진 예측은 단순 최근 7일 평균이 아니라, **실제 판매 이력에서 재료별 일일 소비량을 만들고, 정기휴무·최근 추세·거래처 리드타임까지 반영한 뒤 하루씩 시뮬레이션**하는 방식입니다. 스펙 기준은 `FR-012`, `FR-013`, `FR-018`, `FR-025`, `FR-042`이고, 실제 구현 단일 출처는 [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)입니다.
 
 핵심 흐름은 이렇습니다.
 
 1. **서버에서 raw 데이터 수집**
    - [021_get_depletion_forecast_rpc.sql](/Users/yamon/Desktop/projects/ezstock/supabase/migrations/021_get_depletion_forecast_rpc.sql)
-   - 각 재료별로 `current_stock`, `signed_up_at`, `regular_days_off`, `safety_buffer_days`, 최근 30일 `consumption_samples`를 반환합니다.
+   - 각 재료별로 `current_stock`, `signed_up_at`, `regular_days_off`, `safety_buffer_days`, 최근 90일 `consumption_samples`를 반환합니다.
    - `consumption_samples`는 `sale_items.quantity × recipe_items.quantity_per_serving`를 날짜별로 합산한 값입니다.
    - 거래처 리드타임은 해당 재료에 대해 **가장 자주 사용한 vendor의 리드타임**을 쓰고, 이력이 없으면 기본 `1일`을 사용합니다.
 
@@ -116,15 +116,17 @@ specs/001-mvp-core/        spec.md / data-model.md / contracts / tasks.md
    - 가입 후 `7일 미만`이면 `isColdStart=true`로 처리하고, 소진일 예측은 돌리지 않습니다.
    - 그래서 재료 화면에는 “데이터 수집 중” 안내가 먼저 뜹니다.
 
-3. **정기휴무를 제외한 요일별 평균 소비량 계산**
+3. **정기휴무를 제외한 영업일 타입별 최근가중 평균 계산**
    - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
-   - 같은 요일의 sample들을 평균내서 `월/화/수...`별 평균 소비량을 만듭니다.
+   - 요일 7개를 그대로 쪼개지 않고, 빙수집/카페 운영 패턴에 맞춰 `평일(월~목)`, `금요일`, `주말(토~일)` 그룹으로 묶습니다.
+   - 최근 sample일수록 `exp(-daysAgo / 14)` 방식으로 더 큰 가중치를 줍니다.
    - 정기휴무일은 평균 산정에서 제외합니다.
-   - 어떤 요일 데이터가 비어 있으면 그 요일을 0으로 두지 않고, **전체 영업일 평균**으로 대체해서 실제보다 지나치게 낙관적인 예측을 막습니다.
+   - 단체주문 같은 극단값은 중앙값의 3배로 cap해서 예측 폭주를 완화합니다.
+   - 그룹 표본이 8개 미만이면 **전체 영업일 평균과 섞는 shrinkage**를 적용해, 가맹점 초기 데이터가 적을 때도 예측이 과하게 튀지 않게 합니다.
 
 4. **오늘부터 하루씩 재고 소진 시뮬레이션**
    - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
-   - 내일부터 최대 365일까지 하루씩 진행하면서, 영업일이면 그 요일 평균 소비량만큼 재고를 차감합니다.
+   - 내일부터 최대 365일까지 하루씩 진행하면서, 영업일이면 그 날짜의 영업일 타입 평균 소비량만큼 재고를 차감합니다.
    - 정기휴무는 소비 0으로 건너뜁니다.
    - 재고가 `0 이하`가 되는 첫 날짜를 예상 소진일로 잡습니다.
 
@@ -137,10 +139,12 @@ specs/001-mvp-core/        spec.md / data-model.md / contracts / tasks.md
    - `caution`: buffer 3~4
    - `safe`: buffer ≥ 5
 
-6. **최근 사용량 급증/급감 감지**
+6. **최근 사용량 급증/급감 감지 + 완만한 추세 보정**
    - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
    - 최근 7일 평균과 30일 평균을 비교합니다.
    - 비율 차이가 `±20%`를 넘으면 `rising` 또는 `falling`으로 분류합니다.
+   - 실제 소진일 계산에도 최근 추세를 반영하되, 계수는 `0.85~1.25`로 제한합니다.
+   - 그래서 날씨/이벤트로 하루 매출이 튄 경우에도 예측이 과하게 흔들리지 않습니다.
 
 중요한 구현 포인트:
 

@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { Decimal } from "@/lib/domain/_decimal";
 import {
+  businessDayTypeOf,
   classifyStatus,
+  computeBusinessDayUsageModel,
+  computeTrendFactor,
   computeWeekdayUsageAverage,
   detectTrend,
   forecastIngredient,
@@ -17,6 +20,18 @@ function daysAgo(days: number): Date {
   return new Date(today.getTime() - days * ONE_DAY);
 }
 
+function usageModel(amount: number) {
+  const usageByDayType = new Map([
+    ["weekday", new Decimal(amount)],
+    ["friday", new Decimal(amount)],
+    ["weekend", new Decimal(amount)],
+  ] as const);
+  return {
+    usageByDayType,
+    fallbackDailyUsage: new Decimal(amount),
+  };
+}
+
 describe("isColdStart (FR-018)", () => {
   it("가입 후 7일 미만은 콜드스타트", () => {
     expect(isColdStart(daysAgo(6), today)).toBe(true);
@@ -28,6 +43,48 @@ describe("isColdStart (FR-018)", () => {
 
   it("가입 30일 후는 일반", () => {
     expect(isColdStart(daysAgo(30), today)).toBe(false);
+  });
+});
+
+describe("business day usage model", () => {
+  it("월~목은 weekday, 금요일은 friday, 토/일은 weekend로 분류", () => {
+    expect(businessDayTypeOf(new Date("2026-04-27"), [])).toBe("weekday");
+    expect(businessDayTypeOf(new Date("2026-05-01"), [])).toBe("friday");
+    expect(businessDayTypeOf(new Date("2026-05-02"), [])).toBe("weekend");
+  });
+
+  it("정기휴무는 예측 소비일에서 제외", () => {
+    expect(businessDayTypeOf(new Date("2026-04-27"), ["MON"])).toBeNull();
+  });
+
+  it("최근 sample에 더 큰 가중치를 준다", () => {
+    const model = computeBusinessDayUsageModel(
+      [
+        { date: daysAgo(80), amount: 10 },
+        { date: daysAgo(60), amount: 10 },
+        { date: daysAgo(3), amount: 100 },
+        { date: daysAgo(1), amount: 100 },
+      ],
+      [],
+      today,
+    );
+
+    expect(model.fallbackDailyUsage.toNumber()).toBeGreaterThan(80);
+  });
+
+  it("그룹 표본이 적으면 전체 영업일 평균과 섞어 안정화한다", () => {
+    const samples: DailyConsumption[] = [
+      { date: new Date("2026-04-03"), amount: 100 },
+      { date: new Date("2026-04-06"), amount: 10 },
+      { date: new Date("2026-04-07"), amount: 10 },
+      { date: new Date("2026-04-08"), amount: 10 },
+      { date: new Date("2026-04-09"), amount: 10 },
+    ];
+
+    const model = computeBusinessDayUsageModel(samples, [], today);
+
+    expect(model.usageByDayType.get("friday")?.toNumber()).toBeLessThan(100);
+    expect(model.usageByDayType.get("friday")?.toNumber()).toBeGreaterThan(10);
   });
 });
 
@@ -62,18 +119,9 @@ describe("computeWeekdayUsageAverage", () => {
 
 describe("predictDepletionDate", () => {
   it("재고 100, 매일 10g 소비 → 11일 뒤 소진", () => {
-    const weekdayAvg = new Map([
-      ["MON", new Decimal(10)],
-      ["TUE", new Decimal(10)],
-      ["WED", new Decimal(10)],
-      ["THU", new Decimal(10)],
-      ["FRI", new Decimal(10)],
-      ["SAT", new Decimal(10)],
-      ["SUN", new Decimal(10)],
-    ] as const);
     const result = predictDepletionDate({
       currentStock: 100,
-      weekdayAvg,
+      usageModel: usageModel(10),
       today,
       daysOff: [],
     });
@@ -84,27 +132,18 @@ describe("predictDepletionDate", () => {
   });
 
   it("정기휴무는 소비 0 (재고 보존)", () => {
-    const weekdayAvg = new Map([
-      ["MON", new Decimal(50)],
-      ["TUE", new Decimal(50)],
-      ["WED", new Decimal(50)],
-      ["THU", new Decimal(50)],
-      ["FRI", new Decimal(50)],
-      ["SAT", new Decimal(50)],
-      ["SUN", new Decimal(50)],
-    ] as const);
     // 오늘 목(2026-04-30), 매일 50g, stock 250g.
     // daysOff 없음: 금(200) → 토(150) → 일(100) → 월(50) → 화(0) = 5일째 화요일 소진
     // SUN off: 금(200) → 토(150) → 일(skip) → 월(100) → 화(50) → 수(0) = 6일째 수요일 소진
     const noSundayResult = predictDepletionDate({
       currentStock: 250,
-      weekdayAvg,
+      usageModel: usageModel(50),
       today,
       daysOff: ["SUN"],
     });
     const allDaysResult = predictDepletionDate({
       currentStock: 250,
-      weekdayAvg,
+      usageModel: usageModel(50),
       today,
       daysOff: [],
     });
@@ -112,27 +151,25 @@ describe("predictDepletionDate", () => {
   });
 
   it("예측 1년 내 소진 안 하면 null", () => {
-    const weekdayAvg = new Map([["MON", new Decimal(0.001)]] as const);
     const result = predictDepletionDate({
       currentStock: 1_000_000,
-      weekdayAvg,
+      usageModel: {
+        usageByDayType: new Map([["weekday", new Decimal(0.001)]] as const),
+        fallbackDailyUsage: new Decimal(0.001),
+      },
       today,
       daysOff: [],
     });
     expect(result).toBeNull();
   });
 
-  it("데이터 없는 요일은 영업일 평균으로 대체 — over-forecast 방지", () => {
-    // 월·화만 데이터 (둘 다 10g/일). 영업일 평균 = 10g.
-    // fallback 없이는: 월·화만 소진 → 100/(10×2/7일) ≈ 35일 (실제보다 오래 버틴다고 잘못 안내).
-    // fallback 적용: 매일 10g → 10일 뒤 소진.
-    const weekdayAvg = new Map([
-      ["MON", new Decimal(10)],
-      ["TUE", new Decimal(10)],
-    ] as const);
+  it("데이터 없는 영업일 타입은 전체 영업일 평균으로 대체 — over-forecast 방지", () => {
     const withFallback = predictDepletionDate({
       currentStock: 100,
-      weekdayAvg,
+      usageModel: {
+        usageByDayType: new Map([["weekday", new Decimal(10)]] as const),
+        fallbackDailyUsage: new Decimal(10),
+      },
       today,
       daysOff: [],
     });
@@ -141,14 +178,36 @@ describe("predictDepletionDate", () => {
     expect(daysUntilDepletion).toBeLessThanOrEqual(11);
   });
 
-  it("weekdayAvg 비어있으면 소진 예측 불가 (null)", () => {
+  it("usageModel 비어있으면 소진 예측 불가 (null)", () => {
     const result = predictDepletionDate({
       currentStock: 100,
-      weekdayAvg: new Map(),
+      usageModel: {
+        usageByDayType: new Map(),
+        fallbackDailyUsage: new Decimal(0),
+      },
       today,
       daysOff: [],
     });
     expect(result).toBeNull();
+  });
+
+  it("최근 추세 계수를 소진일 계산에 반영한다", () => {
+    const normal = predictDepletionDate({
+      currentStock: 100,
+      usageModel: usageModel(10),
+      trendFactor: 1,
+      today,
+      daysOff: [],
+    });
+    const rising = predictDepletionDate({
+      currentStock: 100,
+      usageModel: usageModel(10),
+      trendFactor: 1.25,
+      today,
+      daysOff: [],
+    });
+
+    expect(rising!.getTime()).toBeLessThan(normal!.getTime());
   });
 });
 
@@ -222,6 +281,24 @@ describe("detectTrend (FR-025)", () => {
 
   it("데이터 부족(빈 배열) → normal", () => {
     expect(detectTrend([], today)).toBe("normal");
+  });
+});
+
+describe("computeTrendFactor", () => {
+  it("최근 급증 추세는 상한 1.25로 제한", () => {
+    const samples: DailyConsumption[] = Array.from({ length: 30 }, (_, i) => ({
+      date: daysAgo(i + 1),
+      amount: i < 7 ? 500 : 10,
+    }));
+    expect(computeTrendFactor(samples, today)).toBe(1.25);
+  });
+
+  it("최근 급감 추세는 하한 0.85로 제한", () => {
+    const samples: DailyConsumption[] = Array.from({ length: 30 }, (_, i) => ({
+      date: daysAgo(i + 1),
+      amount: i < 7 ? 1 : 100,
+    }));
+    expect(computeTrendFactor(samples, today)).toBe(0.85);
   });
 });
 
