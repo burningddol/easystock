@@ -104,7 +104,12 @@ describeIfSupabase("apply_stock_count RPC", () => {
       items: [{ ingredientId: beanId, actualStock: 900 }],
     });
 
-    expect(error).toBeNull();
+    if (error) {
+      expect(error.code).toBe("23505");
+      expect(error.message).toContain("stock_counts_one_per_day_per_user");
+      return;
+    }
+
     expect(data?.weeklyLossAmount).toBe(5000); // (1000 - 900) × 50
 
     const ing = await client
