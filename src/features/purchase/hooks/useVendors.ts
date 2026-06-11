@@ -7,9 +7,12 @@ import {
   type UseMutationResult,
   type UseQueryResult,
 } from "@tanstack/react-query";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { loadVendors, type LookupClient, type VendorRow } from "@/lib/application/lookups";
+import { invalidateSettingsRelatedQueries } from "@/features/settings/hooks/useSettingsMutations";
 import { saveVendor } from "@/lib/supabase/rpc";
+import type { Database } from "@/lib/supabase/types";
 import type { VendorInput } from "../schemas";
 
 export type { VendorRow } from "@/lib/application/lookups";
@@ -37,12 +40,54 @@ async function createVendor(input: VendorInput): Promise<VendorRow> {
   return row;
 }
 
+interface UpdateVendorLeadTimeInput {
+  vendorId: string;
+  leadTimeDays: number;
+}
+
+async function updateVendorLeadTime(input: UpdateVendorLeadTimeInput): Promise<VendorRow> {
+  const supabase = createClient() as unknown as SupabaseClient<Database>;
+  const { data, error } = await supabase
+    .from("vendors")
+    .update({
+      lead_time_days: input.leadTimeDays,
+    } satisfies Database["public"]["Tables"]["vendors"]["Update"])
+    .eq("id", input.vendorId)
+    .select("id, name, lead_time_days")
+    .single();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("거래처 저장 결과가 비어 있습니다.");
+
+  return {
+    id: data.id,
+    name: data.name,
+    lead_time_days: Number(data.lead_time_days),
+  };
+}
+
 export function useCreateVendor(): UseMutationResult<VendorRow, Error, VendorInput> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createVendor,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: vendorListQueryKey });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: vendorListQueryKey });
+      await invalidateSettingsRelatedQueries(queryClient);
+    },
+  });
+}
+
+export function useUpdateVendorLeadTime(): UseMutationResult<
+  VendorRow,
+  Error,
+  UpdateVendorLeadTimeInput
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateVendorLeadTime,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: vendorListQueryKey });
+      await invalidateSettingsRelatedQueries(queryClient);
     },
   });
 }
