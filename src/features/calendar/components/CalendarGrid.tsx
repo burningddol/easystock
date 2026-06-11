@@ -35,7 +35,7 @@ export function CalendarGrid({
   const trailingBlanks = 42 - leadingBlanks - cells.length;
 
   return (
-    <div className="flex flex-col gap-stack-tight">
+    <div className="glow-panel flex flex-col gap-stack-tight rounded-[28px] border border-border bg-card p-4 shadow-card">
       <WeekdayHeader />
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: leadingBlanks }, (_, i) => (
@@ -72,7 +72,7 @@ function WeekdayHeader(): React.ReactElement {
 }
 
 function BlankCell(): React.ReactElement {
-  return <div className="aspect-square rounded-md bg-bg" aria-hidden />;
+  return <div className="aspect-square rounded-xl bg-bg" aria-hidden />;
 }
 
 interface DayCellProps {
@@ -105,6 +105,7 @@ function DayCell({
       onClick={() => onSelect(cell)}
       className={cn(
         "relative aspect-square rounded-md p-1 text-left transition-colors",
+        "shadow-soft",
         isSelected ? "bg-ink-1 text-bg" : "text-ink-1",
         isToday && !isSelected && "border border-blue ring-1 ring-blue",
         !isToday && "border border-transparent",

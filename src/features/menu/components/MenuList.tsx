@@ -28,10 +28,10 @@ function MenuListRow({ menu }: { menu: MenuRowWithRecipe }): React.ReactElement 
     <li>
       <Link
         href={`/menu/${menu.id}`}
-        className="flex items-center justify-between rounded-lg border border-border bg-card px-tile py-stack hover:bg-card-hover"
+        className="glow-panel flex items-center justify-between rounded-[28px] border border-white/70 bg-white/95 px-5 py-4 shadow-card transition hover:-translate-y-0.5 hover:bg-white"
       >
         <div className="flex flex-col gap-1">
-          <span className="text-body text-ink-1">{menu.name}</span>
+          <span className="text-body font-semibold text-ink-1">{menu.name}</span>
           <span className="text-caption text-ink-3 tabular-nums">
             {formatWon(menu.price)}원
             {hasRecipe && (
@@ -58,7 +58,12 @@ function MenuListRow({ menu }: { menu: MenuRowWithRecipe }): React.ReactElement 
  */
 function MarginChip({ rate }: { rate: number }): React.ReactElement {
   return (
-    <span className={cn("rounded-full px-3 py-1 text-label tabular-nums", marginToneClass(rate))}>
+    <span
+      className={cn(
+        "rounded-full px-3 py-1 text-label font-semibold tabular-nums shadow-soft",
+        marginToneClass(rate),
+      )}
+    >
       {rate.toFixed(0)}%
     </span>
   );
@@ -67,10 +72,10 @@ function MarginChip({ rate }: { rate: number }): React.ReactElement {
 function marginToneClass(rate: number): string {
   switch (marginTone(rate)) {
     case "green":
-      return "bg-green-soft text-green-deep";
+      return "bg-emerald-50 text-emerald-700";
     case "amber":
-      return "bg-amber-soft text-amber-deep";
+      return "bg-amber-50 text-amber-700";
     case "red":
-      return "bg-red-soft text-red-deep";
+      return "bg-rose-50 text-rose-700";
   }
 }

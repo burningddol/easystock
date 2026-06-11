@@ -76,11 +76,15 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
   }
 
   if (!menus) {
-    return <p className="text-body-regular text-ink-3">메뉴를 불러오는 중…</p>;
+    return (
+      <p className="glow-panel rounded-[28px] border border-white/70 bg-white/92 px-5 py-4 text-body-regular text-ink-3 shadow-soft">
+        메뉴를 불러오는 중…
+      </p>
+    );
   }
   if (menus.length === 0) {
     return (
-      <p className="text-body-regular text-ink-3">
+      <p className="glow-panel rounded-[28px] border border-white/70 bg-white/92 px-5 py-4 text-body-regular text-ink-3 shadow-soft">
         먼저 메뉴를 등록해주세요. (메뉴 탭 → 템플릿 불러오기)
       </p>
     );
@@ -91,9 +95,9 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
   const isBlockedByStock = shortages.length > 0;
 
   return (
-    <div className="flex flex-col gap-stack pb-44">
+    <div className="flex flex-col gap-stack pb-36">
       {isRetroactive && (
-        <p className="rounded-md bg-bg p-stack text-caption text-ink-3">
+        <p className="glow-panel rounded-[24px] border border-brand-primary/10 bg-brand-primary/[0.07] px-4 py-3 text-caption text-ink-3 shadow-soft">
           과거 날짜 판매를 저장하면 이 날짜 이후 7일 범위의 재고와 원가 스냅샷이 다시 계산됩니다.
         </p>
       )}
@@ -114,7 +118,10 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
       <SaleSaveBar
         left={
           (stockGuardMessage || submit.isError) && (
-            <p role="alert" className="flex-1 whitespace-pre-line text-caption text-red">
+            <p
+              role="alert"
+              className="flex-1 whitespace-pre-line rounded-2xl bg-rose-50 px-3 py-2 text-caption text-rose-700"
+            >
               {stockGuardMessage || submit.error?.message}
             </p>
           )
@@ -124,6 +131,7 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
             type="button"
             onClick={handleSubmit}
             disabled={totalQuantity === 0 || submit.isPending || isBlockedByStock}
+            className="halo-cta"
           >
             {submit.isPending ? "저장 중…" : `${totalQuantity}개 저장`}
           </PrimaryButton>

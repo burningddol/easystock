@@ -68,7 +68,7 @@ export function StoreNameEditor({
           {...register("storeName")}
           type="text"
           maxLength={50}
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
+          className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 shadow-soft"
         />
       </Field>
 

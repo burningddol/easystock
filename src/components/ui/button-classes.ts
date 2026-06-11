@@ -3,4 +3,4 @@
  * Link/button 모두에 적용 가능하도록 className 상수 단일 출처.
  */
 export const SECONDARY_BUTTON_CLASSES =
-  "rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-2 hover:bg-card-hover";
+  "inline-flex items-center justify-center rounded-xl border border-border-strong bg-white px-stack py-stack-tight text-body-regular font-medium text-ink-1 shadow-soft transition hover:border-blue/30 hover:bg-blue-soft";

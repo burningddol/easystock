@@ -13,8 +13,8 @@ interface SaleSaveBarProps {
 
 export function SaleSaveBar({ left, right }: SaleSaveBarProps): React.ReactElement {
   return (
-    <div className="fixed inset-x-0 bottom-16 z-40 border-t border-border bg-bg px-screen py-stack">
-      <div className="mx-auto flex max-w-screen-md items-center gap-stack">
+    <div className="fixed inset-x-0 bottom-20 z-30 px-screen py-3">
+      <div className="mx-auto flex max-w-screen-md items-center gap-stack rounded-[24px] border border-border bg-white/98 px-4 py-3 shadow-card backdrop-blur">
         {left}
         <div className="ml-auto">{right}</div>
       </div>

@@ -6,8 +6,8 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps): React.ReactElement {
   return (
-    <div className="min-h-screen bg-bg pb-20">
-      <main className="mx-auto max-w-screen-md p-screen">{children}</main>
+    <div className="page-shell min-h-screen bg-bg pb-24">
+      <main className="mx-auto max-w-screen-md px-screen pb-screen pt-4">{children}</main>
       <BottomTabNav />
     </div>
   );

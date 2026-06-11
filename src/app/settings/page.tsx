@@ -40,18 +40,23 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
   const storeType = profile?.store_type ?? "cafe";
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-screen-md flex-col gap-section p-screen pb-20">
-      <header className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <p className="text-micro text-ink-3">설정</p>
-          <h1 className="text-title-lg text-ink-1">가게 설정</h1>
+    <main className="mx-auto flex min-h-screen max-w-screen-md flex-col gap-section p-screen pb-24">
+      <header className="rounded-[28px] border border-border bg-card px-5 py-5 shadow-card">
+        <div className="flex items-start justify-between gap-stack">
+          <div className="flex flex-col gap-1">
+            <p className="text-micro uppercase tracking-[0.14em] text-blue-deep">Settings</p>
+            <h1 className="text-title-lg text-ink-1">가게 설정</h1>
+            <p className="text-body-regular text-ink-3">
+              운영 기준과 예측 계산 규칙을 한 번에 정리하는 곳입니다.
+            </p>
+          </div>
+          <Link href="/today" className={SECONDARY_BUTTON_CLASSES}>
+            닫기
+          </Link>
         </div>
-        <Link href="/today" className="text-body-regular text-ink-3 hover:text-ink-2">
-          닫기
-        </Link>
       </header>
 
-      <section className="flex flex-col gap-stack rounded-lg border border-border bg-card p-tile">
+      <section className="flex flex-col gap-stack rounded-[28px] border border-border bg-card p-5 shadow-card">
         <header className="flex flex-col gap-1">
           <h2 className="text-title-md text-ink-1">가게 정보</h2>
           <p className="text-caption text-ink-3">
@@ -70,7 +75,7 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
         </div>
       </section>
 
-      <section className="flex flex-col gap-stack rounded-lg border border-border bg-card p-tile">
+      <section className="flex flex-col gap-stack rounded-[28px] border border-border bg-card p-5 shadow-card">
         <header className="flex flex-col gap-1">
           <h2 className="text-title-md text-ink-1">예측 · 운영 설정</h2>
           <p className="text-caption text-ink-3">
@@ -110,7 +115,7 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
         </div>
       </section>
 
-      <section className="flex flex-col gap-stack rounded-lg border border-border bg-card p-tile">
+      <section className="flex flex-col gap-stack rounded-[28px] border border-border bg-card p-5 shadow-card">
         <header className="flex flex-col gap-1">
           <h2 className="text-title-md text-ink-1">계정</h2>
           <p className="text-caption text-ink-3">
@@ -129,7 +134,7 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
         />
       </section>
 
-      <section className="flex flex-col gap-stack rounded-lg border border-red-soft bg-red-soft p-tile">
+      <section className="flex flex-col gap-stack rounded-[28px] border border-red bg-red-soft p-5 shadow-soft">
         <header className="flex flex-col gap-1">
           <h2 className="text-title-md text-red-deep">위험영역</h2>
           <p className="text-caption text-red-deep">
@@ -157,7 +162,7 @@ function SettingRow({
   tone?: "default" | "danger";
 }): React.ReactElement {
   return (
-    <div className="flex flex-col gap-1 rounded-md bg-bg px-stack py-stack-tight">
+    <div className="flex flex-col gap-1 rounded-2xl bg-bg px-stack py-stack">
       <p className={tone === "danger" ? "text-label text-red-deep" : "text-label text-ink-2"}>
         {label}
       </p>
@@ -174,8 +179,8 @@ function SettingRow({
 
 function RuleCard({ title, body }: { title: string; body: string }): React.ReactElement {
   return (
-    <div className="rounded-md border border-border bg-bg px-stack py-stack-tight">
-      <p className="text-label text-ink-2">{title}</p>
+    <div className="rounded-2xl border border-border bg-bg px-stack py-stack shadow-soft">
+      <p className="text-label text-blue-deep">{title}</p>
       <p className="mt-1 text-caption text-ink-3">{body}</p>
     </div>
   );

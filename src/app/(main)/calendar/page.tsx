@@ -74,11 +74,15 @@ export default function CalendarPage(): React.ReactElement {
   }
 
   if (year === null || month === null || query.isLoading) {
-    return <p className="text-body-regular text-ink-3">불러오는 중…</p>;
+    return (
+      <p className="glow-panel rounded-[28px] border border-white/70 bg-white/92 px-5 py-4 text-body-regular text-ink-3 shadow-soft">
+        불러오는 중…
+      </p>
+    );
   }
   if (query.error || !query.data) {
     return (
-      <p className="text-body-regular text-red-deep">
+      <p className="rounded-[28px] bg-rose-50 px-5 py-4 text-body-regular text-rose-700 shadow-soft">
         데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
       </p>
     );

@@ -89,7 +89,11 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
   }
 
   if (!menus) {
-    return <p className="text-body-regular text-ink-3">메뉴를 불러오는 중…</p>;
+    return (
+      <p className="glow-panel rounded-[28px] border border-white/70 bg-white/92 px-5 py-4 text-body-regular text-ink-3 shadow-soft">
+        메뉴를 불러오는 중…
+      </p>
+    );
   }
 
   const totalQuantity = editableItems.reduce((sum, it) => sum + it.quantity, 0);
@@ -108,7 +112,7 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
       : null;
 
   return (
-    <div className="flex flex-col gap-stack pb-44">
+    <div className="flex flex-col gap-stack pb-36">
       <DaysLeftHint daysLeft={daysUntilLock(createdAt)} />
       <CostBasisNotice />
 
@@ -128,13 +132,16 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
           value={reason}
           onChange={(e) => setReason(e.target.value.slice(0, 200))}
           rows={2}
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
+          className="min-h-24 rounded-[24px] border border-white bg-white px-4 py-3 text-body-regular text-ink-1 shadow-soft outline-none transition placeholder:text-ink-4 focus:border-brand-primary/30 focus:ring-4 focus:ring-brand-primary/10"
           placeholder="예: 손님 환불, 잘못 입력 등"
         />
       </Field>
 
       {(missingMenuMessage || stockGuardMessage || editMutation.error || deleteMutation.error) && (
-        <p role="alert" className="whitespace-pre-line text-caption text-red">
+        <p
+          role="alert"
+          className="whitespace-pre-line rounded-[24px] bg-rose-50 px-4 py-3 text-caption text-rose-700"
+        >
           {missingMenuMessage ??
             stockGuardMessage ??
             editMutation.error?.message ??
@@ -151,7 +158,7 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
             onClick={handleDelete}
             disabled={isPending}
             className={cn(
-              "rounded-md border border-border px-stack py-stack text-body-regular text-red hover:bg-red-soft",
+              "rounded-2xl border border-rose-200 bg-white px-4 py-3 text-body-regular font-medium text-rose-600 shadow-soft transition hover:-translate-y-0.5 hover:bg-rose-50",
               isPending && "opacity-50",
             )}
           >
@@ -165,6 +172,7 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
             disabled={
               totalQuantity === 0 || isPending || isBlockedByStock || isBlockedByMissingMenus
             }
+            className="halo-cta"
           >
             {editMutation.isPending ? "저장 중…" : "수정 저장"}
           </PrimaryButton>
@@ -176,7 +184,7 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
 
 function CostBasisNotice(): React.ReactElement {
   return (
-    <p className="rounded-md bg-bg p-stack text-caption text-ink-3">
+    <p className="glow-panel rounded-[24px] border border-brand-primary/10 bg-brand-primary/[0.07] px-4 py-3 text-caption text-ink-3 shadow-soft">
       수정 저장 후 이 날짜 이후 7일 범위의 재고와 원가 스냅샷이 다시 계산됩니다.
     </p>
   );
@@ -184,14 +192,14 @@ function CostBasisNotice(): React.ReactElement {
 
 function DaysLeftHint({ daysLeft }: { daysLeft: number }): React.ReactElement {
   return (
-    <p className={cn("text-caption", daysLeftTone(daysLeft))}>
+    <p className={cn("rounded-[24px] px-4 py-3 text-caption shadow-soft", daysLeftTone(daysLeft))}>
       편집 가능 기간 {daysLeft}일 남음 (저장 후 7일까지 수정 가능)
     </p>
   );
 }
 
 function daysLeftTone(daysLeft: number): string {
-  if (daysLeft <= 1) return "text-red-deep";
-  if (daysLeft <= 3) return "text-amber-deep";
-  return "text-ink-3";
+  if (daysLeft <= 1) return "bg-rose-50 text-rose-700";
+  if (daysLeft <= 3) return "bg-amber-50 text-amber-700";
+  return "bg-white/92 text-ink-3";
 }

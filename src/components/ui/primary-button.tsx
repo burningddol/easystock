@@ -16,7 +16,7 @@ export function PrimaryButton({
     <button
       {...rest}
       className={cn(
-        "rounded-md bg-ink-1 px-stack py-stack text-body text-bg transition hover:opacity-90 disabled:opacity-50",
+        "rounded-xl bg-blue px-stack py-stack text-body font-semibold text-white shadow-soft transition hover:bg-blue-deep disabled:opacity-50 disabled:shadow-none",
         className,
       )}
     >

@@ -25,18 +25,18 @@ export function YesterdayKpiCard({
   const maxRevenue = Math.max(...weeklyChart.map((p) => p.revenue), 1);
 
   return (
-    <article className="flex flex-col gap-stack rounded-xl border border-border bg-card p-tile">
+    <article className="flex flex-col gap-stack rounded-[28px] border border-border bg-card p-5 shadow-card">
       <header className="flex items-baseline justify-between">
         <span className="text-caption text-ink-3">어제 매출</span>
         <ChangeChip value={yesterday.revenueChangePercent} />
       </header>
 
-      <div className="text-metric-hero tabular-nums text-ink-1">
+      <div className="text-metric-hero tabular-nums tracking-[-0.03em] text-ink-1">
         {formatWon(yesterday.revenue)}
         <span className="ml-1 text-caption text-ink-3">원</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-stack border-t border-border pt-stack">
+      <div className="grid grid-cols-2 gap-stack rounded-2xl bg-bg p-stack">
         <Metric label="순수익" value={hasRevenue ? `${formatWon(yesterday.netProfit)}원` : "—"} />
         <Metric
           label="마진율"
@@ -63,7 +63,7 @@ function ChangeChip({ value }: ChangeChipProps): React.ReactElement | null {
   return (
     <span
       className={cn(
-        "rounded-md px-2 py-0.5 text-micro tabular-nums",
+        "rounded-full px-2.5 py-1 text-micro tabular-nums shadow-soft",
         isPositive ? "bg-green-soft text-green-deep" : "bg-red-soft text-red-deep",
       )}
     >

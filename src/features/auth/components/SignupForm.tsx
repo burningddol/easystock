@@ -65,7 +65,7 @@ export function SignupForm(): React.ReactElement {
   return (
     <form
       onSubmit={(event) => void handleSubmit(onSubmit)(event)}
-      className="flex flex-col gap-stack"
+      className="glow-panel flex flex-col gap-stack rounded-[28px] border border-border bg-card p-5 shadow-card"
       noValidate
     >
       <Field label="이메일" error={errors.email?.message}>
@@ -73,7 +73,7 @@ export function SignupForm(): React.ReactElement {
           {...register("email")}
           type="email"
           autoComplete="email"
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
+          className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 shadow-soft"
         />
       </Field>
 
@@ -82,7 +82,7 @@ export function SignupForm(): React.ReactElement {
           {...register("password")}
           type="password"
           autoComplete="new-password"
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
+          className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 shadow-soft"
         />
       </Field>
 
@@ -91,7 +91,7 @@ export function SignupForm(): React.ReactElement {
           {...register("storeName")}
           type="text"
           autoComplete="organization"
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
+          className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 shadow-soft"
         />
       </Field>
 
@@ -100,7 +100,7 @@ export function SignupForm(): React.ReactElement {
           {STORE_TYPES.map((type) => (
             <label
               key={type}
-              className="flex flex-1 cursor-pointer items-center justify-center rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-2 has-[:checked]:border-ink-1 has-[:checked]:bg-card-hover"
+              className="flex flex-1 cursor-pointer items-center justify-center rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-2 shadow-soft has-[:checked]:border-blue has-[:checked]:bg-blue-soft has-[:checked]:text-blue-deep"
             >
               <input {...register("storeType")} type="radio" value={type} className="sr-only" />
               {STORE_TYPE_LABELS[type]}
@@ -114,7 +114,7 @@ export function SignupForm(): React.ReactElement {
           {WEEKDAYS.map((day) => (
             <label
               key={day}
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-border bg-card text-body-regular text-ink-2 has-[:checked]:border-ink-1 has-[:checked]:bg-ink-1 has-[:checked]:text-bg"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-border bg-card text-body-regular text-ink-2 shadow-soft has-[:checked]:border-blue has-[:checked]:bg-blue has-[:checked]:text-white"
             >
               <input
                 {...register("regularDaysOff")}
