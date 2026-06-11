@@ -58,7 +58,7 @@ export function RegularDaysOffEditor({
   }
 
   return (
-    <section className="flex flex-col gap-stack">
+    <section className="flex flex-col gap-stack rounded-2xl bg-bg p-stack shadow-soft">
       <header className="flex flex-col gap-stack-tight">
         <h2 className="text-title-md text-ink-1">정기휴무</h2>
         <p className="text-caption text-ink-3">
@@ -76,9 +76,9 @@ export function RegularDaysOffEditor({
               aria-pressed={active}
               onClick={() => handleToggle(day)}
               className={cn(
-                "h-11 min-w-11 rounded-full border px-4 text-body transition",
+                "h-11 min-w-11 rounded-full border px-4 text-body shadow-soft transition",
                 active
-                  ? "border-border-strong bg-ink-1 text-bg"
+                  ? "border-blue bg-blue text-white"
                   : "border-border bg-card text-ink-2 hover:bg-card-hover",
               )}
             >

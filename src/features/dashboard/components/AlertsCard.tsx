@@ -47,7 +47,12 @@ export function AlertsCard({
 
   return (
     <section className="flex flex-col gap-stack-tight">
-      <h2 className="text-label text-ink-3">오늘 할 일</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-label text-ink-3">오늘 할 일</h2>
+        <span className="rounded-full bg-blue-soft px-2.5 py-1 text-micro text-blue-deep shadow-soft">
+          {alerts.length}개
+        </span>
+      </div>
       <ul className="flex flex-col gap-stack-tight">
         {visible.map((alert) => (
           <AlertRow key={alert.key} alert={alert} />
@@ -72,7 +77,11 @@ function AlertRow({ alert }: AlertRowProps): React.ReactElement {
     <li>
       <Link
         href={alert.href}
-        className={cn("flex items-start gap-stack-tight rounded-lg p-tile", tone.bg, tone.text)}
+        className={cn(
+          "flex items-start gap-stack-tight rounded-2xl border border-border p-tile shadow-soft",
+          tone.bg,
+          tone.text,
+        )}
       >
         <div className="flex-1">
           <div className="text-body">{alert.title}</div>

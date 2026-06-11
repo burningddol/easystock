@@ -32,7 +32,7 @@ export default function InventoryPage(): React.ReactElement {
               type="button"
               onClick={() => setIsAddOpen((v) => !v)}
               aria-expanded={isAddOpen}
-              className="rounded-md bg-ink-1 px-stack py-stack-tight text-body-regular text-bg hover:opacity-90"
+              className="halo-cta rounded-2xl bg-brand-primary px-4 py-3 text-body-regular font-semibold text-white shadow-card transition hover:-translate-y-0.5"
             >
               + 재료
             </button>

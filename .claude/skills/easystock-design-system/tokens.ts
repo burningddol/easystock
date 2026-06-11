@@ -8,32 +8,32 @@
 
 export const color = {
   light: {
-    bg: '#f7f6f2',
+    bg: '#f5f7fb',
     card: '#ffffff',
-    cardHover: '#f1efe9',
-    ink1: '#1a1a1a',
-    ink2: '#43423f',
-    ink3: '#87857f',
-    ink4: '#c4c1b8',
-    border: '#e8e5db',
-    borderStrong: '#b8b4a8',
+    cardHover: '#f8fbff',
+    ink1: '#191f28',
+    ink2: '#4e5968',
+    ink3: '#8b95a1',
+    ink4: '#b0b8c1',
+    border: '#e5e8eb',
+    borderStrong: '#d1d6db',
   },
   dark: {
-    bg: '#161513',
-    card: '#1f1d1a',
-    cardHover: '#2a2724',
-    ink1: '#f0ede5',
-    ink2: '#c8c4b8',
-    ink3: '#8a8780',
-    ink4: '#5a5752',
-    border: '#2e2c28',
-    borderStrong: '#4a4742',
+    bg: '#111318',
+    card: '#1a1f29',
+    cardHover: '#232936',
+    ink1: '#f8fafc',
+    ink2: '#d5dbea',
+    ink3: '#98a2b3',
+    ink4: '#667085',
+    border: '#2b3240',
+    borderStrong: '#3a4252',
   },
   status: {
-    red:   { main: '#d6493a', deep: '#8a2c1f', soft: '#fbe6e1', softDark: '#3a1a14' },
-    amber: { main: '#b07d1a', deep: '#6e4a08', soft: '#fbf0d4', softDark: '#3a2a10' },
-    green: { main: '#4a8a52', deep: '#2c5a35', soft: '#e1f0e2', softDark: '#1a2a1d' },
-    blue:  { main: '#3e7bb4', deep: '#234a72', soft: '#dde9f4', softDark: '#18283a' },
+    red:   { main: '#f04452', deep: '#b42318', soft: '#fef0f1', softDark: '#3d1c20' },
+    amber: { main: '#ffb020', deep: '#b54708', soft: '#fff4db', softDark: '#3b2912' },
+    green: { main: '#16b364', deep: '#067647', soft: '#e8fff3', softDark: '#133225' },
+    blue:  { main: '#3182f6', deep: '#1b64da', soft: '#eaf3ff', softDark: '#16263e' },
   },
 } as const;
 
@@ -41,11 +41,11 @@ export const typography = {
   family: "'Pretendard', ui-sans-serif, system-ui, sans-serif",
   numericFeature: { fontVariantNumeric: 'tabular-nums' as const, fontFeatureSettings: '"tnum"' },
 
-  metricHero:   { fontSize: 30,   fontWeight: 700, letterSpacing: '-0.02em' },
-  metricLg:     { fontSize: 24,   fontWeight: 700, letterSpacing: '-0.02em' },
-  metricMd:     { fontSize: 16,   fontWeight: 700 },
-  titleLg:      { fontSize: 22,   fontWeight: 700, letterSpacing: '-0.01em' },
-  titleMd:      { fontSize: 18,   fontWeight: 700 },
+  metricHero:   { fontSize: 32,   fontWeight: 700, letterSpacing: '-0.03em' },
+  metricLg:     { fontSize: 26,   fontWeight: 700, letterSpacing: '-0.025em' },
+  metricMd:     { fontSize: 17,   fontWeight: 700 },
+  titleLg:      { fontSize: 24,   fontWeight: 700, letterSpacing: '-0.02em' },
+  titleMd:      { fontSize: 19,   fontWeight: 700, letterSpacing: '-0.015em' },
   body:         { fontSize: 13.5, fontWeight: 600 },
   bodyRegular:  { fontSize: 13,   fontWeight: 500 },
   label:        { fontSize: 12,   fontWeight: 600 },
@@ -54,20 +54,20 @@ export const typography = {
 } as const;
 
 export const spacing = {
-  tilePadding: 14,
-  cardPadding: 14,
-  screenPadding: 16,
-  sectionGap: 20,
-  stackTight: 8,
-  stack: 12,
-  stackLoose: 20,
+  tilePadding: 16,
+  cardPadding: 16,
+  screenPadding: 20,
+  sectionGap: 24,
+  stackTight: 10,
+  stack: 14,
+  stackLoose: 24,
 } as const;
 
 export const radius = {
-  sm: 6,
-  md: 10,
-  lg: 12,
-  xl: 16,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
   full: 9999,
 } as const;
 
@@ -75,6 +75,12 @@ export const stroke = {
   hairline: '1px solid var(--border)',
   strong:   '1px solid var(--border-strong)',
   dashed:   '1px dashed var(--border-strong)',
+} as const;
+
+export const shadow = {
+  soft: '0 8px 24px rgba(15, 23, 42, 0.06)',
+  card: '0 10px 30px rgba(15, 23, 42, 0.07)',
+  lift: '0 16px 40px rgba(49, 130, 246, 0.12)',
 } as const;
 
 export const interaction = {
@@ -119,5 +125,5 @@ export function cssVarBlock(theme: 'light' | 'dark' = 'light'): string {
   return lines.join('\n  ');
 }
 
-export const tokens = { color, typography, spacing, radius, stroke, interaction, fmt };
+export const tokens = { color, typography, spacing, radius, stroke, shadow, interaction, fmt };
 export default tokens;

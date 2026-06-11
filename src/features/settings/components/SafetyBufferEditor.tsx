@@ -70,7 +70,7 @@ export function SafetyBufferEditor({
           min={0}
           max={7}
           inputMode="numeric"
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1 tabular-nums"
+          className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 tabular-nums shadow-soft"
         />
       </Field>
 

@@ -57,24 +57,38 @@ export default function TodayPage(): React.ReactElement {
   const { data } = dashboard;
 
   return (
-    <section className="flex flex-col gap-section">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-title-lg text-ink-1">{data.storeName}</h1>
-          <p className="text-caption text-ink-3">{todayLabel}</p>
+    <section className="flex flex-col gap-section pb-12">
+      <header className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
+        <div className="flex items-start justify-between gap-stack">
+          <div className="min-w-0 flex-1">
+            <p className="text-micro uppercase tracking-[0.14em] text-blue-deep">Today</p>
+            <h1 className="mt-1 break-words text-title-lg text-ink-1">{data.storeName}</h1>
+            <p className="text-caption text-ink-3">{todayLabel}</p>
+            {data.missingYesterdaySale && (
+              <div className="mt-3">
+                <MissingSaleBadge yesterdaySoldAt={data.yesterday.soldAt} />
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-stack-tight">
+            <Link
+              href="/settings"
+              aria-label="가게 설정"
+              title="가게 설정"
+              className={`${SECONDARY_BUTTON_CLASSES} flex h-11 w-11 items-center justify-center px-0`}
+            >
+              <Settings size={18} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-stack-tight">
-          {data.missingYesterdaySale && (
-            <MissingSaleBadge yesterdaySoldAt={data.yesterday.soldAt} />
-          )}
-          <Link
-            href="/settings"
-            aria-label="가게 설정"
-            title="가게 설정"
-            className={`${SECONDARY_BUTTON_CLASSES} flex h-11 w-11 items-center justify-center px-0`}
-          >
-            <Settings size={18} aria-hidden="true" />
-          </Link>
+
+        <div className="mt-stack rounded-2xl border border-blue/10 bg-blue-soft px-stack py-stack shadow-soft">
+          <p className="text-caption text-blue-deep">오늘 우선순위</p>
+          <p className="mt-1 text-body text-ink-1">
+            {data.missingYesterdaySale
+              ? "어제 판매 입력을 먼저 끝내고, 발주가 필요한 재료를 확인하세요."
+              : "오늘 필요한 발주와 마진 변화를 먼저 확인하세요."}
+          </p>
         </div>
       </header>
 
@@ -87,12 +101,12 @@ export default function TodayPage(): React.ReactElement {
         yesterdaySoldAt={data.yesterday.soldAt}
       />
 
-      <MarginTop3Card top3={data.top3Menus} lowMargin={data.lowMarginMenu} />
-
       <nav className="grid grid-cols-2 gap-stack">
-        <QuickAction href="/purchase" label="매입 등록" />
-        <QuickAction href="/sale" label="판매 입력" />
+        <QuickAction href="/sale" label="판매 입력" tone="primary" />
+        <QuickAction href="/purchase" label="매입 등록" tone="secondary" />
       </nav>
+
+      <MarginTop3Card top3={data.top3Menus} lowMargin={data.lowMarginMenu} />
     </section>
   );
 }
@@ -100,13 +114,18 @@ export default function TodayPage(): React.ReactElement {
 interface QuickActionProps {
   href: string;
   label: string;
+  tone: "primary" | "secondary";
 }
 
-function QuickAction({ href, label }: QuickActionProps): React.ReactElement {
+function QuickAction({ href, label, tone }: QuickActionProps): React.ReactElement {
   return (
     <Link
       href={href}
-      className="flex items-center justify-center rounded-xl border border-border bg-card py-3 text-body text-ink-1"
+      className={
+        tone === "primary"
+          ? "flex items-center justify-center rounded-2xl bg-blue py-3.5 text-body font-semibold text-white shadow-soft transition hover:bg-blue-deep"
+          : "flex items-center justify-center rounded-2xl border border-border-strong bg-white py-3.5 text-body font-medium text-ink-1 shadow-soft transition hover:border-blue/30 hover:bg-blue-soft"
+      }
     >
       {label}
     </Link>

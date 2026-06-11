@@ -16,22 +16,26 @@ export function MenuRow({ menu, quantity, onChange }: MenuRowProps): React.React
   return (
     <li
       className={cn(
-        "flex items-center justify-between rounded-lg border px-tile py-stack",
-        isActive ? "border-border-strong bg-card" : "border-border bg-card",
+        "glow-panel flex items-center justify-between rounded-[28px] border px-5 py-4 shadow-soft transition",
+        isActive
+          ? "border-brand-primary/25 bg-white shadow-card ring-1 ring-brand-primary/10"
+          : "border-white/70 bg-white/92",
       )}
     >
       <div className="flex flex-col gap-1">
-        <span className={cn("text-body", isActive ? "text-ink-1" : "text-ink-2")}>{menu.name}</span>
+        <span className={cn("text-body font-semibold", isActive ? "text-ink-1" : "text-ink-2")}>
+          {menu.name}
+        </span>
         <span className="text-caption text-ink-3 tabular-nums">{formatNumber(menu.price)}원</span>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 rounded-2xl border border-border bg-white p-1.5 shadow-soft">
         <button
           type="button"
           onClick={() => onChange(Math.max(0, quantity - 1))}
           disabled={quantity === 0}
           aria-label={`${menu.name} 수량 -1`}
-          className="h-11 w-11 rounded-md border border-border bg-card text-title-md text-ink-2 hover:bg-card-hover disabled:opacity-40"
+          className="h-11 w-11 rounded-2xl border border-border bg-slate-100 text-title-md font-semibold text-ink-2 shadow-soft transition hover:bg-slate-200 disabled:text-ink-4 disabled:shadow-none"
         >
           −
         </button>
@@ -46,14 +50,14 @@ export function MenuRow({ menu, quantity, onChange }: MenuRowProps): React.React
             const n = Number(e.target.value);
             onChange(Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0);
           }}
-          className="w-14 rounded-md border border-border bg-card py-2 text-center text-body-regular text-ink-1 tabular-nums"
+          className="w-16 rounded-2xl border border-border bg-white py-2 text-center text-body-regular font-semibold text-ink-1 tabular-nums shadow-soft"
         />
 
         <button
           type="button"
           onClick={() => onChange(quantity + 1)}
           aria-label={`${menu.name} 수량 +1`}
-          className="h-11 w-11 rounded-md bg-ink-1 text-title-md text-bg hover:opacity-90"
+          className="h-11 w-11 rounded-2xl bg-blue text-title-md font-semibold text-white shadow-soft transition hover:bg-blue-deep"
         >
           +
         </button>

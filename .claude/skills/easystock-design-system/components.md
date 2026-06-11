@@ -6,23 +6,23 @@
 
 ## Card
 
-기본 컨테이너. 그림자 절대 금지, 보더로만 위계.
+기본 컨테이너. 흰 표면 + 얕은 그림자 + 얇은 보더 조합.
 
 ```tsx
-<div className="bg-card rounded-xl p-3.5" style={{ border: '1px solid var(--border)' }}>
+<div className="bg-card rounded-2xl p-4 shadow-card" style={{ border: '1px solid var(--border)' }}>
   ...
 </div>
 ```
 
 **규칙**
-- `padding: 14px` (`p-3.5`) 기본. 컴팩트는 `12px`, 큰 카드는 `16px`
-- `border-radius: 12~16px`
-- 호버시 `var(--card-hover)` 또는 `border: var(--ink-1)` (선택 상태)
-- 그림자 사용 금지
+- `padding: 16px` 기본. 컴팩트는 `14px`, 큰 카드는 `20px`
+- `border-radius: 16~20px`
+- 기본은 `shadow-card`, 강조는 `shadow-lift`
+- 호버시 `var(--card-hover)` 또는 `border: var(--c-blue)` (선택 상태)
 
 **변형**
 - `interactive` — 호버 가능, cursor pointer
-- `selected` — `border: 1px solid var(--ink-1)` 로 강조
+- `selected` — `border: 1px solid var(--c-blue)` + 연한 블루 배경
 
 ---
 
@@ -30,10 +30,10 @@
 
 ```tsx
 // Primary — 가장 중요한 액션 (저장, 다음, 시작)
-<button className="py-3 bg-ink-1 text-bg rounded-xl font-semibold text-[13.5px]">저장하기</button>
+<button className="py-3 bg-blue text-white rounded-2xl font-semibold text-[14px] shadow-soft">저장하기</button>
 
 // Secondary — 보조 액션 (등록, 추가)
-<button className="py-3 bg-card text-ink-1 rounded-xl font-semibold text-[13.5px]"
+<button className="py-3 bg-card text-ink-1 rounded-2xl font-semibold text-[13.5px] shadow-soft"
   style={{ border: '1px solid var(--border)' }}>매입 등록</button>
 
 // Tertiary (Dashed) — 새 항목 추가
@@ -48,8 +48,9 @@
 
 **규칙**
 - 최소 hit target 44px (작은 아이콘 버튼은 padding으로 보완)
-- Primary는 `bg-ink-1` (검정) → 흰 배경에서 가장 강한 대비
-- 색 채우기 버튼은 안 씀 (브랜드 컬러 없음)
+- Primary는 `bg-blue`, destructive만 red
+- Secondary도 단순 보더 박스보다 `surface button`처럼 보여야 함
+- 1차 CTA는 화면마다 1개만 가장 강하게
 
 ---
 
@@ -122,14 +123,14 @@
 ## Input
 
 ```tsx
-<input className="w-full px-3 py-2.5 rounded-xl bg-card text-[13.5px] font-medium outline-none text-ink-1"
+<input className="w-full px-4 py-3 rounded-2xl bg-card text-[14px] font-medium outline-none text-ink-1 shadow-soft"
   style={{ border: '1px solid var(--border)' }} />
 ```
 
 **규칙**
 - 단위 표시는 `absolute` 우측 8~10px (`원`, `kg`, `일`)
 - 숫자 입력은 `num` 클래스
-- 포커스 시 보더 색만 `ink-1` 로 변경 (ring 사용 금지)
+- 포커스 시 보더는 `blue`, 배경은 더 밝게
 - 폼 라벨은 항상 인풋 위, `text-ink-3 font-semibold`
 
 ---

@@ -5,7 +5,11 @@ export function LoadingText({
 }: {
   children?: string;
 }): React.ReactElement {
-  return <p className="text-body-regular text-ink-3">{children}</p>;
+  return (
+    <div className="glow-panel rounded-2xl border border-border bg-card px-stack py-stack shadow-soft">
+      <p className="text-body-regular text-ink-3">{children}</p>
+    </div>
+  );
 }
 
 interface ErrorAlertProps {
@@ -15,8 +19,10 @@ interface ErrorAlertProps {
 
 export function ErrorAlert({ message, prefix }: ErrorAlertProps): React.ReactElement {
   return (
-    <p role="alert" className="text-body-regular text-red-deep">
-      {prefix ? `${prefix} ${message}` : message}
-    </p>
+    <div className="rounded-2xl border border-red bg-red-soft px-stack py-stack shadow-soft">
+      <p role="alert" className="text-body-regular text-red-deep">
+        {prefix ? `${prefix} ${message}` : message}
+      </p>
+    </div>
   );
 }

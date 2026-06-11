@@ -18,8 +18,8 @@ export function MonthCumulativeCard({
   marginLabel,
 }: MonthCumulativeCardProps): React.ReactElement {
   return (
-    <article className="flex flex-col gap-stack rounded-xl border border-border bg-card p-tile">
-      <div className="grid grid-cols-2 gap-stack">
+    <article className="glow-panel flex flex-col gap-stack rounded-[28px] border border-border bg-card p-5 shadow-card">
+      <div className="grid grid-cols-2 gap-stack rounded-2xl bg-bg p-stack">
         <Metric label="총 매출" value={`${formatWon(cumulative.totalRevenue)}원`} />
         <Metric label="순수익" value={`${formatWon(cumulative.totalNetProfit)}원`} />
         <Metric

@@ -27,7 +27,7 @@ const STATUS_LABEL: Record<DepletionStatus, string> = {
 export function IngredientStatusList({ items }: IngredientStatusListProps): React.ReactElement {
   if (items.length === 0) {
     return (
-      <p className="text-body-regular text-ink-3">
+      <p className="glow-panel rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-3 shadow-soft">
         등록된 재료가 없어요. 매입을 등록하면 여기에 표시됩니다.
       </p>
     );
@@ -47,7 +47,12 @@ export function IngredientStatusList({ items }: IngredientStatusListProps): Reac
         if (!list || list.length === 0) return null;
         return (
           <section key={status} className="flex flex-col gap-stack-tight">
-            <h2 className="text-title-md text-ink-1">{STATUS_LABEL[status]}</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-title-md text-ink-1">{STATUS_LABEL[status]}</h2>
+              <span className="rounded-full bg-blue-soft px-2.5 py-1 text-micro text-blue-deep shadow-soft">
+                {list.length}개
+              </span>
+            </div>
             <ul className="flex flex-col gap-stack-tight">
               {list.map((item) => (
                 <IngredientRow key={item.ingredientId} item={item} />
@@ -78,7 +83,7 @@ function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactE
   }
 
   return (
-    <li className="flex flex-col gap-1 rounded-lg border border-border bg-card px-tile py-stack">
+    <li className="glow-panel flex flex-col gap-1 rounded-[24px] border border-border bg-card px-tile py-stack shadow-card">
       <div className="flex items-center justify-between gap-stack">
         <div className="flex flex-col gap-1">
           <span className="text-body text-ink-1">{item.name}</span>
@@ -101,7 +106,7 @@ function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactE
             onClick={() => void handleDelete()}
             disabled={deleteMutation.isPending}
             aria-label={`${item.name} 삭제`}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-caption text-ink-3 hover:border-red hover:text-red disabled:opacity-50"
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-card text-caption text-ink-3 shadow-soft hover:border-red hover:text-red disabled:opacity-50"
           >
             ×
           </button>

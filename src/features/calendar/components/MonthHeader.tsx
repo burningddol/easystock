@@ -20,25 +20,30 @@ export function MonthHeader({
   onToday,
 }: MonthHeaderProps): React.ReactElement {
   return (
-    <header className="flex items-center justify-between">
-      <div className="flex items-center gap-stack">
-        <NavButton ariaLabel="이전 달" onClick={onPrev}>
-          ‹
-        </NavButton>
-        <h1 className="text-title-lg text-ink-1 tabular-nums">
-          {year}년 {month}월
-        </h1>
-        <NavButton ariaLabel="다음 달" onClick={onNext}>
-          ›
-        </NavButton>
+    <header className="glow-panel rounded-[28px] border border-border bg-card px-5 py-5 shadow-card">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-stack">
+          <NavButton ariaLabel="이전 달" onClick={onPrev}>
+            ‹
+          </NavButton>
+          <div className="flex flex-col">
+            <span className="text-micro uppercase tracking-[0.14em] text-blue-deep">Calendar</span>
+            <h1 className="text-title-lg text-ink-1 tabular-nums">
+              {year}년 {month}월
+            </h1>
+          </div>
+          <NavButton ariaLabel="다음 달" onClick={onNext}>
+            ›
+          </NavButton>
+        </div>
+        <button
+          type="button"
+          onClick={onToday}
+          className="rounded-xl border border-border bg-card px-3 py-2 text-caption text-ink-2 shadow-soft transition hover:bg-card-hover"
+        >
+          오늘
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={onToday}
-        className="rounded-md border border-border px-2 py-1 text-caption text-ink-3"
-      >
-        오늘
-      </button>
     </header>
   );
 }
@@ -55,7 +60,7 @@ function NavButton({ ariaLabel, onClick, children }: NavButtonProps): React.Reac
       type="button"
       aria-label={ariaLabel}
       onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-ink-1"
+      className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-card text-ink-1 shadow-soft transition hover:bg-card-hover"
     >
       {children}
     </button>

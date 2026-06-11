@@ -66,7 +66,7 @@ export function PurchaseForm(): React.ReactElement {
     return (
       <div className="flex flex-col gap-section">
         <PriceChangeAlertList alerts={savedAlerts} />
-        <PrimaryButton type="button" onClick={() => router.push("/inventory")}>
+        <PrimaryButton type="button" onClick={() => router.push("/inventory")} className="halo-cta">
           확인했어요
         </PrimaryButton>
       </div>
@@ -106,17 +106,17 @@ export function PurchaseForm(): React.ReactElement {
           {...register("purchasedAt")}
           type="date"
           max={todayString()}
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1 tabular-nums"
+          className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 tabular-nums shadow-soft"
         />
       </Field>
 
-      <section className="flex flex-col gap-stack-tight">
+      <section className="glow-panel flex flex-col gap-stack-tight rounded-[28px] border border-border bg-card p-5 shadow-card">
         <header className="flex items-center justify-between">
           <span className="text-label text-ink-2">매입 항목</span>
           <button
             type="button"
             onClick={() => append({ ingredientId: "", quantity: 0, amount: 0 })}
-            className="rounded-md border border-border px-stack py-1 text-label text-ink-2 hover:bg-card-hover"
+            className="rounded-xl border border-border bg-card px-stack py-2 text-label text-ink-2 shadow-soft hover:bg-card-hover"
           >
             + 항목 추가
           </button>
@@ -152,7 +152,7 @@ export function PurchaseForm(): React.ReactElement {
         </p>
       )}
 
-      <PrimaryButton type="submit" disabled={isSubmitting || submit.isPending}>
+      <PrimaryButton type="submit" disabled={isSubmitting || submit.isPending} className="halo-cta">
         {submit.isPending ? "저장 중…" : "매입 저장"}
       </PrimaryButton>
     </form>
@@ -185,7 +185,7 @@ function VendorPicker({
         name="vendorId"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
+        className="flex-1 rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 shadow-soft"
       >
         <option value="">거래처 선택</option>
         {vendors.map((v) => (
@@ -197,7 +197,7 @@ function VendorPicker({
       <button
         type="button"
         onClick={() => setMode("create")}
-        className="rounded-md border border-border px-stack py-stack-tight text-body-regular text-ink-2 hover:bg-card-hover"
+        className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-2 shadow-soft hover:bg-card-hover"
       >
         + 신규
       </button>
@@ -234,7 +234,7 @@ function ItemRow({
     return <IngredientQuickCreate onCreated={onIngredientCreated} onCancel={onCloseQuickCreate} />;
   }
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-border bg-card p-tile">
+    <div className="glow-panel flex flex-col gap-1 rounded-[24px] border border-border bg-card p-tile shadow-card">
       <Controller
         control={control}
         name={`items.${idx}.ingredientId`}
@@ -244,7 +244,7 @@ function ItemRow({
               name={field.name}
               value={field.value}
               onChange={(e) => field.onChange(e.target.value)}
-              className="flex-1 rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
+              className="flex-1 rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 shadow-soft"
             >
               <option value="">재료 선택</option>
               {ingredients.map((ing) => (
@@ -256,7 +256,7 @@ function ItemRow({
             <button
               type="button"
               onClick={onOpenQuickCreate}
-              className="rounded-md border border-border px-stack py-stack-tight text-label text-ink-2 hover:bg-card-hover"
+              className="rounded-2xl border border-border bg-card px-stack py-stack text-label text-ink-2 shadow-soft hover:bg-card-hover"
             >
               + 신규
             </button>
@@ -272,7 +272,7 @@ function ItemRow({
             type="number"
             min={0}
             step="0.001"
-            className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1 tabular-nums"
+            className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 tabular-nums shadow-soft"
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -281,7 +281,7 @@ function ItemRow({
             {...register(`items.${idx}.amount`, { valueAsNumber: true })}
             type="number"
             min={0}
-            className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1 tabular-nums"
+            className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 tabular-nums shadow-soft"
           />
         </label>
       </div>

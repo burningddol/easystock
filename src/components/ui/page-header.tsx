@@ -10,9 +10,14 @@ interface PageHeaderProps {
  */
 export function PageHeader({ title, action }: PageHeaderProps): React.ReactElement {
   return (
-    <header className="flex items-center justify-between gap-stack-tight">
-      <h1 className="text-title-lg text-ink-1">{title}</h1>
-      {action}
+    <header className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
+      <div className="flex items-center justify-between gap-stack-tight">
+        <div className="flex flex-col gap-1">
+          <span className="text-micro uppercase tracking-[0.14em] text-blue-deep">Workspace</span>
+          <h1 className="text-title-lg text-ink-1">{title}</h1>
+        </div>
+        <div className="shrink-0">{action}</div>
+      </div>
     </header>
   );
 }

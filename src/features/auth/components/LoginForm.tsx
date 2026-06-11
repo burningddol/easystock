@@ -46,7 +46,7 @@ export function LoginForm(): React.ReactElement {
   return (
     <form
       onSubmit={(event) => void handleSubmit(onSubmit)(event)}
-      className="flex flex-col gap-stack"
+      className="glow-panel flex flex-col gap-stack rounded-[28px] border border-border bg-card p-5 shadow-card"
       noValidate
     >
       {withdrawalNotice && (
@@ -63,7 +63,7 @@ export function LoginForm(): React.ReactElement {
           {...register("email")}
           type="email"
           autoComplete="email"
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
+          className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 shadow-soft"
         />
       </Field>
 
@@ -72,7 +72,7 @@ export function LoginForm(): React.ReactElement {
           {...register("password")}
           type="password"
           autoComplete="current-password"
-          className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1"
+          className="rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-1 shadow-soft"
         />
       </Field>
 

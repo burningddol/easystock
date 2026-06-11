@@ -25,8 +25,11 @@ export function MarginTop3Card({
     <section className="flex flex-col gap-stack">
       {top3.length > 0 && (
         <div className="flex flex-col gap-stack-tight">
-          <h2 className="text-label text-ink-3">이번 주 마진 TOP 3</h2>
-          <ul className="rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between">
+            <h2 className="text-label text-ink-3">이번 주 마진 TOP 3</h2>
+            <span className="text-micro text-ink-3">주간 기준</span>
+          </div>
+          <ul className="rounded-[28px] border border-border bg-card shadow-card">
             {top3.map((menu, idx) => (
               <TopRow
                 key={menu.menuId}
@@ -56,7 +59,7 @@ function TopRow({ rank, menu, isLast }: TopRowProps): React.ReactElement {
   return (
     <li
       className={cn(
-        "flex items-center gap-stack px-tile py-stack",
+        "flex items-center gap-stack px-5 py-stack",
         !isLast && "border-b border-border",
       )}
     >
@@ -76,7 +79,7 @@ interface LowMarginAlertProps {
 
 function LowMarginAlert({ menu }: LowMarginAlertProps): React.ReactElement {
   return (
-    <div className="flex items-start gap-stack-tight rounded-xl bg-red-soft p-tile">
+    <div className="flex items-start gap-stack-tight rounded-[24px] border border-red bg-red-soft p-tile shadow-soft">
       <div className="flex-1">
         <div className="text-body text-red-deep">
           {menu.name} 마진 {menu.marginPercent.toFixed(0)}%로 하락
