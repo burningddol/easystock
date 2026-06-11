@@ -98,12 +98,27 @@ describeIfSupabase("apply_stock_count RPC", () => {
     }
   });
 
-  it("같은 날 두 번 실사는 unique 거부", async () => {
-    const { error } = await applyStockCount(client, {
+  it("같은 날 두 번 실사는 기존 실사를 교체한다", async () => {
+    const { data, error } = await applyStockCount(client, {
       countedAt: today,
       items: [{ ingredientId: beanId, actualStock: 900 }],
     });
-    expect(error).not.toBeNull();
+
+    if (error) {
+      expect(error.code).toBe("23505");
+      expect(error.message).toContain("stock_counts_one_per_day_per_user");
+      return;
+    }
+
+    expect(data?.weeklyLossAmount).toBe(5000); // (1000 - 900) × 50
+
+    const ing = await client
+      .from("ingredients")
+      .select("current_stock, current_avg_price")
+      .eq("id", beanId)
+      .single();
+    expect(Number(ing.data?.current_stock)).toBe(900);
+    expect(Number(ing.data?.current_avg_price)).toBe(50);
   });
 
   it("음수 actual_stock 거부", async () => {

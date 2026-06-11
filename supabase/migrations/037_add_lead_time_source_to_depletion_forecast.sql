@@ -1,7 +1,10 @@
 -- Migration: get_depletion_forecast RPC에 리드타임 출처 정보 추가
 -- 예측 UI에서 "기본 1일" fallback인지, 어느 거래처 기준인지 바로 설명할 수 있게 한다.
+-- 리턴 타입 변경으로 인해 기존 함수 DROP 후 재생성
 
-create or replace function public.get_depletion_forecast()
+drop function if exists public.get_depletion_forecast();
+
+create function public.get_depletion_forecast()
 returns table (
   ingredient_id uuid,
   name text,
