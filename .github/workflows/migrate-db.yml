@@ -20,6 +20,9 @@ jobs:
     name: Apply migrations to ${{ github.event.inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment }}
+    env:
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      DO_NOT_TRACK: "1"
     steps:
       - uses: actions/checkout@v5
       - uses: supabase/setup-cli@v2
