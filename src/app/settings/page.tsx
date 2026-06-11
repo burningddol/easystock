@@ -6,6 +6,7 @@ import { LogoutButton } from "@/features/settings/components/LogoutButton";
 import { RegularDaysOffEditor } from "@/features/settings/components/RegularDaysOffEditor";
 import { SafetyBufferEditor } from "@/features/settings/components/SafetyBufferEditor";
 import { StoreNameEditor } from "@/features/settings/components/StoreNameEditor";
+import { VendorLeadTimeManager } from "@/features/settings/components/VendorLeadTimeManager";
 import type { Weekday } from "@/lib/domain/regular-days-off";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
 
@@ -105,11 +106,7 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
             label="위험 단계 계산"
             value={`소진 예상일까지 남은 일수에서 거래처 리드타임과 안전여유 ${safetyBufferDays}일을 함께 빼서 safe / caution / order_needed / critical 단계를 정합니다.`}
           />
-          <div className="flex flex-wrap gap-stack-tight">
-            <Link href="/purchase" className={SECONDARY_BUTTON_CLASSES}>
-              거래처 리드타임 관리로 이동
-            </Link>
-          </div>
+          <VendorLeadTimeManager />
         </div>
       </section>
 
