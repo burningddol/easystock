@@ -116,6 +116,12 @@ export function MenuRow({
               </div>
 
               <div className="flex flex-col gap-2">
+                {group.values.length === 0 && (
+                  <p className="rounded-2xl border border-dashed border-border bg-white/70 px-3 py-3 text-[11px] text-ink-3">
+                    이 그룹에는 아직 선택지가 없어요. 메뉴 수정에서 옵션값을 추가해야 판매 입력에
+                    선택 버튼이 생깁니다.
+                  </p>
+                )}
                 {group.values.map((value) => {
                   const current = selectedOptionByValue.get(value.id)?.quantity ?? 0;
                   return (

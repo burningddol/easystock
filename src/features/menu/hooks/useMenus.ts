@@ -19,14 +19,18 @@ export type { MenuRowWithRecipe } from "@/lib/application/lookups";
 export const menuListQueryKey = ["menus", "list"] as const;
 
 async function fetchMenus(): Promise<MenuRowWithRecipe[]> {
-  const supabase = createClient() as unknown as import("@/lib/application/lookups").LookupClient;
-  return loadMenus(supabase);
+  const supabase = createClient();
+  await (supabase as never as { auth: { getSession: () => Promise<unknown> } }).auth.getSession();
+  return loadMenus(supabase as unknown as import("@/lib/application/lookups").LookupClient);
 }
 
 export function useMenus(): UseQueryResult<MenuRowWithRecipe[]> {
   return useQuery({
     queryKey: menuListQueryKey,
     queryFn: fetchMenus,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 

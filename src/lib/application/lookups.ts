@@ -309,10 +309,9 @@ export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe
                 current_stock: Number(item.ingredient.current_stock),
                 current_avg_price: Number(item.ingredient.current_avg_price),
               },
-            })),
-        })),
-      }))
-      .filter((group) => group.values.length > 0),
+              })),
+          })),
+      })),
   }));
 }
 
