@@ -25,6 +25,10 @@ export interface SaleClient {
 export interface SubmitSaleItemInput {
   menuId: string;
   quantity: number;
+  options?: ReadonlyArray<{
+    optionValueId: string;
+    quantity: number;
+  }>;
 }
 
 export interface SubmitSaleInput {

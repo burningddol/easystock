@@ -426,7 +426,13 @@ describe("application layer", () => {
           { rpc: {} },
           {
             soldAt: "2026-06-02",
-            items: [{ menuId: "menu-1", quantity: 3 }],
+            items: [
+              {
+                menuId: "menu-1",
+                quantity: 3,
+                options: [{ optionValueId: "option-1", quantity: 2 }],
+              },
+            ],
           },
         ),
       ).resolves.toEqual({
@@ -442,7 +448,13 @@ describe("application layer", () => {
           { rpc: {} },
           {
             saleId: "sale-1",
-            newItems: [{ menuId: "menu-2", quantity: 4 }],
+            newItems: [
+              {
+                menuId: "menu-2",
+                quantity: 4,
+                options: [{ optionValueId: "option-2", quantity: 4 }],
+              },
+            ],
             reason: "fix count",
           },
         ),
@@ -450,6 +462,34 @@ describe("application layer", () => {
         totalRevenue: 48000,
         totalCostSnapshot: 19000,
       });
+
+      expect(rpcMocks.saveSale).toHaveBeenCalledWith(
+        { rpc: {} },
+        {
+          soldAt: "2026-06-02",
+          items: [
+            {
+              menuId: "menu-1",
+              quantity: 3,
+              options: [{ optionValueId: "option-1", quantity: 2 }],
+            },
+          ],
+        },
+      );
+      expect(rpcMocks.editSale).toHaveBeenCalledWith(
+        { rpc: {} },
+        {
+          saleId: "sale-1",
+          newItems: [
+            {
+              menuId: "menu-2",
+              quantity: 4,
+              options: [{ optionValueId: "option-2", quantity: 4 }],
+            },
+          ],
+          reason: "fix count",
+        },
+      );
     });
 
     it("editSale translates negative_stock into an ingredient-friendly message", async () => {

@@ -8,6 +8,14 @@ import { z } from "zod";
 export const saleItemInputSchema = z.object({
   menuId: z.string().uuid(),
   quantity: z.number().int().positive(),
+  options: z
+    .array(
+      z.object({
+        optionValueId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+      }),
+    )
+    .optional(),
 });
 
 export type SaleItemInputDto = z.infer<typeof saleItemInputSchema>;
