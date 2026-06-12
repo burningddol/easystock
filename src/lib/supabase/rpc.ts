@@ -62,10 +62,34 @@ function mapRecipePayload(
   }));
 }
 
-function mapSaleItemsPayload(
-  items: ReadonlyArray<{ menuId: string; quantity: number }>,
-): Array<{ menu_id: string; quantity: number }> {
-  return items.map((it) => ({ menu_id: it.menuId, quantity: it.quantity }));
+interface SaleItemOptionInput {
+  optionValueId: string;
+  quantity: number;
+}
+
+interface SaleItemInput {
+  menuId: string;
+  quantity: number;
+  options?: ReadonlyArray<SaleItemOptionInput>;
+}
+
+function mapSaleItemsPayload(items: ReadonlyArray<SaleItemInput>): Array<{
+  menu_id: string;
+  quantity: number;
+  options?: Array<{ option_value_id: string; quantity: number }>;
+}> {
+  return items.map((it) => ({
+    menu_id: it.menuId,
+    quantity: it.quantity,
+    ...(it.options
+      ? {
+          options: it.options.map((option) => ({
+            option_value_id: option.optionValueId,
+            quantity: option.quantity,
+          })),
+        }
+      : {}),
+  }));
 }
 
 interface EditMenuArgs extends SaveMenuArgs {
@@ -130,7 +154,7 @@ interface SaleRpcRow {
 
 interface SaveSaleArgs {
   soldAt: string; // YYYY-MM-DD
-  items: ReadonlyArray<{ menuId: string; quantity: number }>;
+  items: ReadonlyArray<SaleItemInput>;
 }
 
 export function saveSale(client: ClientLike, args: SaveSaleArgs): Promise<RpcResult<SaleRpcRow[]>> {
@@ -142,7 +166,7 @@ export function saveSale(client: ClientLike, args: SaveSaleArgs): Promise<RpcRes
 
 interface EditSaleArgs {
   saleId: string;
-  newItems: ReadonlyArray<{ menuId: string; quantity: number }>;
+  newItems: ReadonlyArray<SaleItemInput>;
   reason?: string;
 }
 
