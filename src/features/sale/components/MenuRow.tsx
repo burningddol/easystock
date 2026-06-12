@@ -24,7 +24,7 @@ export function MenuRow({
   const isActive = quantity > 0;
   const hasOptionControls = menu.option_groups.length > 0 && onOptionChange !== undefined;
   const selectedOptionByValue = new Map(optionSelections.map((item) => [item.optionValueId, item]));
-  const showOptions = hasOptionControls && (isActive || optionSelections.length > 0);
+  const showOptions = hasOptionControls;
   const [open, setOpen] = useState(showOptions);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export function MenuRow({
                 onClick={() => setOpen((prev) => !prev)}
                 className="rounded-full border border-border bg-white px-2 py-1 text-[11px] text-ink-3 hover:text-ink-2"
               >
-                {open ? "옵션 닫기" : "옵션"}
+                {open ? "옵션 닫기" : "옵션 보기"}
               </button>
             )}
           </div>
@@ -96,6 +96,10 @@ export function MenuRow({
 
       {showOptions && open && (
         <div className="mt-4 flex flex-col gap-3 rounded-3xl bg-slate-50/90 p-4">
+          <p className="text-[11px] text-ink-3">
+            판매 수량을 입력하면 아래 옵션을 같이 고를 수 있어요. 택1형은 메뉴 수량만큼 정확히
+            맞춰야 합니다.
+          </p>
           {menu.option_groups.map((group) => (
             <div key={group.id} className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3">

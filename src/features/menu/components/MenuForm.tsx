@@ -1,8 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm, useFieldArray, type Control, type UseFormRegister } from "react-hook-form";
+import { useEffect, useState } from "react";
+import {
+  useForm,
+  useFieldArray,
+  type Control,
+  type UseFormRegister,
+  type UseFormSetValue,
+  type UseFormWatch,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { Field } from "@/components/ui/field";
@@ -35,6 +42,8 @@ export function MenuForm({ ingredients, mode }: MenuFormProps): React.ReactEleme
     register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<MenuInput>({
     resolver: zodResolver(menuSchema),
@@ -103,39 +112,6 @@ export function MenuForm({ ingredients, mode }: MenuFormProps): React.ReactEleme
 
       <section className="flex flex-col gap-stack-tight">
         <header className="flex items-center justify-between">
-          <span className="text-label text-ink-2">레시피 (1회 제공량)</span>
-          <button
-            type="button"
-            onClick={() =>
-              append({ ingredientId: ingredients[0]?.id ?? "", quantityPerServing: 1 })
-            }
-            className="rounded-md border border-border px-stack py-1 text-label text-ink-2 hover:bg-card-hover"
-            disabled={ingredients.length === 0}
-          >
-            + 재료 추가
-          </button>
-        </header>
-
-        {ingredients.length === 0 && (
-          <p className="text-caption text-ink-3">
-            재료를 먼저 등록해주세요. (템플릿 불러오면 재료/메뉴가 함께 만들어집니다.)
-          </p>
-        )}
-
-        {fields.map((field, idx) => (
-          <RecipeRow
-            key={field.id}
-            idx={idx}
-            register={register}
-            ingredients={ingredients}
-            onRemove={() => remove(idx)}
-            error={errors.recipe?.[idx]?.quantityPerServing?.message}
-          />
-        ))}
-      </section>
-
-      <section className="flex flex-col gap-stack-tight">
-        <header className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <span className="text-label text-ink-2">옵션 / 커스터마이징</span>
             <span className="text-caption text-ink-3">
@@ -171,9 +147,44 @@ export function MenuForm({ ingredients, mode }: MenuFormProps): React.ReactEleme
             key={field.id}
             groupIdx={idx}
             control={control}
+            watch={watch}
+            setValue={setValue}
             register={register}
             ingredients={ingredients}
             onRemove={() => removeOptionGroup(idx)}
+          />
+        ))}
+      </section>
+
+      <section className="flex flex-col gap-stack-tight">
+        <header className="flex items-center justify-between">
+          <span className="text-label text-ink-2">레시피 (1회 제공량)</span>
+          <button
+            type="button"
+            onClick={() =>
+              append({ ingredientId: ingredients[0]?.id ?? "", quantityPerServing: 1 })
+            }
+            className="rounded-md border border-border px-stack py-1 text-label text-ink-2 hover:bg-card-hover"
+            disabled={ingredients.length === 0}
+          >
+            + 재료 추가
+          </button>
+        </header>
+
+        {ingredients.length === 0 && (
+          <p className="text-caption text-ink-3">
+            재료를 먼저 등록해주세요. (템플릿 불러오면 재료/메뉴가 함께 만들어집니다.)
+          </p>
+        )}
+
+        {fields.map((field, idx) => (
+          <RecipeRow
+            key={field.id}
+            idx={idx}
+            register={register}
+            ingredients={ingredients}
+            onRemove={() => remove(idx)}
+            error={errors.recipe?.[idx]?.quantityPerServing?.message}
           />
         ))}
       </section>
@@ -202,6 +213,8 @@ interface RecipeRowProps {
 interface OptionGroupEditorProps {
   groupIdx: number;
   control: Control<MenuInput>;
+  watch: UseFormWatch<MenuInput>;
+  setValue: UseFormSetValue<MenuInput>;
   register: UseFormRegister<MenuInput>;
   ingredients: readonly IngredientOption[];
   onRemove: () => void;
@@ -210,10 +223,24 @@ interface OptionGroupEditorProps {
 function OptionGroupEditor({
   groupIdx,
   control,
+  watch,
+  setValue,
   register,
   ingredients,
   onRemove,
 }: OptionGroupEditorProps): React.ReactElement {
+  const selectionType = watch(`optionGroups.${groupIdx}.selectionType`);
+  const minSelect = watch(`optionGroups.${groupIdx}.minSelect`);
+  const maxSelect = watch(`optionGroups.${groupIdx}.maxSelect`);
+  const isRequired = watch(`optionGroups.${groupIdx}.isRequired`);
+
+  useEffect(() => {
+    if (selectionType !== "single") return;
+    if (minSelect !== 1) setValue(`optionGroups.${groupIdx}.minSelect`, 1, { shouldDirty: true });
+    if (maxSelect !== 1) setValue(`optionGroups.${groupIdx}.maxSelect`, 1, { shouldDirty: true });
+    if (!isRequired) setValue(`optionGroups.${groupIdx}.isRequired`, true, { shouldDirty: true });
+  }, [groupIdx, isRequired, maxSelect, minSelect, selectionType, setValue]);
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: `optionGroups.${groupIdx}.values` as const,
@@ -247,12 +274,19 @@ function OptionGroupEditor({
         </button>
       </div>
 
+      <p className="rounded-2xl bg-slate-50 px-3 py-2 text-caption text-ink-3">
+        {selectionType === "single"
+          ? "택1형은 판매할 때 메뉴 수량만큼 정확히 하나씩 선택하게 됩니다. 최소/최대 선택은 1로 고정됩니다."
+          : "추가형은 여러 개를 더하거나 0개로 비워둘 수 있습니다."}
+      </p>
+
       <div className="grid grid-cols-2 gap-stack-tight">
         <Field label="최소 선택">
           <input
             {...register(`optionGroups.${groupIdx}.minSelect`, { valueAsNumber: true })}
             type="number"
             min={0}
+            disabled={selectionType === "single"}
             className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1 tabular-nums"
           />
         </Field>
@@ -263,6 +297,7 @@ function OptionGroupEditor({
             })}
             type="number"
             min={1}
+            disabled={selectionType === "single"}
             className="rounded-md border border-border bg-card px-stack py-stack-tight text-body-regular text-ink-1 tabular-nums"
           />
         </Field>
@@ -295,7 +330,10 @@ function OptionGroupEditor({
   );
 }
 
-interface OptionValueEditorProps extends Omit<OptionGroupEditorProps, "groupIdx" | "onRemove"> {
+interface OptionValueEditorProps extends Omit<
+  OptionGroupEditorProps,
+  "groupIdx" | "onRemove" | "watch" | "setValue"
+> {
   groupIdx: number;
   valueIdx: number;
   onRemove: () => void;

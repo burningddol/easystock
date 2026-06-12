@@ -194,7 +194,7 @@ export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe
         ingredient:ingredients (
           id, name, unit, current_stock, current_avg_price
         )
-      ),
+      )
     `,
     )
     .eq("is_active", true)
