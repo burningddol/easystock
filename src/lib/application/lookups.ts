@@ -4,6 +4,9 @@ export type LookupClient = SupabaseLike;
 interface SupabaseLike {
   from: (table: string) => {
     select: (query: string) => {
+      order: (
+        column: string,
+      ) => PromiseLike<{ data: LookupRow[] | null; error: { message: string } | null }>;
       eq: (
         column: string,
         value: unknown,
@@ -77,39 +80,41 @@ interface RawRecipeItem {
   ingredient: RawIngredient | null;
 }
 
-interface RawOptionRecipeItem {
-  id: string;
-  quantity_per_selection: string | number;
-  ingredient: RawIngredient | null;
-}
-
-interface RawOptionValue {
-  id: string;
-  name: string;
-  price_delta: string | number;
-  is_default: boolean;
-  is_active: boolean;
-  menu_option_value_recipe_items: RawOptionRecipeItem[];
-}
-
-interface RawOptionGroup {
-  id: string;
-  name: string;
-  selection_type: "single" | "add_on";
-  is_required: boolean;
-  min_select: number;
-  max_select: number | null;
-  is_active: boolean;
-  menu_option_values: RawOptionValue[];
-}
-
 interface RawMenuRow {
   id: string;
   name: string;
   price: string | number;
   is_active: boolean;
   recipe_items: RawRecipeItem[];
-  menu_option_groups?: RawOptionGroup[];
+}
+
+interface RawOptionGroupRow {
+  id: string;
+  menu_id: string;
+  name: string;
+  selection_type: "single" | "add_on";
+  is_required: boolean;
+  min_select: number;
+  max_select: number | null;
+  is_active: boolean;
+  sort_order: number;
+}
+
+interface RawOptionValueRow {
+  id: string;
+  option_group_id: string;
+  name: string;
+  price_delta: string | number;
+  is_default: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
+
+interface RawOptionRecipeItem {
+  id: string;
+  option_value_id: string;
+  quantity_per_selection: string | number;
+  ingredient: RawIngredient | null;
 }
 
 export interface VendorRow {
@@ -178,7 +183,7 @@ interface RawSaleRow {
 }
 
 export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe[]> {
-  const { data, error } = await client
+  const menusQuery = client
     .from("menus")
     .select(
       `
@@ -190,25 +195,71 @@ export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe
           id, name, unit, current_stock, current_avg_price
         )
       ),
-      menu_option_groups (
-        id, name, selection_type, is_required, min_select, max_select, is_active, sort_order,
-        menu_option_values (
-          id, name, price_delta, is_default, is_active, sort_order,
-          menu_option_value_recipe_items (
-            id, quantity_per_selection,
-            ingredient:ingredients (
-              id, name, unit, current_stock, current_avg_price
-            )
-          )
-        )
-      )
     `,
     )
     .eq("is_active", true)
     .order("name");
+  const groupsQuery = client
+    .from("menu_option_groups")
+    .select(
+      "id, menu_id, name, selection_type, is_required, min_select, max_select, is_active, sort_order",
+    )
+    .eq("is_active", true)
+    .order("sort_order");
+  const valuesQuery = client
+    .from("menu_option_values")
+    .select("id, option_group_id, name, price_delta, is_default, is_active, sort_order")
+    .eq("is_active", true)
+    .order("sort_order");
+  const recipeQuery = client
+    .from("menu_option_value_recipe_items")
+    .select(
+      `
+        id, option_value_id, quantity_per_selection,
+        ingredient:ingredients (
+          id, name, unit, current_stock, current_avg_price
+        )
+      `,
+    )
+    .order("id");
 
-  if (error) throw new Error(error.message);
-  const rows = (data ?? []) as unknown as RawMenuRow[];
+  const [menusResult, groupsResult, valuesResult, recipeResult] = await Promise.all([
+    menusQuery,
+    groupsQuery,
+    valuesQuery,
+    recipeQuery,
+  ]);
+
+  const { data: menus, error: menusError } = menusResult;
+  const { data: groups, error: groupsError } = groupsResult;
+  const { data: values, error: valuesError } = valuesResult;
+  const { data: recipeItems, error: recipeError } = recipeResult;
+  const firstError = menusError ?? groupsError ?? valuesError ?? recipeError;
+  if (firstError) throw new Error(firstError.message);
+
+  const rows = (menus ?? []) as unknown as RawMenuRow[];
+  const groupRows = ((groups ?? []) as unknown as RawOptionGroupRow[]).filter(
+    (group) => group.is_active,
+  );
+  const valueRows = ((values ?? []) as unknown as RawOptionValueRow[]).filter(
+    (value) => value.is_active,
+  );
+  const recipeRows = (recipeItems ?? []) as unknown as RawOptionRecipeItem[];
+  const valuesByGroup = new Map<string, RawOptionValueRow[]>();
+  const recipesByValue = new Map<string, RawOptionRecipeItem[]>();
+
+  for (const value of valueRows) {
+    const list = valuesByGroup.get(value.option_group_id) ?? [];
+    list.push(value);
+    valuesByGroup.set(value.option_group_id, list);
+  }
+
+  for (const item of recipeRows) {
+    const list = recipesByValue.get(item.option_value_id) ?? [];
+    list.push(item);
+    recipesByValue.set(item.option_value_id, list);
+  }
+
   return rows.map((menu) => ({
     id: menu.id,
     name: menu.name,
@@ -229,8 +280,8 @@ export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe
           current_avg_price: Number(item.ingredient.current_avg_price),
         },
       })),
-    option_groups: (menu.menu_option_groups ?? [])
-      .filter((group) => group.is_active)
+    option_groups: groupRows
+      .filter((group) => group.menu_id === menu.id)
       .map((group) => ({
         id: group.id,
         name: group.name,
@@ -238,30 +289,28 @@ export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe
         is_required: group.is_required,
         min_select: group.min_select,
         max_select: group.max_select,
-        values: group.menu_option_values
-          .filter((value) => value.is_active)
-          .map((value) => ({
-            id: value.id,
-            name: value.name,
-            price_delta: Number(value.price_delta),
-            is_default: value.is_default,
-            recipe_items: value.menu_option_value_recipe_items
-              .filter(
-                (item): item is RawOptionRecipeItem & { ingredient: RawIngredient } =>
-                  item.ingredient !== null,
-              )
-              .map((item) => ({
-                id: item.id,
-                quantity_per_selection: Number(item.quantity_per_selection),
-                ingredient: {
-                  id: item.ingredient.id,
-                  name: item.ingredient.name,
-                  unit: item.ingredient.unit,
-                  current_stock: Number(item.ingredient.current_stock),
-                  current_avg_price: Number(item.ingredient.current_avg_price),
-                },
-              })),
-          })),
+        values: (valuesByGroup.get(group.id) ?? []).map((value) => ({
+          id: value.id,
+          name: value.name,
+          price_delta: Number(value.price_delta),
+          is_default: value.is_default,
+          recipe_items: (recipesByValue.get(value.id) ?? [])
+            .filter(
+              (item): item is RawOptionRecipeItem & { ingredient: RawIngredient } =>
+                item.ingredient !== null,
+            )
+            .map((item) => ({
+              id: item.id,
+              quantity_per_selection: Number(item.quantity_per_selection),
+              ingredient: {
+                id: item.ingredient.id,
+                name: item.ingredient.name,
+                unit: item.ingredient.unit,
+                current_stock: Number(item.ingredient.current_stock),
+                current_avg_price: Number(item.ingredient.current_avg_price),
+              },
+            })),
+        })),
       }))
       .filter((group) => group.values.length > 0),
   }));

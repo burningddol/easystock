@@ -9,7 +9,7 @@ type RpcResponse<T> = {
 function createClientMock(results: Record<string, RpcResponse<unknown>>) {
   return {
     from: vi.fn((table: string) => {
-      const response = results[table];
+      const response = results[table] ?? { data: [], error: null };
       const chain: any = {
         select: vi.fn(() => chain),
         eq: vi.fn(() => chain),
@@ -54,6 +54,9 @@ describe("query lookups", () => {
         ],
         error: null,
       },
+      menu_option_groups: { data: [], error: null },
+      menu_option_values: { data: [], error: null },
+      menu_option_value_recipe_items: { data: [], error: null },
     });
 
     await expect(loadMenus(client)).resolves.toEqual([
