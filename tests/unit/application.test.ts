@@ -13,6 +13,7 @@ const rpcMocks = vi.hoisted(() => ({
   saveMenu: vi.fn(),
   editMenu: vi.fn(),
   deleteMenu: vi.fn(),
+  saveMenuOptions: vi.fn(),
 }));
 
 const forecastMocks = vi.hoisted(() => ({
@@ -32,6 +33,7 @@ vi.mock("@/lib/supabase/rpc", () => ({
   saveMenu: rpcMocks.saveMenu,
   editMenu: rpcMocks.editMenu,
   deleteMenu: rpcMocks.deleteMenu,
+  saveMenuOptions: rpcMocks.saveMenuOptions,
 }));
 
 vi.mock("@/lib/domain/forecast", async () => {
@@ -586,6 +588,10 @@ describe("application layer", () => {
       });
       rpcMocks.deleteMenu.mockResolvedValue({
         data: [{ menu_id: "menu-1", was_active: false }],
+        error: null,
+      });
+      rpcMocks.saveMenuOptions.mockResolvedValue({
+        data: [],
         error: null,
       });
 

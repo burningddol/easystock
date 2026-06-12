@@ -36,6 +36,31 @@ export interface MenuRowWithRecipe {
       current_avg_price: number;
     };
   }>;
+  option_groups: Array<{
+    id: string;
+    name: string;
+    selection_type: "single" | "add_on";
+    is_required: boolean;
+    min_select: number;
+    max_select: number | null;
+    values: Array<{
+      id: string;
+      name: string;
+      price_delta: number;
+      is_default: boolean;
+      recipe_items: Array<{
+        id: string;
+        quantity_per_selection: number;
+        ingredient: {
+          id: string;
+          name: string;
+          unit: string;
+          current_stock: number;
+          current_avg_price: number;
+        };
+      }>;
+    }>;
+  }>;
 }
 
 interface RawIngredient {
@@ -52,12 +77,39 @@ interface RawRecipeItem {
   ingredient: RawIngredient | null;
 }
 
+interface RawOptionRecipeItem {
+  id: string;
+  quantity_per_selection: string | number;
+  ingredient: RawIngredient | null;
+}
+
+interface RawOptionValue {
+  id: string;
+  name: string;
+  price_delta: string | number;
+  is_default: boolean;
+  is_active: boolean;
+  menu_option_value_recipe_items: RawOptionRecipeItem[];
+}
+
+interface RawOptionGroup {
+  id: string;
+  name: string;
+  selection_type: "single" | "add_on";
+  is_required: boolean;
+  min_select: number;
+  max_select: number | null;
+  is_active: boolean;
+  menu_option_values: RawOptionValue[];
+}
+
 interface RawMenuRow {
   id: string;
   name: string;
   price: string | number;
   is_active: boolean;
   recipe_items: RawRecipeItem[];
+  menu_option_groups?: RawOptionGroup[];
 }
 
 export interface VendorRow {
@@ -86,6 +138,16 @@ export interface SaleWithItems {
     quantity: number;
     unit_price: number;
     menu_cost_snapshot: number;
+    options: Array<{
+      id: string;
+      option_group_id: string;
+      option_value_id: string;
+      quantity: number;
+      group_name_snapshot: string;
+      value_name_snapshot: string;
+      price_delta_snapshot: number;
+      option_cost_snapshot: number;
+    }>;
   }>;
 }
 
@@ -102,6 +164,16 @@ interface RawSaleRow {
     quantity: number;
     unit_price: string | number;
     menu_cost_snapshot: string | number;
+    sale_item_options?: Array<{
+      id: string;
+      option_group_id: string;
+      option_value_id: string;
+      quantity: number;
+      group_name_snapshot: string;
+      value_name_snapshot: string;
+      price_delta_snapshot: string | number;
+      option_cost_snapshot: string | number;
+    }>;
   }>;
 }
 
@@ -116,6 +188,18 @@ export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe
         quantity_per_serving,
         ingredient:ingredients (
           id, name, unit, current_stock, current_avg_price
+        )
+      ),
+      menu_option_groups (
+        id, name, selection_type, is_required, min_select, max_select, is_active, sort_order,
+        menu_option_values (
+          id, name, price_delta, is_default, is_active, sort_order,
+          menu_option_value_recipe_items (
+            id, quantity_per_selection,
+            ingredient:ingredients (
+              id, name, unit, current_stock, current_avg_price
+            )
+          )
         )
       )
     `,
@@ -145,6 +229,41 @@ export async function loadMenus(client: SupabaseLike): Promise<MenuRowWithRecipe
           current_avg_price: Number(item.ingredient.current_avg_price),
         },
       })),
+    option_groups: (menu.menu_option_groups ?? [])
+      .filter((group) => group.is_active)
+      .map((group) => ({
+        id: group.id,
+        name: group.name,
+        selection_type: group.selection_type,
+        is_required: group.is_required,
+        min_select: group.min_select,
+        max_select: group.max_select,
+        values: group.menu_option_values
+          .filter((value) => value.is_active)
+          .map((value) => ({
+            id: value.id,
+            name: value.name,
+            price_delta: Number(value.price_delta),
+            is_default: value.is_default,
+            recipe_items: value.menu_option_value_recipe_items
+              .filter(
+                (item): item is RawOptionRecipeItem & { ingredient: RawIngredient } =>
+                  item.ingredient !== null,
+              )
+              .map((item) => ({
+                id: item.id,
+                quantity_per_selection: Number(item.quantity_per_selection),
+                ingredient: {
+                  id: item.ingredient.id,
+                  name: item.ingredient.name,
+                  unit: item.ingredient.unit,
+                  current_stock: Number(item.ingredient.current_stock),
+                  current_avg_price: Number(item.ingredient.current_avg_price),
+                },
+              })),
+          })),
+      }))
+      .filter((group) => group.values.length > 0),
   }));
 }
 
@@ -196,7 +315,12 @@ export async function loadSaleByDate(
       id, sold_at, created_at, total_revenue, total_cost_snapshot,
       sale_items (
         id, menu_id, quantity, unit_price, menu_cost_snapshot,
-        menu:menus (name)
+        menu:menus (name),
+        sale_item_options (
+          id, option_group_id, option_value_id, quantity,
+          group_name_snapshot, value_name_snapshot,
+          price_delta_snapshot, option_cost_snapshot
+        )
       )
     `,
     )
@@ -219,6 +343,16 @@ export async function loadSaleByDate(
       quantity: si.quantity,
       unit_price: Number(si.unit_price),
       menu_cost_snapshot: Number(si.menu_cost_snapshot),
+      options: (si.sale_item_options ?? []).map((option) => ({
+        id: option.id,
+        option_group_id: option.option_group_id,
+        option_value_id: option.option_value_id,
+        quantity: option.quantity,
+        group_name_snapshot: option.group_name_snapshot,
+        value_name_snapshot: option.value_name_snapshot,
+        price_delta_snapshot: Number(option.price_delta_snapshot),
+        option_cost_snapshot: Number(option.option_cost_snapshot),
+      })),
     })),
   };
 }

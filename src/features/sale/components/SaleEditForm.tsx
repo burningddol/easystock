@@ -9,7 +9,7 @@ import { PrimaryButton } from "@/components/ui/primary-button";
 import { cn } from "@/lib/utils";
 import { useSaleEdit, useSaleDelete } from "../hooks/useSaleEdit";
 import { findSaleStockShortages, formatStockShortageMessage } from "../lib/stock-guard";
-import { toSnapshotMenu } from "../lib/to-snapshot-menu";
+import { toSnapshotMenuWithOptions } from "../lib/to-snapshot-menu-with-options";
 import type { SaleWithItems } from "../hooks/useSaleByDate";
 import { MenuRow } from "./MenuRow";
 import { StickyTotalCard } from "./StickyTotalCard";
@@ -35,8 +35,22 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
   // quantities Map identity가 매번 새로워서 useMemo가 skip 못 함 → inline derive.
   const items = Array.from(quantities.entries())
     .filter(([, qty]) => qty > 0)
-    .map(([menuId, quantity]) => ({ menuId, quantity }));
+    .map(([menuId, quantity]) => {
+      const saleItem = sale.items.find((item) => item.menu_id === menuId);
+      return {
+        menuId,
+        quantity,
+        options: saleItem
+          ? saleItem.options.map((option) => ({
+              groupId: option.option_group_id,
+              optionValueId: option.option_value_id,
+              quantity: option.quantity,
+            }))
+          : undefined,
+      };
+    });
   const activeMenuIds = menus ? new Set(menus.map((menu) => menu.id)) : null;
+  const menuById = new Map((menus ?? []).map((menu) => [menu.id, menu]));
   const editableItems = activeMenuIds
     ? items.filter((item) => activeMenuIds.has(item.menuId))
     : items;
@@ -46,7 +60,16 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
 
   const preview =
     menus && menus.length > 0 && editableItems.length > 0
-      ? computeSnapshotPreview(editableItems, menus.map(toSnapshotMenu))
+      ? computeSnapshotPreview(
+          editableItems,
+          editableItems.map((item) =>
+            toSnapshotMenuWithOptions(
+              menuById.get(item.menuId)!,
+              item.quantity,
+              item.options ?? [],
+            ),
+          ),
+        )
       : null;
   const shortages =
     menus && menus.length > 0
@@ -56,6 +79,11 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
           existingItems: sale.items.map((item) => ({
             menu_id: item.menu_id,
             quantity: item.quantity,
+            options: item.options.map((option) => ({
+              groupId: option.option_group_id,
+              optionValueId: option.option_value_id,
+              quantity: option.quantity,
+            })),
           })),
         })
       : [];

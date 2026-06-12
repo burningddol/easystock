@@ -34,6 +34,7 @@ export function useEditMenu(): UseMutationResult<string, Error, EditMenuVariable
         name: values.name,
         price: values.price,
         recipe: values.recipe,
+        optionGroups: values.optionGroups,
       };
       return updateMenu(supabase, payload);
     },

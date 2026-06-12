@@ -6,6 +6,13 @@ import { persist } from "zustand/middleware";
 export interface SaleDraftItem {
   menuId: string;
   quantity: number;
+  options: SaleDraftOptionItem[];
+}
+
+export interface SaleDraftOptionItem {
+  groupId: string;
+  optionValueId: string;
+  quantity: number;
 }
 
 export type SaleDraftsByDate = Record<string, SaleDraftItem[]>;
@@ -33,7 +40,7 @@ export function upsertSaleDraftItems(
     const existing = current.find((item) => item.menuId === menuId);
     nextItems = existing
       ? current.map((item) => (item.menuId === menuId ? { ...item, quantity } : item))
-      : [...current, { menuId, quantity }];
+      : [...current, { menuId, quantity, options: [] }];
   }
 
   return {
@@ -60,9 +67,43 @@ export function replaceSaleDraftDateItems(
   };
 }
 
+export function setSaleDraftOptionQuantity(
+  draftsByDate: SaleDraftsByDate,
+  date: string,
+  menuId: string,
+  groupId: string,
+  optionValueId: string,
+  quantity: number,
+): SaleDraftsByDate {
+  const current = draftsByDate[date] ?? [];
+  const nextItems = current.map((item) => {
+    if (item.menuId !== menuId) return item;
+    const options = item.options ?? [];
+    const nextOptions = options.filter(
+      (opt) => opt.groupId !== groupId || opt.optionValueId !== optionValueId,
+    );
+    if (quantity > 0) {
+      nextOptions.push({ groupId, optionValueId, quantity });
+    }
+    return { ...item, options: nextOptions };
+  });
+
+  return {
+    ...draftsByDate,
+    [date]: nextItems,
+  };
+}
+
 interface SaleDraftState {
   draftsByDate: SaleDraftsByDate;
   setQuantity: (date: string, menuId: string, quantity: number) => void;
+  setOptionQuantity: (
+    date: string,
+    menuId: string,
+    groupId: string,
+    optionValueId: string,
+    quantity: number,
+  ) => void;
   clearDate: (date: string) => void;
   replaceDateItems: (date: string, items: readonly SaleDraftItem[]) => void;
 }
@@ -80,6 +121,18 @@ export const useSaleDraft = create<SaleDraftState>()(
       setQuantity: (date, menuId, quantity) =>
         set((state) => ({
           draftsByDate: upsertSaleDraftItems(state.draftsByDate, date, menuId, quantity),
+        })),
+
+      setOptionQuantity: (date, menuId, groupId, optionValueId, quantity) =>
+        set((state) => ({
+          draftsByDate: setSaleDraftOptionQuantity(
+            state.draftsByDate,
+            date,
+            menuId,
+            groupId,
+            optionValueId,
+            quantity,
+          ),
         })),
 
       clearDate: (date) =>

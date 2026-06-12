@@ -52,6 +52,23 @@ interface SaveMenuRow {
   menu_id: string;
 }
 
+interface SaveMenuOptionsArgs {
+  menuId: string;
+  optionGroups: ReadonlyArray<{
+    name: string;
+    selectionType: "single" | "add_on";
+    isRequired: boolean;
+    minSelect: number;
+    maxSelect?: number | null;
+    values: ReadonlyArray<{
+      name: string;
+      priceDelta: number;
+      isDefault: boolean;
+      recipe: ReadonlyArray<{ ingredientId: string; quantityPerSelection: number }>;
+    }>;
+  }>;
+}
+
 // 도메인 타입 → RPC payload 변환 어댑터 — saveMenu / editMenu / saveSale / editSale 4곳 공유.
 function mapRecipePayload(
   recipe: SaveMenuArgs["recipe"],
@@ -141,6 +158,35 @@ export function saveMenu(
     p_name: args.name,
     p_price: args.price,
     p_recipe: mapRecipePayload(args.recipe),
+  });
+}
+
+export function saveMenuOptions(
+  client: ClientLike,
+  args: SaveMenuOptionsArgs,
+): Promise<
+  RpcResult<Array<{ menu_id: string; option_group_count: number; option_value_count: number }>>
+> {
+  return callRpc(client, "save_menu_options", {
+    p_menu_id: args.menuId,
+    p_option_groups: args.optionGroups.map((group, groupIdx) => ({
+      name: group.name,
+      selection_type: group.selectionType,
+      is_required: group.isRequired,
+      min_select: group.minSelect,
+      max_select: group.maxSelect ?? null,
+      sort_order: groupIdx,
+      values: group.values.map((value, valueIdx) => ({
+        name: value.name,
+        price_delta: value.priceDelta,
+        is_default: value.isDefault,
+        sort_order: valueIdx,
+        recipe: value.recipe.map((item) => ({
+          ingredient_id: item.ingredientId,
+          quantity_per_selection: item.quantityPerSelection,
+        })),
+      })),
+    })),
   });
 }
 

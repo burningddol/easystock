@@ -49,6 +49,7 @@ describe("query lookups", () => {
                 ingredient: null,
               },
             ],
+            option_groups: [],
           },
         ],
         error: null,
@@ -74,6 +75,7 @@ describe("query lookups", () => {
             },
           },
         ],
+        option_groups: [],
       },
     ]);
   });
@@ -164,6 +166,7 @@ describe("query lookups", () => {
           quantity: 3,
           unit_price: 15000,
           menu_cost_snapshot: 6000,
+          options: [],
         },
       ],
     });
