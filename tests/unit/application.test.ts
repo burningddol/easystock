@@ -50,7 +50,12 @@ import { loadTodayDashboard } from "@/lib/application/dashboard";
 import { loadCalendarMonth, withConsecutiveMissingDays } from "@/lib/application/calendar";
 import { applyInventoryReplay, loadDepletionForecast } from "@/lib/application/inventory";
 import { submitPurchase } from "@/lib/application/purchase";
-import { applySaleSnapshotRewrite, editSale, submitSale } from "@/lib/application/sale";
+import {
+  applySaleSnapshotRewrite,
+  editSale,
+  formatSaleErrorMessage,
+  submitSale,
+} from "@/lib/application/sale";
 
 describe("application layer", () => {
   beforeEach(() => {
@@ -545,6 +550,22 @@ describe("application layer", () => {
         ),
       ).rejects.toThrow(
         "이미 이 날짜의 판매가 입력되어 있어요. 캘린더 날짜 상세 또는 판매 수정 화면에서 기존 기록을 수정해주세요.",
+      );
+    });
+
+    it("formatSaleErrorMessage maps schema cache and query errors into friendly messages", () => {
+      expect(
+        formatSaleErrorMessage(
+          "Could not find the table 'public.menu_option_groups' in the schema cache",
+        ),
+      ).toBe(
+        "메뉴 옵션 데이터를 아직 불러오지 못했어요. 데이터베이스 마이그레이션 반영 후 다시 시도해주세요.",
+      );
+      expect(formatSaleErrorMessage("failed to parse select parameter")).toBe(
+        "메뉴 데이터를 읽는 중 오류가 발생했어요. 최신 마이그레이션 반영 후 다시 시도해주세요.",
+      );
+      expect(formatSaleErrorMessage("menu not found: abc")).toBe(
+        "메뉴를 다시 불러오지 못했어요. 새로고침 후 다시 시도해주세요.",
       );
     });
 

@@ -10,6 +10,7 @@ import { PrimaryButton } from "@/components/ui/primary-button";
 import { MenuRow } from "./MenuRow";
 import { StickyTotalCard } from "./StickyTotalCard";
 import { SaleSaveBar } from "./SaleSaveBar";
+import { SaleErrorNotice } from "./SaleErrorNotice";
 import { useSaleSubmit } from "../hooks/useSaleSubmit";
 import { useFavoriteMenus } from "../hooks/useFavoriteMenus";
 import {
@@ -18,6 +19,7 @@ import {
   formatStockShortageMessage,
 } from "../lib/stock-guard";
 import { toSnapshotMenuWithOptions } from "../lib/to-snapshot-menu-with-options";
+import { formatSaleErrorMessage } from "@/lib/application/sale";
 
 interface SaleInputFormProps {
   soldAt: string; // YYYY-MM-DD
@@ -78,6 +80,7 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
         optionErrors.map((error) => `- ${error.message}`).join("\n") +
         "\n판매 수량과 옵션 수량을 다시 확인해주세요."
       : "";
+  const saleErrorMessage = submit.error ? formatSaleErrorMessage(submit.error.message) : "";
 
   function handleSubmit(): void {
     if (shortages.length > 0 || optionErrors.length > 0) return;
@@ -149,13 +152,17 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
 
       <SaleSaveBar
         left={
-          (stockGuardMessage || optionGuardMessage || submit.isError) && (
-            <p
-              role="alert"
-              className="flex-1 whitespace-pre-line rounded-2xl bg-rose-50 px-3 py-2 text-caption text-rose-700"
-            >
-              {stockGuardMessage || optionGuardMessage || submit.error?.message}
-            </p>
+          (stockGuardMessage || optionGuardMessage || saleErrorMessage) && (
+            <SaleErrorNotice
+              title={
+                stockGuardMessage
+                  ? "재고 부족"
+                  : optionGuardMessage
+                    ? "옵션 확인 필요"
+                    : "저장 실패"
+              }
+              message={stockGuardMessage || optionGuardMessage || saleErrorMessage}
+            />
           )
         }
         right={

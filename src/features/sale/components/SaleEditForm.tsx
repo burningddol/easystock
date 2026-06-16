@@ -14,6 +14,9 @@ import type { SaleWithItems } from "../hooks/useSaleByDate";
 import { MenuRow } from "./MenuRow";
 import { StickyTotalCard } from "./StickyTotalCard";
 import { SaleSaveBar } from "./SaleSaveBar";
+import type { SaleDraftOptionItem } from "@/stores/sale-draft";
+import { SaleErrorNotice } from "./SaleErrorNotice";
+import { formatSaleErrorMessage } from "@/lib/application/sale";
 
 interface SaleEditFormProps {
   sale: SaleWithItems;
@@ -30,23 +33,29 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
   const [quantities, setQuantities] = useState<Map<string, number>>(
     () => new Map(sale.items.map((it) => [it.menu_id, it.quantity])),
   );
+  const [optionSelections, setOptionSelections] = useState<Map<string, SaleDraftOptionItem[]>>(
+    () =>
+      new Map(
+        sale.items.map((it) => [
+          it.menu_id,
+          it.options.map((option) => ({
+            groupId: option.option_group_id,
+            optionValueId: option.option_value_id,
+            quantity: option.quantity,
+          })),
+        ]),
+      ),
+  );
   const [reason, setReason] = useState("");
 
   // quantities Map identity가 매번 새로워서 useMemo가 skip 못 함 → inline derive.
   const items = Array.from(quantities.entries())
     .filter(([, qty]) => qty > 0)
     .map(([menuId, quantity]) => {
-      const saleItem = sale.items.find((item) => item.menu_id === menuId);
       return {
         menuId,
         quantity,
-        options: saleItem
-          ? saleItem.options.map((option) => ({
-              groupId: option.option_group_id,
-              optionValueId: option.option_value_id,
-              quantity: option.quantity,
-            }))
-          : undefined,
+        options: optionSelections.get(menuId) ?? [],
       };
     });
   const activeMenuIds = menus ? new Set(menus.map((menu) => menu.id)) : null;
@@ -94,9 +103,34 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
       const updated = new Map(prev);
       if (next <= 0) {
         updated.delete(menuId);
+        setOptionSelections((prevOptions) => {
+          const updatedOptions = new Map(prevOptions);
+          updatedOptions.delete(menuId);
+          return updatedOptions;
+        });
       } else {
         updated.set(menuId, next);
       }
+      return updated;
+    });
+  }
+
+  function setOptionQuantity(
+    menuId: string,
+    groupId: string,
+    optionValueId: string,
+    quantity: number,
+  ): void {
+    setOptionSelections((prev) => {
+      const updated = new Map(prev);
+      const current = updated.get(menuId) ?? [];
+      const nextOptions = current.filter(
+        (opt) => opt.groupId !== groupId || opt.optionValueId !== optionValueId,
+      );
+      if (quantity > 0) {
+        nextOptions.push({ groupId, optionValueId, quantity });
+      }
+      updated.set(menuId, nextOptions);
       return updated;
     });
   }
@@ -138,6 +172,10 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
           "메뉴를 다시 활성화한 뒤 수정하거나, 필요하면 이 판매 기록을 삭제 후 다시 입력해 주세요.",
         ].join("\n")
       : null;
+  const saleErrorMessage =
+    editMutation.error?.message || deleteMutation.error?.message
+      ? formatSaleErrorMessage(editMutation.error?.message || deleteMutation.error?.message || "")
+      : "";
 
   return (
     <div className="flex flex-col gap-stack pb-36">
@@ -151,6 +189,10 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
             menu={menu}
             quantity={quantities.get(menu.id) ?? 0}
             onChange={(next) => setQuantity(menu.id, next)}
+            optionSelections={optionSelections.get(menu.id) ?? []}
+            onOptionChange={(groupId, optionValueId, next) =>
+              setOptionQuantity(menu.id, groupId, optionValueId, next)
+            }
           />
         ))}
       </ul>
@@ -165,16 +207,11 @@ export function SaleEditForm({ sale, createdAt }: SaleEditFormProps): React.Reac
         />
       </Field>
 
-      {(missingMenuMessage || stockGuardMessage || editMutation.error || deleteMutation.error) && (
-        <p
-          role="alert"
-          className="whitespace-pre-line rounded-[24px] bg-rose-50 px-4 py-3 text-caption text-rose-700"
-        >
-          {missingMenuMessage ??
-            stockGuardMessage ??
-            editMutation.error?.message ??
-            deleteMutation.error?.message}
-        </p>
+      {(missingMenuMessage || stockGuardMessage || saleErrorMessage) && (
+        <SaleErrorNotice
+          title={missingMenuMessage ? "수정 불가" : stockGuardMessage ? "재고 부족" : "수정 실패"}
+          message={missingMenuMessage ?? stockGuardMessage ?? saleErrorMessage}
+        />
       )}
 
       {preview && totalQuantity > 0 && <StickyTotalCard preview={preview} />}
