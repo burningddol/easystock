@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { loadMenus, type MenuRowWithRecipe } from "@/lib/application/lookups";
+import { loadMenus, type LookupClient, type MenuRowWithRecipe } from "@/lib/application/lookups";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
 
 /**
@@ -19,9 +19,8 @@ export type { MenuRowWithRecipe } from "@/lib/application/lookups";
 export const menuListQueryKey = ["menus", "list"] as const;
 
 async function fetchMenus(): Promise<MenuRowWithRecipe[]> {
-  const supabase = createClient();
-  await (supabase as never as { auth: { getSession: () => Promise<unknown> } }).auth.getSession();
-  return loadMenus(supabase as unknown as import("@/lib/application/lookups").LookupClient);
+  const supabase = createClient() as unknown as LookupClient;
+  return loadMenus(supabase);
 }
 
 export function useMenus(): UseQueryResult<MenuRowWithRecipe[]> {

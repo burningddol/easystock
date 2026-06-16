@@ -49,10 +49,7 @@ export function toSnapshotMenuWithOptions(
     name: row.name,
     price: row.price + totalPriceDelta / quantity,
     recipeItems: [...baseByIngredient.entries()]
-      .map(([ingredientId, item]) => ({
-        quantity: item.quantity,
-        avgPrice: item.avgPrice,
-      }))
+      .map(([, item]) => ({ quantity: item.quantity, avgPrice: item.avgPrice }))
       .sort((a, b) => a.avgPrice - b.avgPrice || a.quantity - b.quantity),
   };
 }
