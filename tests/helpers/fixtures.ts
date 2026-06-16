@@ -32,35 +32,50 @@ export async function seedCafeWithBean(
     throw new Error(`cloneMenuTemplate failed: ${cloneResult.error.message}`);
   }
 
-  const menu = await client.from("menus").select("id").eq("name", menuName).single();
+  const clonedMenuIds = cloneResult.data?.[0]?.menu_ids ?? [];
+  if (clonedMenuIds.length === 0) {
+    throw new Error(`menu '${menuName}' lookup failed: no menu_id returned from clone`);
+  }
+
+  const menu = await client
+    .from("menus")
+    .select("id")
+    .in("id", clonedMenuIds)
+    .eq("name", menuName)
+    .single();
   if (menu.error || !menu.data) {
     throw new Error(`menu '${menuName}' lookup failed: ${menu.error?.message ?? "no row"}`);
   }
 
-  const admin = getServiceRoleClient();
-  const ing = await admin
-    .from("ingredients")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("name", ingredientName)
-    .single();
-  if (ing.error || !ing.data) {
-    throw new Error(
-      `ingredient '${ingredientName}' lookup failed: ${ing.error?.message ?? "no row"}`,
-    );
+  const recipeItems = await client
+    .from("recipe_items")
+    .select("ingredient:ingredients ( id, name )")
+    .eq("menu_id", menu.data.id);
+  if (recipeItems.error) {
+    throw new Error(`recipe_items lookup failed: ${recipeItems.error.message}`);
   }
+
+  const matchedIngredientId = recipeItems.data?.find(
+    (item: { ingredient: { id: string; name: string } | null }) =>
+      item.ingredient?.name === ingredientName,
+  )?.ingredient?.id;
+  if (!matchedIngredientId) {
+    throw new Error(`ingredient '${ingredientName}' lookup failed from menu '${menuName}' recipe`);
+  }
+
+  const admin = getServiceRoleClient();
 
   if (options.stock !== undefined && options.avgPrice !== undefined) {
     const update = await admin
       .from("ingredients")
       .update({ current_stock: options.stock, current_avg_price: options.avgPrice })
-      .eq("id", ing.data.id);
+      .eq("id", matchedIngredientId);
     if (update.error) {
       throw new Error(`ingredient stock update failed: ${update.error.message}`);
     }
   }
 
-  return { menuId: menu.data.id, ingredientId: ing.data.id };
+  return { menuId: menu.data.id, ingredientId: matchedIngredientId };
 }
 
 interface InsertResultLike<T> {
