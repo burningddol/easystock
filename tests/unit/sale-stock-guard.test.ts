@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   findSaleStockShortages,
   formatStockShortageMessage,
+  findSaleOptionErrors,
 } from "@/features/sale/lib/stock-guard";
 import type { MenuRowWithRecipe } from "@/features/menu/hooks/useMenus";
 
@@ -24,6 +25,7 @@ const menus: MenuRowWithRecipe[] = [
         },
       },
     ],
+    option_groups: [],
   },
   {
     id: "menu-2",
@@ -41,6 +43,57 @@ const menus: MenuRowWithRecipe[] = [
           current_stock: 200,
           current_avg_price: 20,
         },
+      },
+    ],
+    option_groups: [],
+  },
+  {
+    id: "menu-3",
+    name: "샷추가커피",
+    price: 5000,
+    is_active: true,
+    recipe_items: [
+      {
+        id: "recipe-3",
+        quantity_per_serving: 10,
+        ingredient: {
+          id: "ing-3",
+          name: "원두",
+          unit: "g",
+          current_stock: 100,
+          current_avg_price: 50,
+        },
+      },
+    ],
+    option_groups: [
+      {
+        id: "group-1",
+        name: "샷 추가",
+        selection_type: "add_on",
+        is_required: false,
+        min_select: 0,
+        max_select: 2,
+        values: [
+          {
+            id: "value-1",
+            name: "샷 추가",
+            price_delta: 500,
+            is_default: false,
+            recipe_items: [
+              {
+                id: "recipe-4",
+                quantity_per_selection: 20,
+                ingredient: {
+                  id: "ing-4",
+                  name: "원두",
+                  unit: "g",
+                  current_stock: 0,
+                  current_avg_price: 50,
+                },
+              },
+            ],
+          },
+        ],
       },
     ],
   },
@@ -115,5 +168,47 @@ describe("sale stock guard", () => {
     expect(message).toBe(
       "재고가 부족한 재료가 있어요.\n- 인절미: 사용 가능 0g, 필요 60g, 부족 60g\n- 팥: 사용 가능 10g, 필요 40g, 부족 30g\n먼저 매입 또는 재고실사로 재고를 채워주세요.",
     );
+  });
+
+  it("옵션 재료 부족도 shortage에 포함한다", () => {
+    const shortages = findSaleStockShortages({
+      items: [
+        {
+          menuId: "menu-3",
+          quantity: 2,
+          options: [{ groupId: "group-1", optionValueId: "value-1", quantity: 2 }],
+        },
+      ],
+      menus,
+    });
+
+    expect(shortages.some((item) => item.ingredientId === "ing-4")).toBe(true);
+  });
+
+  it("필수 옵션 미선택은 option error로 걸린다", () => {
+    const optionMenu = menus[2]!;
+    const requiredGroup = optionMenu.option_groups[0]!;
+    const errors = findSaleOptionErrors({
+      items: [
+        {
+          menuId: "menu-3",
+          quantity: 2,
+          options: [],
+        },
+      ],
+      menus: [
+        {
+          ...optionMenu,
+          option_groups: [
+            {
+              ...requiredGroup,
+              is_required: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(errors.some((error) => error.message.includes("required_option_missing"))).toBe(true);
   });
 });

@@ -66,5 +66,21 @@ function toInitialValues(
       ingredientId: item.ingredient.id,
       quantityPerServing: item.quantity_per_serving,
     })),
+    optionGroups: menu.option_groups.map((group) => ({
+      name: group.name,
+      selectionType: group.selection_type,
+      isRequired: group.is_required,
+      minSelect: group.min_select,
+      maxSelect: group.max_select,
+      values: group.values.map((value) => ({
+        name: value.name,
+        priceDelta: value.price_delta,
+        isDefault: value.is_default,
+        recipe: value.recipe_items.map((item) => ({
+          ingredientId: item.ingredient.id,
+          quantityPerSelection: item.quantity_per_selection,
+        })),
+      })),
+    })),
   };
 }

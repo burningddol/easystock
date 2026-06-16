@@ -22,6 +22,7 @@ const baseMenu = (overrides?: Partial<MenuRowWithRecipe>): MenuRowWithRecipe => 
     },
   ],
   ...overrides,
+  option_groups: overrides?.option_groups ?? [],
 });
 
 describe("computeMenuMarginFromRow", () => {

@@ -10,10 +10,16 @@ import { PrimaryButton } from "@/components/ui/primary-button";
 import { MenuRow } from "./MenuRow";
 import { StickyTotalCard } from "./StickyTotalCard";
 import { SaleSaveBar } from "./SaleSaveBar";
+import { SaleErrorNotice } from "./SaleErrorNotice";
 import { useSaleSubmit } from "../hooks/useSaleSubmit";
 import { useFavoriteMenus } from "../hooks/useFavoriteMenus";
-import { findSaleStockShortages, formatStockShortageMessage } from "../lib/stock-guard";
-import { toSnapshotMenu } from "../lib/to-snapshot-menu";
+import {
+  findSaleOptionErrors,
+  findSaleStockShortages,
+  formatStockShortageMessage,
+} from "../lib/stock-guard";
+import { toSnapshotMenuWithOptions } from "../lib/to-snapshot-menu-with-options";
+import { formatSaleErrorMessage } from "@/lib/application/sale";
 
 interface SaleInputFormProps {
   soldAt: string; // YYYY-MM-DD
@@ -26,6 +32,7 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
   const { data: favorites } = useFavoriteMenus();
   const draftItems = useSaleDraft((s) => s.draftsByDate[soldAt] ?? EMPTY_SALE_DRAFT_ITEMS);
   const setQuantity = useSaleDraft((s) => s.setQuantity);
+  const setOptionQuantity = useSaleDraft((s) => s.setOptionQuantity);
   const clearDraftDate = useSaleDraft((s) => s.clearDate);
   const replaceDraftItems = useSaleDraft((s) => s.replaceDateItems);
   const submit = useSaleSubmit();
@@ -44,26 +51,50 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
   // ~20개 메뉴 sort + Map 구성은 trivial, useMemo 오버헤드만 더함 → inline.
   const sortedMenus = sortByFavorites(menus ?? [], favorites ?? []);
   const validMenuIds = menus ? new Set(menus.map((menu) => menu.id)) : null;
+  const menuById = new Map((menus ?? []).map((menu) => [menu.id, menu]));
   const items = validMenuIds ? sanitizeSaleDraftItems(draftItems, validMenuIds) : draftItems;
   const draftMap = new Map(items.map((it) => [it.menuId, it.quantity]));
+  const draftOptionMap = new Map(items.map((it) => [it.menuId, it.options ?? []]));
 
   const preview =
     menus && menus.length > 0
       ? computeSnapshotPreview(
           items.filter((it) => it.quantity > 0),
-          menus.map(toSnapshotMenu),
+          items
+            .filter((it) => it.quantity > 0)
+            .map((item) =>
+              toSnapshotMenuWithOptions(
+                menuById.get(item.menuId)!,
+                item.quantity,
+                item.options ?? [],
+              ),
+            ),
         )
       : null;
+  const optionErrors = menus && menus.length > 0 ? findSaleOptionErrors({ items, menus }) : [];
   const shortages = menus && menus.length > 0 ? findSaleStockShortages({ items, menus }) : [];
   const stockGuardMessage = formatStockShortageMessage(shortages);
+  const optionGuardMessage =
+    optionErrors.length > 0
+      ? "옵션 선택이 맞지 않아요.\n" +
+        optionErrors.map((error) => `- ${error.message}`).join("\n") +
+        "\n판매 수량과 옵션 수량을 다시 확인해주세요."
+      : "";
+  const saleErrorMessage = submit.error ? formatSaleErrorMessage(submit.error.message) : "";
 
   function handleSubmit(): void {
-    if (shortages.length > 0) return;
+    if (shortages.length > 0 || optionErrors.length > 0) return;
 
     submit.mutate(
       {
         soldAt,
-        items: items.filter((it) => it.quantity > 0),
+        items: items
+          .filter((it) => it.quantity > 0)
+          .map((item) => ({
+            menuId: item.menuId,
+            quantity: item.quantity,
+            options: item.options?.filter((option) => option.quantity > 0),
+          })),
         isFirstSale,
       },
       {
@@ -109,6 +140,10 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
             menu={menu}
             quantity={draftMap.get(menu.id) ?? 0}
             onChange={(next) => setQuantity(soldAt, menu.id, next)}
+            optionSelections={draftOptionMap.get(menu.id) ?? []}
+            onOptionChange={(groupId, optionValueId, next) =>
+              setOptionQuantity(soldAt, menu.id, groupId, optionValueId, next)
+            }
           />
         ))}
       </ul>
@@ -117,20 +152,26 @@ export function SaleInputForm({ soldAt, isFirstSale }: SaleInputFormProps): Reac
 
       <SaleSaveBar
         left={
-          (stockGuardMessage || submit.isError) && (
-            <p
-              role="alert"
-              className="flex-1 whitespace-pre-line rounded-2xl bg-rose-50 px-3 py-2 text-caption text-rose-700"
-            >
-              {stockGuardMessage || submit.error?.message}
-            </p>
+          (stockGuardMessage || optionGuardMessage || saleErrorMessage) && (
+            <SaleErrorNotice
+              title={
+                stockGuardMessage
+                  ? "재고 부족"
+                  : optionGuardMessage
+                    ? "옵션 확인 필요"
+                    : "저장 실패"
+              }
+              message={stockGuardMessage || optionGuardMessage || saleErrorMessage}
+            />
           )
         }
         right={
           <PrimaryButton
             type="button"
             onClick={handleSubmit}
-            disabled={totalQuantity === 0 || submit.isPending || isBlockedByStock}
+            disabled={
+              totalQuantity === 0 || submit.isPending || isBlockedByStock || optionErrors.length > 0
+            }
             className="halo-cta"
           >
             {submit.isPending ? "저장 중…" : `${totalQuantity}개 저장`}

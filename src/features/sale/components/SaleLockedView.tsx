@@ -29,6 +29,33 @@ export function SaleLockedView({ sale }: SaleLockedViewProps): React.ReactElemen
           <span>{formatWon(sale.total_revenue - sale.total_cost_snapshot)}원</span>
         </li>
       </ul>
+      <section className="flex flex-col gap-2">
+        <h3 className="text-caption font-semibold text-ink-2">판매 항목</h3>
+        <ul className="flex flex-col gap-3">
+          {sale.items.map((item) => (
+            <li key={item.id} className="rounded-2xl bg-slate-50 px-4 py-3">
+              <div className="flex items-center justify-between gap-3 text-body-regular text-ink-1">
+                <span>{item.menu_name ?? "알 수 없는 메뉴"}</span>
+                <span className="tabular-nums">{item.quantity}개</span>
+              </div>
+              {item.options.length > 0 && (
+                <ul className="mt-2 flex flex-col gap-1 text-caption text-ink-3">
+                  {item.options.map((option) => (
+                    <li key={option.id} className="flex justify-between gap-3">
+                      <span>
+                        {option.group_name_snapshot} · {option.value_name_snapshot}
+                      </span>
+                      <span className="tabular-nums">
+                        +{formatWon(option.price_delta_snapshot)}원
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
       <p className="text-micro text-ink-3">{MARGIN_LABEL}</p>
     </article>
   );

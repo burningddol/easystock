@@ -142,6 +142,10 @@ export async function applySaleSnapshotRewrite(
   return data;
 }
 
+export function formatSaleErrorMessage(message: string): string {
+  return toBasicSaleErrorMessage(message);
+}
+
 async function toSaleErrorMessage(client: SaleClient, message: string): Promise<string> {
   const ingredientId = parseNegativeStockIngredientId(message);
   if (!ingredientId) return toBasicSaleErrorMessage(message);
@@ -168,6 +172,24 @@ function toBasicSaleErrorMessage(message: string): string {
   }
   if (message.includes("menu_no_recipe")) {
     return "레시피가 없는 메뉴가 포함되어 있어 저장할 수 없어요.";
+  }
+  if (message.includes("menu not found")) {
+    return "메뉴를 다시 불러오지 못했어요. 새로고침 후 다시 시도해주세요.";
+  }
+  if (
+    message.includes("Could not find a relationship between 'menus' and 'menu_option_groups'") ||
+    message.includes("Could not find the table 'public.menu_option_groups' in the schema cache")
+  ) {
+    return "메뉴 옵션 데이터를 아직 불러오지 못했어요. 데이터베이스 마이그레이션 반영 후 다시 시도해주세요.";
+  }
+  if (message.includes("failed to parse select parameter")) {
+    return "메뉴 데이터를 읽는 중 오류가 발생했어요. 최신 마이그레이션 반영 후 다시 시도해주세요.";
+  }
+  if (message.includes("duplicate key value violates unique constraint")) {
+    return "이미 같은 내용이 저장되어 있어요. 입력 값을 다시 확인해주세요.";
+  }
+  if (message.includes("permission denied")) {
+    return "권한 문제로 저장할 수 없어요. 로그인 상태와 접근 권한을 확인해주세요.";
   }
   return message;
 }

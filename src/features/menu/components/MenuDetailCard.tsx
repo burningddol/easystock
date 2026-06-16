@@ -46,6 +46,39 @@ export function MenuDetailCard({ menu }: MenuDetailCardProps): React.ReactElemen
         </ul>
       )}
 
+      {menu.option_groups.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h3 className="text-caption font-semibold text-ink-2">옵션 구성</h3>
+          <ul className="flex flex-col gap-3">
+            {menu.option_groups.map((group) => (
+              <li key={group.id} className="rounded-3xl bg-slate-50/85 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-body-regular text-ink-1">{group.name}</span>
+                    <span className="text-caption text-ink-3">
+                      {group.selection_type === "single" ? "택1형" : "추가형"} ·{" "}
+                      {group.is_required ? "필수" : "선택"} · 최소 {group.min_select}
+                      {group.max_select !== null ? ` / 최대 ${group.max_select}` : ""}
+                    </span>
+                  </div>
+                </div>
+                <ul className="mt-3 flex flex-col gap-2">
+                  {group.values.map((value) => (
+                    <li
+                      key={value.id}
+                      className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-caption text-ink-2"
+                    >
+                      <span>{value.name}</span>
+                      <span className="tabular-nums">+{formatWon(value.price_delta)}원</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {hasRecipe && (
         <footer className="rounded-3xl bg-slate-50/90 px-4 py-4">
           <div className="flex items-baseline justify-between">

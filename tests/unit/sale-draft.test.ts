@@ -13,43 +13,45 @@ describe("sale draft helpers", () => {
     const second = upsertSaleDraftItems(first, "2026-06-02", "menu-b", 3);
 
     expect(second).toEqual({
-      "2026-06-01": [{ menuId: "menu-a", quantity: 2 }],
-      "2026-06-02": [{ menuId: "menu-b", quantity: 3 }],
+      "2026-06-01": [{ menuId: "menu-a", quantity: 2, options: [] }],
+      "2026-06-02": [{ menuId: "menu-b", quantity: 3, options: [] }],
     });
   });
 
   it("지정한 날짜의 드래프트만 지운다", () => {
     const drafts: SaleDraftsByDate = {
-      "2026-06-01": [{ menuId: "menu-a", quantity: 2 }],
-      "2026-06-02": [{ menuId: "menu-b", quantity: 3 }],
+      "2026-06-01": [{ menuId: "menu-a", quantity: 2, options: [] }],
+      "2026-06-02": [{ menuId: "menu-b", quantity: 3, options: [] }],
     };
 
     expect(clearSaleDraftDate(drafts, "2026-06-01")).toEqual({
-      "2026-06-02": [{ menuId: "menu-b", quantity: 3 }],
+      "2026-06-02": [{ menuId: "menu-b", quantity: 3, options: [] }],
     });
   });
 
   it("현재 메뉴에 없는 항목은 제거한다", () => {
     const filtered = sanitizeSaleDraftItems(
       [
-        { menuId: "menu-a", quantity: 2 },
-        { menuId: "menu-x", quantity: 1 },
+        { menuId: "menu-a", quantity: 2, options: [] },
+        { menuId: "menu-x", quantity: 1, options: [] },
       ],
       new Set(["menu-a", "menu-b"]),
     );
 
-    expect(filtered).toEqual([{ menuId: "menu-a", quantity: 2 }]);
+    expect(filtered).toEqual([{ menuId: "menu-a", quantity: 2, options: [] }]);
   });
 
   it("드래프트 항목을 날짜 단위로 통째로 교체한다", () => {
     const drafts: SaleDraftsByDate = {
-      "2026-06-01": [{ menuId: "menu-a", quantity: 2 }],
+      "2026-06-01": [{ menuId: "menu-a", quantity: 2, options: [] }],
     };
 
     expect(
-      replaceSaleDraftDateItems(drafts, "2026-06-01", [{ menuId: "menu-b", quantity: 4 }]),
+      replaceSaleDraftDateItems(drafts, "2026-06-01", [
+        { menuId: "menu-b", quantity: 4, options: [] },
+      ]),
     ).toEqual({
-      "2026-06-01": [{ menuId: "menu-b", quantity: 4 }],
+      "2026-06-01": [{ menuId: "menu-b", quantity: 4, options: [] }],
     });
   });
 });

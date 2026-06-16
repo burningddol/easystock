@@ -1,14 +1,29 @@
 import type { MenuRowWithRecipe } from "@/features/menu/hooks/useMenus";
+import {
+  computeOptionIngredientRequirements,
+  validateMenuOptionSelections,
+  type MenuOptionGroupPolicy,
+  type MenuOptionSelection,
+  type OptionRecipeItem,
+} from "@/lib/domain/menu-options";
 import { formatNumber } from "@/lib/utils/format";
+
+interface SaleItemOptionLike {
+  groupId: string;
+  optionValueId: string;
+  quantity: number;
+}
 
 interface SaleItemLike {
   menuId: string;
   quantity: number;
+  options?: readonly SaleItemOptionLike[];
 }
 
 interface ExistingSaleItemLike {
   menu_id: string;
   quantity: number;
+  options?: readonly SaleItemOptionLike[];
 }
 
 export interface StockShortage {
@@ -20,10 +35,56 @@ export interface StockShortage {
   shortage: number;
 }
 
+export interface SaleOptionError {
+  menuId: string;
+  message: string;
+}
+
 interface FindSaleStockShortagesInput {
   items: readonly SaleItemLike[];
   menus: readonly MenuRowWithRecipe[];
   existingItems?: readonly ExistingSaleItemLike[];
+}
+
+export function findSaleOptionErrors({
+  items,
+  menus,
+}: {
+  items: readonly SaleItemLike[];
+  menus: readonly MenuRowWithRecipe[];
+}): SaleOptionError[] {
+  const menuById = new Map(menus.map((menu) => [menu.id, menu]));
+  const errors: SaleOptionError[] = [];
+
+  for (const item of items) {
+    if (item.quantity <= 0) continue;
+    const menu = menuById.get(item.menuId);
+    if (!menu || menu.option_groups.length === 0) continue;
+
+    const groups: MenuOptionGroupPolicy[] = menu.option_groups.map((group) => ({
+      groupId: group.id,
+      selectionType: group.selection_type,
+      isRequired: group.is_required,
+      minSelect: group.min_select,
+      maxSelect: group.max_select,
+    }));
+
+    const selections: MenuOptionSelection[] = (item.options ?? []).map((option) => ({
+      groupId: option.groupId,
+      optionValueId: option.optionValueId,
+      quantity: option.quantity,
+    }));
+
+    for (const message of validateMenuOptionSelections({
+      menuQuantity: item.quantity,
+      groups,
+      selections,
+    })) {
+      errors.push({ menuId: item.menuId, message });
+    }
+  }
+
+  return errors;
 }
 
 export function findSaleStockShortages({
@@ -44,6 +105,18 @@ export function findSaleStockShortages({
         currentStock: recipeItem.ingredient.current_stock,
       });
     }
+
+    for (const group of menu.option_groups) {
+      for (const value of group.values) {
+        for (const recipeItem of value.recipe_items) {
+          ingredientStock.set(recipeItem.ingredient.id, {
+            name: recipeItem.ingredient.name,
+            unit: recipeItem.ingredient.unit,
+            currentStock: recipeItem.ingredient.current_stock,
+          });
+        }
+      }
+    }
   }
 
   for (const item of items) {
@@ -57,6 +130,13 @@ export function findSaleStockShortages({
         (required.get(recipeItem.ingredient.id) ?? 0) + consumed,
       );
     }
+
+    for (const requirement of computeMenuOptionRequirements(menu, item.options ?? [])) {
+      required.set(
+        requirement.ingredientId,
+        (required.get(requirement.ingredientId) ?? 0) + requirement.quantity,
+      );
+    }
   }
 
   for (const item of existingItems) {
@@ -68,6 +148,13 @@ export function findSaleStockShortages({
       restored.set(
         recipeItem.ingredient.id,
         (restored.get(recipeItem.ingredient.id) ?? 0) + consumed,
+      );
+    }
+
+    for (const requirement of computeMenuOptionRequirements(menu, item.options ?? [])) {
+      restored.set(
+        requirement.ingredientId,
+        (restored.get(requirement.ingredientId) ?? 0) + requirement.quantity,
       );
     }
   }
@@ -92,6 +179,45 @@ export function findSaleStockShortages({
     })
     .filter((item): item is StockShortage => item !== null)
     .sort((a, b) => b.shortage - a.shortage || a.name.localeCompare(b.name, "ko-KR"));
+}
+
+function computeMenuOptionRequirements(
+  menu: MenuRowWithRecipe,
+  selections: readonly SaleItemOptionLike[],
+): Array<{ ingredientId: string; quantity: number }> {
+  if (menu.option_groups.length === 0 || selections.length === 0) return [];
+
+  const selectionByValue = new Map(
+    selections.map((selection) => [selection.optionValueId, selection]),
+  );
+  const normalizedSelections: MenuOptionSelection[] = [];
+  const recipeItems: OptionRecipeItem[] = [];
+
+  for (const group of menu.option_groups) {
+    for (const value of group.values) {
+      const selection = selectionByValue.get(value.id);
+      if (!selection || selection.quantity <= 0) continue;
+
+      normalizedSelections.push({
+        groupId: group.id,
+        optionValueId: value.id,
+        quantity: selection.quantity,
+      });
+
+      for (const recipeItem of value.recipe_items) {
+        recipeItems.push({
+          optionValueId: value.id,
+          ingredientId: recipeItem.ingredient.id,
+          quantityPerSelection: recipeItem.quantity_per_selection,
+        });
+      }
+    }
+  }
+
+  return computeOptionIngredientRequirements({
+    selections: normalizedSelections,
+    recipeItems,
+  });
 }
 
 export function formatStockShortageMessage(shortages: readonly StockShortage[]): string {
