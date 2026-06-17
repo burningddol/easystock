@@ -8,9 +8,11 @@ import {
   computeWeekdayUsageAverage,
   detectTrend,
   forecastIngredient,
+  forecastMenuDemand,
   isColdStart,
   predictDepletionDate,
   type DailyConsumption,
+  type DailyMenuDemand,
 } from "@/lib/domain/forecast";
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
@@ -365,5 +367,69 @@ describe("forecastIngredient (합성)", () => {
         noOffDay.expectedDepletionDate.getTime(),
       );
     }
+  });
+});
+
+describe("forecastMenuDemand", () => {
+  it("콜드스타트면 horizon은 유지하되 예측 수량은 0", () => {
+    const result = forecastMenuDemand({
+      demandSamples: [{ date: daysAgo(1), quantity: 10 }],
+      daysOff: [],
+      signupDate: daysAgo(3),
+      today,
+      horizonDays: 3,
+    });
+
+    expect(result.isColdStart).toBe(true);
+    expect(result.dailyPredictions).toHaveLength(3);
+    expect(result.dailyPredictions.every((day) => day.predictedQuantity === 0)).toBe(true);
+  });
+
+  it("정기휴무일은 메뉴 수요 예측도 0으로 둔다", () => {
+    const result = forecastMenuDemand({
+      demandSamples: Array.from({ length: 30 }, (_, i) => ({
+        date: daysAgo(i + 1),
+        quantity: 10,
+      })),
+      daysOff: ["SUN"],
+      signupDate: daysAgo(60),
+      today,
+      horizonDays: 3,
+    });
+
+    const sunday = result.dailyPredictions.find((day) => day.dayType === null);
+    expect(sunday).toBeDefined();
+    expect(sunday?.predictedQuantity).toBe(0);
+  });
+
+  it("영업일 타입별 판매 패턴을 메뉴 수요에 반영한다", () => {
+    const samples: DailyMenuDemand[] = [
+      { date: new Date("2026-04-24"), quantity: 60 },
+      { date: new Date("2026-04-17"), quantity: 55 },
+      { date: new Date("2026-04-10"), quantity: 50 },
+      { date: new Date("2026-04-03"), quantity: 45 },
+      { date: new Date("2026-04-27"), quantity: 8 },
+      { date: new Date("2026-04-28"), quantity: 8 },
+      { date: new Date("2026-04-29"), quantity: 8 },
+      { date: new Date("2026-04-23"), quantity: 8 },
+      { date: new Date("2026-04-22"), quantity: 8 },
+      { date: new Date("2026-04-21"), quantity: 8 },
+      { date: new Date("2026-04-20"), quantity: 8 },
+      { date: new Date("2026-04-16"), quantity: 8 },
+    ];
+
+    const result = forecastMenuDemand({
+      demandSamples: samples,
+      daysOff: [],
+      signupDate: daysAgo(60),
+      today,
+      horizonDays: 5,
+    });
+
+    const friday = result.dailyPredictions.find((day) => day.dayType === "friday");
+    const weekday = result.dailyPredictions.find(
+      (day) => day.dayType === "weekday" && day.date.toISOString().slice(0, 10) === "2026-05-04",
+    );
+    expect(friday?.predictedQuantity).toBeGreaterThan(weekday?.predictedQuantity ?? 0);
   });
 });

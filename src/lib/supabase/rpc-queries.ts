@@ -14,6 +14,16 @@ export interface DepletionForecastRow {
   regularDaysOff: ReadonlyArray<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
 }
 
+export interface MenuDemandForecastRow {
+  menuId: string;
+  name: string;
+  price: number;
+  isActive: boolean;
+  demandSamples: Array<{ date: string; quantity: number }>;
+  signedUpAt: string;
+  regularDaysOff: ReadonlyArray<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
+}
+
 interface DepletionForecastRawRow {
   ingredient_id: string;
   name: string;
@@ -24,6 +34,16 @@ interface DepletionForecastRawRow {
   is_default_lead_time: boolean;
   safety_buffer_days?: number | null;
   consumption_samples: Array<{ date: string; amount: number }>;
+  signed_up_at: string;
+  regular_days_off: Array<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
+}
+
+interface MenuDemandForecastRawRow {
+  menu_id: string;
+  name: string;
+  price: number;
+  is_active: boolean;
+  demand_samples: Array<{ date: string; quantity: number }>;
   signed_up_at: string;
   regular_days_off: Array<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
 }
@@ -261,6 +281,25 @@ export async function getDepletionForecast(
           ? row.safety_buffer_days
           : 1,
       consumptionSamples: row.consumption_samples ?? [],
+      signedUpAt: row.signed_up_at,
+      regularDaysOff: row.regular_days_off ?? [],
+    })),
+    error: null,
+  };
+}
+
+export async function getMenuDemandForecast(
+  client: ClientLike,
+): Promise<RpcResult<MenuDemandForecastRow[]>> {
+  const result = await callRpc<MenuDemandForecastRawRow[]>(client, "get_menu_demand_forecast");
+  if (result.error) return { data: null, error: result.error };
+  return {
+    data: (result.data ?? []).map((row) => ({
+      menuId: row.menu_id,
+      name: row.name,
+      price: numeric(row.price),
+      isActive: row.is_active,
+      demandSamples: row.demand_samples ?? [],
       signedUpAt: row.signed_up_at,
       regularDaysOff: row.regular_days_off ?? [],
     })),
