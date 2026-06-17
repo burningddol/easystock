@@ -12,6 +12,7 @@ import {
   forecastMenuDemand,
   isColdStart,
   predictDepletionDate,
+  recommendPurchaseQuantity,
   type DailyConsumption,
   type DailyMenuDemand,
 } from "@/lib/domain/forecast";
@@ -252,6 +253,43 @@ describe("classifyStatus (FR-013)", () => {
     const date = new Date(today.getTime() + 6 * ONE_DAY);
     expect(classifyStatus(date, 1, 1, today)).toBe("caution");
     expect(classifyStatus(date, 1, 3, today)).toBe("order_needed");
+  });
+});
+
+describe("recommendPurchaseQuantity", () => {
+  it("리드타임 + 안전여유 + 7일 운영분까지 부족한 수량을 추천한다", () => {
+    const result = recommendPurchaseQuantity({
+      currentStock: 100,
+      leadTimeDays: 2,
+      safetyBufferDays: 1,
+      today,
+      dailyDemand: Array.from({ length: 10 }, (_, index) => ({
+        date: new Date(today.getTime() + (index + 1) * ONE_DAY),
+        amount: 20,
+      })),
+    });
+
+    expect(result.recommendedOrderQuantity).toBe(100);
+    expect(result.targetCoverageDays).toBe(7);
+    expect(result.isOrderRecommended).toBe(true);
+    expect(result.orderByDate).toEqual(new Date(today.getTime() + 2 * ONE_DAY));
+  });
+
+  it("현재 재고가 목표 커버리지를 채우면 발주 추천하지 않는다", () => {
+    const result = recommendPurchaseQuantity({
+      currentStock: 1_000,
+      leadTimeDays: 1,
+      safetyBufferDays: 1,
+      today,
+      dailyDemand: Array.from({ length: 10 }, (_, index) => ({
+        date: new Date(today.getTime() + (index + 1) * ONE_DAY),
+        amount: 20,
+      })),
+    });
+
+    expect(result.recommendedOrderQuantity).toBe(0);
+    expect(result.isOrderRecommended).toBe(false);
+    expect(result.orderByDate).toBeNull();
   });
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { daysUntilDate, formatNumber } from "@/lib/utils/format";
+import { daysUntilDate, formatDateKoFromIso, formatNumber, localIsoDate } from "@/lib/utils/format";
 import type { DepletionStatus } from "@/lib/domain/forecast";
 import { useDeleteIngredient } from "@/features/purchase/hooks/useIngredients";
 import type { IngredientForecastView } from "../hooks/useDepletionForecast";
@@ -118,6 +118,20 @@ function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactE
           {deleteMutation.error.message}
         </p>
       )}
+      {item.purchaseRecommendation?.isOrderRecommended && (
+        <div className="mt-2 rounded-2xl border border-blue/20 bg-blue-soft px-3 py-2 text-caption text-blue-deep">
+          <span className="font-semibold">
+            권장 발주{" "}
+            {formatNumber(Math.ceil(item.purchaseRecommendation.recommendedOrderQuantity))}
+            {item.unit}
+          </span>
+          <span className="text-blue-deep/70">
+            {" "}
+            · {formatOrderByDate(item.purchaseRecommendation.orderByDate)}까지 · 리드타임+ 안전여유+
+            {item.purchaseRecommendation.targetCoverageDays}일 운영분 기준
+          </span>
+        </div>
+      )}
     </li>
   );
 }
@@ -154,6 +168,11 @@ function formatDepletion(item: IngredientForecastView): string {
   if (days === null) return "예측 데이터 부족";
   if (days === 0) return "오늘 소진";
   return `${days}일 후 소진`;
+}
+
+function formatOrderByDate(date: Date | null): string {
+  if (!date) return "발주일 미정";
+  return formatDateKoFromIso(localIsoDate(date));
 }
 
 function TrendBadge({ trend }: { trend: "rising" | "falling" }): React.ReactElement {

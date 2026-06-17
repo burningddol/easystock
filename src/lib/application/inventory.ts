@@ -3,10 +3,12 @@ import {
   forecastIngredientDemandFromMenus,
   forecastIngredient,
   forecastMenuDemand,
+  recommendPurchaseQuantity,
   type DailyConsumption,
   type DailyMenuDemand,
   type ForecastResult,
   type IngredientDemandForecast,
+  type PurchaseRecommendationResult,
 } from "@/lib/domain/forecast";
 import {
   applyInventoryReplay as applyInventoryReplayRpc,
@@ -32,6 +34,7 @@ export interface IngredientForecastView extends ForecastResult {
   isDefaultLeadTime: boolean;
   safetyBufferDays: number;
   forecastSource: "menu_demand" | "consumption_history";
+  purchaseRecommendation: PurchaseRecommendationResult | null;
 }
 
 export interface MenuDemandForecastView {
@@ -126,6 +129,7 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       isDefaultLeadTime: row.isDefaultLeadTime,
       safetyBufferDays,
       forecastSource: "consumption_history" as const,
+      purchaseRecommendation: null,
       ...forecast,
     };
   });
@@ -142,16 +146,23 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
 
   return legacyForecasts.map((legacy) => {
     const demand = demandByIngredient.get(legacy.ingredientId);
-    const depletionDate = demand
-      ? predictDepletionDateFromDemand(legacy.currentStock, demand)
-      : null;
+    if (!demand) return legacy;
+    const depletionDate = predictDepletionDateFromDemand(legacy.currentStock, demand);
     if (!depletionDate) return legacy;
+    const purchaseRecommendation = recommendPurchaseQuantity({
+      currentStock: legacy.currentStock,
+      leadTimeDays: legacy.leadTimeDays,
+      safetyBufferDays: legacy.safetyBufferDays,
+      dailyDemand: demand.dailyPredictions,
+      today,
+    });
 
     return {
       ...legacy,
       expectedDepletionDate: depletionDate,
       status: classifyStatus(depletionDate, legacy.leadTimeDays, legacy.safetyBufferDays, today),
       forecastSource: "menu_demand",
+      purchaseRecommendation,
     };
   });
 }

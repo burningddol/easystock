@@ -105,6 +105,22 @@ export interface ForecastResult {
   isColdStart: boolean;
 }
 
+export interface PurchaseRecommendationInput {
+  currentStock: number;
+  leadTimeDays: number;
+  safetyBufferDays: number;
+  dailyDemand: readonly IngredientDemandForecastDay[];
+  today: Date;
+  coverageDays?: number;
+}
+
+export interface PurchaseRecommendationResult {
+  recommendedOrderQuantity: number;
+  orderByDate: Date | null;
+  targetCoverageDays: number;
+  isOrderRecommended: boolean;
+}
+
 export interface MenuDemandForecastInput {
   demandSamples: readonly DailyMenuDemand[];
   daysOff: readonly Weekday[];
@@ -346,6 +362,74 @@ export function classifyStatus(
   if (buffer === 2) return "order_needed";
   if (buffer <= 4) return "caution";
   return "safe";
+}
+
+/**
+ * 발주 추천량.
+ *
+ * 현재 재고가 `리드타임 + 안전여유 + 목표 커버리지` 기간의 예상 소요량을
+ * 커버하도록 부족분만 추천한다. 기본 목표 커버리지는 7일이다.
+ */
+export function recommendPurchaseQuantity({
+  currentStock,
+  leadTimeDays,
+  safetyBufferDays,
+  dailyDemand,
+  today,
+  coverageDays = 7,
+}: PurchaseRecommendationInput): PurchaseRecommendationResult {
+  const targetCoverageDays = Math.max(1, Math.ceil(coverageDays));
+  const reorderWindowDays = Math.max(0, Math.ceil(leadTimeDays)) + Math.max(0, safetyBufferDays);
+  const targetWindowDays = reorderWindowDays + targetCoverageDays;
+  const normalizedToday = startOfForecastDay(today);
+  const demandByDay = dailyDemand
+    .filter((day) => startOfForecastDay(day.date).getTime() > normalizedToday.getTime())
+    .sort((a, b) => startOfForecastDay(a.date).getTime() - startOfForecastDay(b.date).getTime());
+
+  const targetDemand = demandByDay
+    .slice(0, targetWindowDays)
+    .reduce((sum, day) => sum + Math.max(0, day.amount), 0);
+  const recommendedOrderQuantity = Math.max(0, targetDemand - Math.max(0, currentStock));
+
+  const orderByDate = computeOrderByDate({
+    currentStock,
+    leadTimeDays,
+    safetyBufferDays,
+    dailyDemand: demandByDay,
+    today: normalizedToday,
+  });
+
+  return {
+    recommendedOrderQuantity,
+    orderByDate,
+    targetCoverageDays,
+    isOrderRecommended: recommendedOrderQuantity > 0,
+  };
+}
+
+function computeOrderByDate({
+  currentStock,
+  leadTimeDays,
+  safetyBufferDays,
+  dailyDemand,
+  today,
+}: {
+  currentStock: number;
+  leadTimeDays: number;
+  safetyBufferDays: number;
+  dailyDemand: readonly IngredientDemandForecastDay[];
+  today: Date;
+}): Date | null {
+  let stock = currentStock;
+  for (const day of dailyDemand) {
+    stock -= Math.max(0, day.amount);
+    if (stock <= 0) {
+      const orderBy = new Date(startOfForecastDay(day.date));
+      orderBy.setDate(orderBy.getDate() - Math.max(0, Math.ceil(leadTimeDays)) - safetyBufferDays);
+      return orderBy.getTime() < today.getTime() ? today : orderBy;
+    }
+  }
+  return null;
 }
 
 /**

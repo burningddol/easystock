@@ -287,6 +287,7 @@ describe("application layer", () => {
           trend: "rising",
           isColdStart: false,
           forecastSource: "consumption_history",
+          purchaseRecommendation: null,
         },
       ]);
 
@@ -351,6 +352,8 @@ describe("application layer", () => {
       expect(result?.forecastSource).toBe("menu_demand");
       expect(result?.expectedDepletionDate).toBeInstanceOf(Date);
       expect(result?.status).toBe("critical");
+      expect(result?.purchaseRecommendation?.isOrderRecommended).toBe(true);
+      expect(result?.purchaseRecommendation?.recommendedOrderQuantity).toBeGreaterThan(0);
     });
 
     it("loadDepletionForecast falls back to safety buffer 1 when rpc field is missing", async () => {
