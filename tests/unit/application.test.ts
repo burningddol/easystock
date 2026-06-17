@@ -66,6 +66,7 @@ import {
 describe("application layer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    rpcMocks.getMenuDemandForecast.mockResolvedValue({ data: [], error: null });
   });
 
   describe("calendar", () => {
@@ -282,6 +283,7 @@ describe("application layer", () => {
           status: "caution",
           trend: "rising",
           isColdStart: false,
+          forecastSource: "consumption_history",
         },
       ]);
 
@@ -294,6 +296,58 @@ describe("application layer", () => {
         signupDate: new Date("2026-05-20T00:00:00.000Z"),
         today: expect.any(Date),
       });
+    });
+
+    it("loadDepletionForecast prefers menu-based ingredient demand when available", async () => {
+      rpcMocks.getDepletionForecast.mockResolvedValue({
+        data: [
+          {
+            ingredientId: "ice",
+            name: "얼음",
+            unit: "g",
+            currentStock: 100,
+            leadTimeDays: 1,
+            leadTimeVendorName: "얼음상회",
+            isDefaultLeadTime: false,
+            safetyBufferDays: 1,
+            consumptionSamples: [{ date: "2026-06-01", amount: 1 }],
+            signedUpAt: "2026-05-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+      rpcMocks.getMenuDemandForecast.mockResolvedValue({
+        data: [
+          {
+            menuId: "menu-1",
+            name: "과일빙수",
+            price: 12000,
+            isActive: true,
+            baseRecipe: [{ ingredientId: "ice", quantityPerServing: 100 }],
+            optionGroups: [],
+            demandSamples: Array.from({ length: 30 }, (_, index) => ({
+              date: `2026-05-${String(index + 1).padStart(2, "0")}`,
+              quantity: 10,
+            })),
+            signedUpAt: "2026-04-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+      forecastMocks.forecastIngredient.mockReturnValue({
+        expectedDepletionDate: null,
+        status: "safe",
+        trend: "normal",
+        isColdStart: false,
+      });
+
+      const [result] = await loadDepletionForecast({ rpc: {} });
+
+      expect(result?.forecastSource).toBe("menu_demand");
+      expect(result?.expectedDepletionDate).toBeInstanceOf(Date);
+      expect(result?.status).toBe("critical");
     });
 
     it("loadDepletionForecast falls back to safety buffer 1 when rpc field is missing", async () => {
