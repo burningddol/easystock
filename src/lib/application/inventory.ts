@@ -20,6 +20,7 @@ interface RpcClient {
 }
 
 const MENU_DEMAND_DEPLETION_HORIZON_DAYS = 365;
+const MENU_FORECAST_BACKTEST_DAYS = 14;
 
 export interface IngredientForecastView extends ForecastResult {
   ingredientId: string;
@@ -55,6 +56,24 @@ export interface MenuDemandForecastView {
       selectionRate: number;
       isDefault: boolean;
     }>;
+  }>;
+}
+
+export interface MenuForecastAccuracyView {
+  menuId: string;
+  name: string;
+  averageAbsoluteError: number | null;
+  meanAbsolutePercentageError: number | null;
+  bias: "over" | "under" | "balanced" | "insufficient_data";
+  evaluatedDayCount: number;
+  actualTotalQuantity: number;
+  predictedTotalQuantity: number;
+  dailyResults: Array<{
+    date: Date;
+    actualQuantity: number;
+    predictedQuantity: number;
+    absoluteError: number;
+    absolutePercentageError: number | null;
   }>;
 }
 
@@ -174,6 +193,86 @@ export async function loadMenuDemandForecastViews(
     .sort((a, b) => b.sevenDayTotalQuantity - a.sevenDayTotalQuantity);
 }
 
+export async function loadMenuForecastAccuracyViews(
+  client: RpcClient,
+  backtestDays: number = MENU_FORECAST_BACKTEST_DAYS,
+): Promise<MenuForecastAccuracyView[]> {
+  const { data, error } = await getMenuDemandForecast(client);
+  if (error) throw new Error(error.message);
+
+  return (data ?? [])
+    .map((row) => {
+      const samples = row.demandSamples
+        .map((sample) => ({
+          date: startOfDay(new Date(sample.date)),
+          quantity: Number(sample.quantity),
+        }))
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+      const sampleByDate = new Map(samples.map((sample) => [dateKey(sample.date), sample]));
+      const latestSampleDate = samples.at(-1)?.date ?? startOfDay(new Date());
+      const targetDates = Array.from({ length: backtestDays }, (_, index) =>
+        addDays(latestSampleDate, index - backtestDays + 1),
+      );
+
+      const dailyResults = targetDates.map((targetDate) => {
+        const trainUntil = addDays(targetDate, -1);
+        const trainingSamples: DailyMenuDemand[] = samples
+          .filter((sample) => sample.date.getTime() <= trainUntil.getTime())
+          .map((sample) => ({ date: sample.date, quantity: sample.quantity }));
+        const forecast = forecastMenuDemand({
+          demandSamples: trainingSamples,
+          daysOff: row.regularDaysOff,
+          signupDate: new Date(row.signedUpAt),
+          today: trainUntil,
+          horizonDays: 1,
+        });
+        const actualQuantity = sampleByDate.get(dateKey(targetDate))?.quantity ?? 0;
+        const predictedQuantity = forecast.dailyPredictions[0]?.predictedQuantity ?? 0;
+        const absoluteError = Math.abs(predictedQuantity - actualQuantity);
+
+        return {
+          date: targetDate,
+          actualQuantity,
+          predictedQuantity,
+          absoluteError,
+          absolutePercentageError:
+            actualQuantity > 0 ? absoluteError / Math.max(1, actualQuantity) : null,
+        };
+      });
+
+      const evaluated = dailyResults.filter((result) => result.actualQuantity > 0);
+      const actualTotalQuantity = sumBy(dailyResults, (result) => result.actualQuantity);
+      const predictedTotalQuantity = sumBy(dailyResults, (result) => result.predictedQuantity);
+      const averageAbsoluteError =
+        evaluated.length > 0
+          ? sumBy(evaluated, (result) => result.absoluteError) / evaluated.length
+          : null;
+      const meanAbsolutePercentageError =
+        evaluated.length > 0
+          ? sumBy(evaluated, (result) => result.absolutePercentageError ?? 0) / evaluated.length
+          : null;
+
+      return {
+        menuId: row.menuId,
+        name: row.name,
+        averageAbsoluteError,
+        meanAbsolutePercentageError,
+        bias: classifyForecastBias(actualTotalQuantity, predictedTotalQuantity, evaluated.length),
+        evaluatedDayCount: evaluated.length,
+        actualTotalQuantity,
+        predictedTotalQuantity,
+        dailyResults,
+      };
+    })
+    .sort((a, b) => {
+      if (a.meanAbsolutePercentageError === null) return 1;
+      if (b.meanAbsolutePercentageError === null) return -1;
+      const aError = a.meanAbsolutePercentageError;
+      const bError = b.meanAbsolutePercentageError;
+      return bError - aError;
+    });
+}
+
 export async function loadMenuBasedIngredientDemandForecast(
   client: RpcClient,
   horizonDays: number = 7,
@@ -233,6 +332,35 @@ function predictDepletionDateFromDemand(
 
 function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return startOfDay(next);
+}
+
+function dateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function sumBy<T>(items: readonly T[], selector: (item: T) => number): number {
+  return items.reduce((sum, item) => sum + selector(item), 0);
+}
+
+function classifyForecastBias(
+  actualTotalQuantity: number,
+  predictedTotalQuantity: number,
+  evaluatedDayCount: number,
+): MenuForecastAccuracyView["bias"] {
+  if (evaluatedDayCount === 0 || actualTotalQuantity === 0) return "insufficient_data";
+
+  const ratio = predictedTotalQuantity / actualTotalQuantity;
+  if (ratio >= 1.15) return "over";
+  if (ratio <= 0.85) return "under";
+  return "balanced";
 }
 
 export interface ApplyInventoryReplayInput {
