@@ -53,6 +53,7 @@ import { loadCalendarMonth, withConsecutiveMissingDays } from "@/lib/application
 import {
   applyInventoryReplay,
   loadDepletionForecast,
+  loadIngredientForecastAccuracyViews,
   loadMenuForecastAccuracyViews,
   loadMenuDemandForecastViews,
   loadMenuBasedIngredientDemandForecast,
@@ -548,6 +549,59 @@ describe("application layer", () => {
       expect(result?.evaluatedDayCount).toBe(7);
       expect(result?.actualTotalQuantity).toBe(70);
       expect(result?.predictedTotalQuantity).toBeGreaterThan(0);
+      expect(result?.meanAbsolutePercentageError).not.toBeNull();
+      expect(result?.bias).not.toBe("insufficient_data");
+    });
+
+    it("loadIngredientForecastAccuracyViews compares ingredient demand forecast with actual consumption", async () => {
+      rpcMocks.getMenuDemandForecast.mockResolvedValue({
+        data: [
+          {
+            menuId: "menu-1",
+            name: "과일빙수",
+            price: 12000,
+            isActive: true,
+            baseRecipe: [{ ingredientId: "ice", quantityPerServing: 100 }],
+            optionGroups: [],
+            demandSamples: Array.from({ length: 30 }, (_, index) => ({
+              date: `2026-05-${String(index + 1).padStart(2, "0")}`,
+              quantity: 10,
+            })),
+            signedUpAt: "2026-04-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+      rpcMocks.getDepletionForecast.mockResolvedValue({
+        data: [
+          {
+            ingredientId: "ice",
+            name: "얼음",
+            unit: "g",
+            currentStock: 10000,
+            leadTimeDays: 1,
+            leadTimeVendorName: null,
+            isDefaultLeadTime: true,
+            safetyBufferDays: 1,
+            consumptionSamples: Array.from({ length: 30 }, (_, index) => ({
+              date: `2026-05-${String(index + 1).padStart(2, "0")}`,
+              amount: 1000,
+            })),
+            signedUpAt: "2026-04-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+
+      const [result] = await loadIngredientForecastAccuracyViews({ rpc: {} }, 7);
+
+      expect(result?.ingredientId).toBe("ice");
+      expect(result?.dailyResults).toHaveLength(7);
+      expect(result?.evaluatedDayCount).toBe(7);
+      expect(result?.actualTotalAmount).toBe(7000);
+      expect(result?.predictedTotalAmount).toBeGreaterThan(0);
       expect(result?.meanAbsolutePercentageError).not.toBeNull();
       expect(result?.bias).not.toBe("insufficient_data");
     });
