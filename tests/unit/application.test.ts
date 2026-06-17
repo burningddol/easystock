@@ -53,6 +53,7 @@ import { loadCalendarMonth, withConsecutiveMissingDays } from "@/lib/application
 import {
   applyInventoryReplay,
   loadDepletionForecast,
+  loadMenuDemandForecastViews,
   loadMenuBasedIngredientDemandForecast,
 } from "@/lib/application/inventory";
 import { submitPurchase } from "@/lib/application/purchase";
@@ -461,6 +462,61 @@ describe("application layer", () => {
         ?.amount;
       expect(ice).toBeGreaterThan(0);
       expect(condensed).toBeCloseTo((ice ?? 0) * 0.1);
+    });
+
+    it("loadMenuDemandForecastViews exposes menu demand totals and option rates", async () => {
+      rpcMocks.getMenuDemandForecast.mockResolvedValue({
+        data: [
+          {
+            menuId: "menu-1",
+            name: "과일빙수",
+            price: 12000,
+            isActive: true,
+            baseRecipe: [{ ingredientId: "ice", quantityPerServing: 100 }],
+            optionGroups: [
+              {
+                optionGroupId: "size",
+                name: "사이즈",
+                selectionType: "single",
+                isRequired: true,
+                values: [
+                  {
+                    optionValueId: "large",
+                    name: "라지",
+                    isDefault: false,
+                    selectionRate: 0.6,
+                    recipe: [],
+                  },
+                  {
+                    optionValueId: "regular",
+                    name: "레귤러",
+                    isDefault: true,
+                    selectionRate: 0.4,
+                    recipe: [],
+                  },
+                ],
+              },
+            ],
+            demandSamples: Array.from({ length: 30 }, (_, index) => ({
+              date: `2026-05-${String(index + 1).padStart(2, "0")}`,
+              quantity: 10,
+            })),
+            signedUpAt: "2026-04-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+
+      const [result] = await loadMenuDemandForecastViews({ rpc: {} }, 7);
+
+      expect(result?.menuId).toBe("menu-1");
+      expect(result?.dailyPredictions).toHaveLength(7);
+      expect(result?.sevenDayTotalQuantity).toBeGreaterThan(0);
+      expect(result?.optionGroups[0]?.values.map((value) => value.optionValueId)).toEqual([
+        "large",
+        "regular",
+      ]);
     });
   });
 
