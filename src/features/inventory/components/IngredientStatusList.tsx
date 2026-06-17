@@ -95,6 +95,7 @@ function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactE
             안전여유 {item.safetyBufferDays}일
           </span>
           <span className="text-caption text-ink-3">{formatLeadTimeSource(item)}</span>
+          <span className="text-caption text-ink-3">{formatForecastSource(item)}</span>
         </div>
         <div className="flex items-center gap-stack-tight">
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
@@ -128,6 +129,13 @@ function formatLeadTimeSource(item: IngredientForecastView): string {
   return item.leadTimeVendorName
     ? `${item.leadTimeVendorName} 거래처 이력 기준 리드타임 적용`
     : "최근 가장 자주 쓴 거래처 기준 리드타임 적용";
+}
+
+function formatForecastSource(item: IngredientForecastView): string {
+  if (item.forecastSource === "menu_demand") {
+    return "메뉴·옵션 판매 예측 기준";
+  }
+  return "최근 재료 사용량 기준";
 }
 
 const STATUS_TONE: Record<DepletionStatus, string> = {

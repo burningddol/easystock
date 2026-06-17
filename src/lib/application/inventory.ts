@@ -1,4 +1,5 @@
 import {
+  classifyStatus,
   forecastIngredientDemandFromMenus,
   forecastIngredient,
   forecastMenuDemand,
@@ -18,6 +19,8 @@ interface RpcClient {
   rpc: unknown;
 }
 
+const MENU_DEMAND_DEPLETION_HORIZON_DAYS = 365;
+
 export interface IngredientForecastView extends ForecastResult {
   ingredientId: string;
   name: string;
@@ -27,6 +30,7 @@ export interface IngredientForecastView extends ForecastResult {
   leadTimeVendorName: string | null;
   isDefaultLeadTime: boolean;
   safetyBufferDays: number;
+  forecastSource: "menu_demand" | "consumption_history";
 }
 
 export async function loadDepletionForecast(client: RpcClient): Promise<IngredientForecastView[]> {
@@ -34,7 +38,7 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
   if (error) throw new Error(error.message);
 
   const today = new Date();
-  return (data ?? []).map((row) => {
+  const legacyForecasts = (data ?? []).map((row) => {
     const samples: DailyConsumption[] = row.consumptionSamples.map((s) => ({
       date: new Date(s.date),
       amount: Number(s.amount),
@@ -58,7 +62,33 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       leadTimeVendorName: row.leadTimeVendorName,
       isDefaultLeadTime: row.isDefaultLeadTime,
       safetyBufferDays,
+      forecastSource: "consumption_history" as const,
       ...forecast,
+    };
+  });
+
+  const menuDemandForecasts = await loadMenuBasedIngredientDemandForecastSafely(
+    client,
+    MENU_DEMAND_DEPLETION_HORIZON_DAYS,
+  );
+  if (menuDemandForecasts.length === 0) return legacyForecasts;
+
+  const demandByIngredient = new Map(
+    menuDemandForecasts.map((forecast) => [forecast.ingredientId, forecast]),
+  );
+
+  return legacyForecasts.map((legacy) => {
+    const demand = demandByIngredient.get(legacy.ingredientId);
+    const depletionDate = demand
+      ? predictDepletionDateFromDemand(legacy.currentStock, demand)
+      : null;
+    if (!depletionDate) return legacy;
+
+    return {
+      ...legacy,
+      expectedDepletionDate: depletionDate,
+      status: classifyStatus(depletionDate, legacy.leadTimeDays, legacy.safetyBufferDays, today),
+      forecastSource: "menu_demand",
     };
   });
 }
@@ -93,6 +123,35 @@ export async function loadMenuBasedIngredientDemandForecast(
       };
     }),
   );
+}
+
+async function loadMenuBasedIngredientDemandForecastSafely(
+  client: RpcClient,
+  horizonDays: number,
+): Promise<IngredientDemandForecast[]> {
+  try {
+    return await loadMenuBasedIngredientDemandForecast(client, horizonDays);
+  } catch {
+    return [];
+  }
+}
+
+function predictDepletionDateFromDemand(
+  currentStock: number,
+  demand: IngredientDemandForecast,
+): Date | null {
+  let stock = currentStock;
+
+  for (const day of demand.dailyPredictions) {
+    stock -= Math.max(0, day.amount);
+    if (stock <= 0) return startOfDay(day.date);
+  }
+
+  return null;
+}
+
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 export interface ApplyInventoryReplayInput {
