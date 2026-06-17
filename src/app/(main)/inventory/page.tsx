@@ -22,6 +22,9 @@ export default function InventoryPage(): React.ReactElement {
         title="재료"
         action={
           <div className="flex gap-stack-tight">
+            <Link href="/inventory/menu-forecast" className={SECONDARY_BUTTON_CLASSES}>
+              메뉴 예측
+            </Link>
             <Link href="/inventory/stock-count" className={SECONDARY_BUTTON_CLASSES}>
               실사
             </Link>

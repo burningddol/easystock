@@ -33,6 +33,31 @@ export interface IngredientForecastView extends ForecastResult {
   forecastSource: "menu_demand" | "consumption_history";
 }
 
+export interface MenuDemandForecastView {
+  menuId: string;
+  name: string;
+  price: number;
+  tomorrowQuantity: number;
+  sevenDayTotalQuantity: number;
+  trend: "rising" | "falling" | "normal";
+  isColdStart: boolean;
+  dailyPredictions: Array<{
+    date: Date;
+    predictedQuantity: number;
+  }>;
+  optionGroups: Array<{
+    optionGroupId: string;
+    name: string;
+    selectionType: "single" | "add_on";
+    values: Array<{
+      optionValueId: string;
+      name: string;
+      selectionRate: number;
+      isDefault: boolean;
+    }>;
+  }>;
+}
+
 export async function loadDepletionForecast(client: RpcClient): Promise<IngredientForecastView[]> {
   const { data, error } = await getDepletionForecast(client);
   if (error) throw new Error(error.message);
@@ -91,6 +116,62 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       forecastSource: "menu_demand",
     };
   });
+}
+
+export async function loadMenuDemandForecastViews(
+  client: RpcClient,
+  horizonDays: number = 7,
+): Promise<MenuDemandForecastView[]> {
+  const { data, error } = await getMenuDemandForecast(client);
+  if (error) throw new Error(error.message);
+
+  const today = new Date();
+  return (data ?? [])
+    .map((row) => {
+      const demandSamples: DailyMenuDemand[] = row.demandSamples.map((sample) => ({
+        date: new Date(sample.date),
+        quantity: Number(sample.quantity),
+      }));
+      const forecast = forecastMenuDemand({
+        demandSamples,
+        daysOff: row.regularDaysOff,
+        signupDate: new Date(row.signedUpAt),
+        today,
+        horizonDays,
+      });
+      const dailyPredictions = forecast.dailyPredictions.map((day) => ({
+        date: day.date,
+        predictedQuantity: day.predictedQuantity,
+      }));
+
+      return {
+        menuId: row.menuId,
+        name: row.name,
+        price: row.price,
+        tomorrowQuantity: dailyPredictions[0]?.predictedQuantity ?? 0,
+        sevenDayTotalQuantity: dailyPredictions.reduce(
+          (sum, day) => sum + day.predictedQuantity,
+          0,
+        ),
+        trend: forecast.trend,
+        isColdStart: forecast.isColdStart,
+        dailyPredictions,
+        optionGroups: row.optionGroups.map((group) => ({
+          optionGroupId: group.optionGroupId,
+          name: group.name,
+          selectionType: group.selectionType,
+          values: group.values
+            .map((value) => ({
+              optionValueId: value.optionValueId,
+              name: value.name,
+              selectionRate: value.selectionRate,
+              isDefault: value.isDefault,
+            }))
+            .sort((a, b) => b.selectionRate - a.selectionRate),
+        })),
+      };
+    })
+    .sort((a, b) => b.sevenDayTotalQuantity - a.sevenDayTotalQuantity);
 }
 
 export async function loadMenuBasedIngredientDemandForecast(
