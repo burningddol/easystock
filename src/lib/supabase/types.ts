@@ -765,6 +765,18 @@ export type Database = {
           unit: Database["public"]["Enums"]["ingredient_unit"]
         }[]
       }
+      get_menu_demand_forecast: {
+        Args: never
+        Returns: {
+          demand_samples: Json
+          is_active: boolean
+          menu_id: string
+          name: string
+          price: number
+          regular_days_off: Database["public"]["Enums"]["weekday"][]
+          signed_up_at: string
+        }[]
+      }
       get_today_dashboard: { Args: never; Returns: Json }
       request_withdrawal: {
         Args: never

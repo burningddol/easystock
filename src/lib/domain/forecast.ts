@@ -39,6 +39,11 @@ export interface DailyConsumption {
   amount: number;
 }
 
+export interface DailyMenuDemand {
+  date: Date;
+  quantity: number;
+}
+
 export interface ForecastInput {
   currentStock: number;
   leadTimeDays: number;
@@ -52,6 +57,27 @@ export interface ForecastInput {
 export interface ForecastResult {
   expectedDepletionDate: Date | null;
   status: DepletionStatus;
+  trend: ConsumptionTrend;
+  isColdStart: boolean;
+}
+
+export interface MenuDemandForecastInput {
+  demandSamples: readonly DailyMenuDemand[];
+  daysOff: readonly Weekday[];
+  signupDate: Date;
+  today: Date;
+  horizonDays?: number;
+}
+
+export interface MenuDemandForecastDay {
+  date: Date;
+  dayType: BusinessDayType | null;
+  predictedQuantity: number;
+}
+
+export interface MenuDemandForecastResult {
+  dailyPredictions: MenuDemandForecastDay[];
+  fallbackDailyQuantity: number;
   trend: ConsumptionTrend;
   isColdStart: boolean;
 }
@@ -350,4 +376,69 @@ export function forecastIngredient(input: ForecastInput): ForecastResult {
     trend,
     isColdStart: false,
   };
+}
+
+/**
+ * 메뉴별 수요 예측.
+ *
+ * 재료 예측과 같은 영업일 타입/최근가중/추세 모델을 사용하되, 값의 단위만
+ * 재료 사용량이 아니라 메뉴 판매 수량이다. 옵션 선택률은 다음 단계에서 별도
+ * modifier attach-rate 모델로 곱한다.
+ */
+export function forecastMenuDemand(input: MenuDemandForecastInput): MenuDemandForecastResult {
+  const horizonDays = input.horizonDays ?? 7;
+  if (isColdStart(input.signupDate, input.today)) {
+    return {
+      dailyPredictions: buildZeroMenuDemandDays(input.today, horizonDays, input.daysOff),
+      fallbackDailyQuantity: 0,
+      trend: "normal",
+      isColdStart: true,
+    };
+  }
+
+  const consumptionLikeSamples = input.demandSamples.map((sample) => ({
+    date: sample.date,
+    amount: sample.quantity,
+  }));
+  const model = computeBusinessDayUsageModel(consumptionLikeSamples, input.daysOff, input.today);
+  const trendFactor = computeTrendFactor(consumptionLikeSamples, input.today);
+  const trend = detectTrend(consumptionLikeSamples, input.today);
+  const predictions: MenuDemandForecastDay[] = [];
+
+  for (let offset = 1; offset <= horizonDays; offset++) {
+    const date = new Date(input.today.getTime() + offset * ONE_DAY_MS);
+    const dayType = businessDayTypeOf(date, input.daysOff);
+    const predictedQuantity = dayType
+      ? (model.usageByDayType.get(dayType) ?? model.fallbackDailyUsage)
+          .times(clamp(trendFactor, TREND_FACTOR_MIN, TREND_FACTOR_MAX))
+          .toNumber()
+      : 0;
+    predictions.push({
+      date,
+      dayType,
+      predictedQuantity,
+    });
+  }
+
+  return {
+    dailyPredictions: predictions,
+    fallbackDailyQuantity: model.fallbackDailyUsage.toNumber(),
+    trend,
+    isColdStart: false,
+  };
+}
+
+function buildZeroMenuDemandDays(
+  today: Date,
+  horizonDays: number,
+  daysOff: readonly Weekday[],
+): MenuDemandForecastDay[] {
+  return Array.from({ length: horizonDays }, (_, index) => {
+    const date = new Date(today.getTime() + (index + 1) * ONE_DAY_MS);
+    return {
+      date,
+      dayType: businessDayTypeOf(date, daysOff),
+      predictedQuantity: 0,
+    };
+  });
 }
