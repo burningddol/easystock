@@ -7,6 +7,7 @@ import {
   computeTrendFactor,
   computeWeekdayUsageAverage,
   detectTrend,
+  forecastIngredientDemandFromMenus,
   forecastIngredient,
   forecastMenuDemand,
   isColdStart,
@@ -431,5 +432,181 @@ describe("forecastMenuDemand", () => {
       (day) => day.dayType === "weekday" && day.date.toISOString().slice(0, 10) === "2026-05-04",
     );
     expect(friday?.predictedQuantity).toBeGreaterThan(weekday?.predictedQuantity ?? 0);
+  });
+});
+
+describe("forecastIngredientDemandFromMenus", () => {
+  it("메뉴 기본 레시피와 옵션 선택률/부착률을 재료 소요량으로 합산한다", () => {
+    const demand = forecastIngredientDemandFromMenus([
+      {
+        menuId: "menu-bingsu",
+        name: "과일빙수",
+        baseRecipe: [{ ingredientId: "milk-ice", quantityPerServing: 100 }],
+        optionGroups: [
+          {
+            optionGroupId: "ice-type",
+            name: "얼음 선택",
+            selectionType: "single",
+            isRequired: true,
+            values: [
+              {
+                optionValueId: "milk",
+                name: "우유얼음",
+                isDefault: true,
+                selectionRate: 0.7,
+                recipe: [{ ingredientId: "milk", quantityPerSelection: 50 }],
+              },
+              {
+                optionValueId: "green-tea",
+                name: "녹차얼음",
+                isDefault: false,
+                selectionRate: 0.3,
+                recipe: [{ ingredientId: "green-tea-powder", quantityPerSelection: 10 }],
+              },
+            ],
+          },
+          {
+            optionGroupId: "toppings",
+            name: "토핑 추가",
+            selectionType: "add_on",
+            isRequired: false,
+            values: [
+              {
+                optionValueId: "condensed-milk",
+                name: "연유 추가",
+                isDefault: false,
+                selectionRate: 0.4,
+                recipe: [{ ingredientId: "condensed-milk", quantityPerSelection: 20 }],
+              },
+            ],
+          },
+        ],
+        demandForecast: {
+          dailyPredictions: [
+            {
+              date: new Date("2026-05-01T00:00:00"),
+              dayType: "friday",
+              predictedQuantity: 100,
+            },
+          ],
+          fallbackDailyQuantity: 100,
+          trend: "normal",
+          isColdStart: false,
+        },
+      },
+    ]);
+
+    const byIngredient = new Map(
+      demand.map((item) => [item.ingredientId, item.dailyPredictions[0]?.amount]),
+    );
+    expect(byIngredient.get("milk-ice")).toBe(10_000);
+    expect(byIngredient.get("milk")).toBe(3_500);
+    expect(byIngredient.get("green-tea-powder")).toBe(300);
+    expect(byIngredient.get("condensed-milk")).toBe(800);
+  });
+
+  it("택1 옵션 이력 비율 합이 1이 아니면 정규화한다", () => {
+    const demand = forecastIngredientDemandFromMenus([
+      {
+        menuId: "menu-1",
+        name: "테스트메뉴",
+        baseRecipe: [],
+        optionGroups: [
+          {
+            optionGroupId: "single",
+            name: "택1",
+            selectionType: "single",
+            isRequired: true,
+            values: [
+              {
+                optionValueId: "a",
+                name: "A",
+                isDefault: false,
+                selectionRate: 2,
+                recipe: [{ ingredientId: "a-ing", quantityPerSelection: 10 }],
+              },
+              {
+                optionValueId: "b",
+                name: "B",
+                isDefault: false,
+                selectionRate: 1,
+                recipe: [{ ingredientId: "b-ing", quantityPerSelection: 10 }],
+              },
+            ],
+          },
+        ],
+        demandForecast: {
+          dailyPredictions: [
+            {
+              date: new Date("2026-05-01T00:00:00"),
+              dayType: "friday",
+              predictedQuantity: 90,
+            },
+          ],
+          fallbackDailyQuantity: 90,
+          trend: "normal",
+          isColdStart: false,
+        },
+      },
+    ]);
+
+    const byIngredient = new Map(
+      demand.map((item) => [item.ingredientId, item.dailyPredictions[0]?.amount]),
+    );
+    expect(byIngredient.get("a-ing")).toBeCloseTo(600);
+    expect(byIngredient.get("b-ing")).toBeCloseTo(300);
+  });
+
+  it("택1 옵션 이력이 없으면 기본값으로 fallback한다", () => {
+    const demand = forecastIngredientDemandFromMenus([
+      {
+        menuId: "menu-1",
+        name: "테스트메뉴",
+        baseRecipe: [],
+        optionGroups: [
+          {
+            optionGroupId: "single",
+            name: "택1",
+            selectionType: "single",
+            isRequired: true,
+            values: [
+              {
+                optionValueId: "default",
+                name: "기본",
+                isDefault: true,
+                selectionRate: 0,
+                recipe: [{ ingredientId: "default-ing", quantityPerSelection: 5 }],
+              },
+              {
+                optionValueId: "other",
+                name: "기타",
+                isDefault: false,
+                selectionRate: 0,
+                recipe: [{ ingredientId: "other-ing", quantityPerSelection: 5 }],
+              },
+            ],
+          },
+        ],
+        demandForecast: {
+          dailyPredictions: [
+            {
+              date: new Date("2026-05-01T00:00:00"),
+              dayType: "friday",
+              predictedQuantity: 10,
+            },
+          ],
+          fallbackDailyQuantity: 10,
+          trend: "normal",
+          isColdStart: false,
+        },
+      },
+    ]);
+
+    expect(demand).toEqual([
+      {
+        ingredientId: "default-ing",
+        dailyPredictions: [{ date: new Date("2026-05-01T00:00:00"), amount: 50 }],
+      },
+    ]);
   });
 });

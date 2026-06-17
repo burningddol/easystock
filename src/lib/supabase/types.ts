@@ -768,10 +768,12 @@ export type Database = {
       get_menu_demand_forecast: {
         Args: never
         Returns: {
+          base_recipe: Json
           demand_samples: Json
           is_active: boolean
           menu_id: string
           name: string
+          option_groups: Json
           price: number
           regular_days_off: Database["public"]["Enums"]["weekday"][]
           signed_up_at: string

@@ -19,6 +19,20 @@ export interface MenuDemandForecastRow {
   name: string;
   price: number;
   isActive: boolean;
+  baseRecipe: Array<{ ingredientId: string; quantityPerServing: number }>;
+  optionGroups: Array<{
+    optionGroupId: string;
+    name: string;
+    selectionType: "single" | "add_on";
+    isRequired: boolean;
+    values: Array<{
+      optionValueId: string;
+      name: string;
+      isDefault: boolean;
+      selectionRate: number;
+      recipe: Array<{ ingredientId: string; quantityPerSelection: number }>;
+    }>;
+  }>;
   demandSamples: Array<{ date: string; quantity: number }>;
   signedUpAt: string;
   regularDaysOff: ReadonlyArray<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
@@ -43,6 +57,20 @@ interface MenuDemandForecastRawRow {
   name: string;
   price: number;
   is_active: boolean;
+  base_recipe?: Array<{ ingredient_id: string; quantity_per_serving: number }> | null;
+  option_groups?: Array<{
+    option_group_id: string;
+    name: string;
+    selection_type: "single" | "add_on";
+    is_required: boolean;
+    values?: Array<{
+      option_value_id: string;
+      name: string;
+      is_default: boolean;
+      selection_rate: number;
+      recipe?: Array<{ ingredient_id: string; quantity_per_selection: number }> | null;
+    }> | null;
+  }> | null;
   demand_samples: Array<{ date: string; quantity: number }>;
   signed_up_at: string;
   regular_days_off: Array<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
@@ -299,6 +327,26 @@ export async function getMenuDemandForecast(
       name: row.name,
       price: numeric(row.price),
       isActive: row.is_active,
+      baseRecipe: (row.base_recipe ?? []).map((item) => ({
+        ingredientId: item.ingredient_id,
+        quantityPerServing: numeric(item.quantity_per_serving),
+      })),
+      optionGroups: (row.option_groups ?? []).map((group) => ({
+        optionGroupId: group.option_group_id,
+        name: group.name,
+        selectionType: group.selection_type,
+        isRequired: group.is_required,
+        values: (group.values ?? []).map((value) => ({
+          optionValueId: value.option_value_id,
+          name: value.name,
+          isDefault: value.is_default,
+          selectionRate: numeric(value.selection_rate),
+          recipe: (value.recipe ?? []).map((item) => ({
+            ingredientId: item.ingredient_id,
+            quantityPerSelection: numeric(item.quantity_per_selection),
+          })),
+        })),
+      })),
       demandSamples: row.demand_samples ?? [],
       signedUpAt: row.signed_up_at,
       regularDaysOff: row.regular_days_off ?? [],
