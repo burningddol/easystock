@@ -1,6 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { ForecastPeriodSelector } from "@/features/inventory/components/ForecastPeriodSelector";
 import { IngredientForecastAccuracyList } from "@/features/inventory/components/IngredientForecastAccuracyList";
 import { MenuForecastAccuracyList } from "@/features/inventory/components/MenuForecastAccuracyList";
 import { useIngredientForecastAccuracy } from "@/features/inventory/hooks/useIngredientForecastAccuracy";
@@ -9,9 +12,21 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
 import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
 
+const BACKTEST_OPTIONS = [14, 30, 60] as const;
+
 export default function ForecastAccuracyPage(): React.ReactElement {
-  const menuQuery = useMenuForecastAccuracy();
-  const ingredientQuery = useIngredientForecastAccuracy();
+  return (
+    <Suspense fallback={<LoadingText />}>
+      <ForecastAccuracyContent />
+    </Suspense>
+  );
+}
+
+function ForecastAccuracyContent(): React.ReactElement {
+  const searchParams = useSearchParams();
+  const backtestDays = parseOption(searchParams.get("days"), BACKTEST_OPTIONS, 14);
+  const menuQuery = useMenuForecastAccuracy(backtestDays);
+  const ingredientQuery = useIngredientForecastAccuracy(backtestDays);
 
   return (
     <section className="flex flex-col gap-section">
@@ -26,12 +41,21 @@ export default function ForecastAccuracyPage(): React.ReactElement {
 
       <section className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
         <p className="text-body text-ink-1">
-          최근 14일 기준으로 메뉴·재료 예측과 실제 판매/소비량을 비교합니다.
+          최근 {backtestDays}일 기준으로 메뉴·재료 예측과 실제 판매/소비량을 비교합니다.
         </p>
         <p className="mt-1 text-caption text-ink-3">
           각 날짜의 예측은 그 전날까지의 판매 이력만 사용해 다시 계산합니다.
         </p>
       </section>
+
+      <ForecastPeriodSelector
+        label="백테스트 기간"
+        queryKey="days"
+        selectedValue={backtestDays}
+        options={BACKTEST_OPTIONS}
+        suffix="일"
+        pathname="/inventory/forecast-accuracy"
+      />
 
       <AccuracySection title="재료 예측 정확도">
         {ingredientQuery.isLoading && <LoadingText />}
@@ -46,6 +70,11 @@ export default function ForecastAccuracyPage(): React.ReactElement {
       </AccuracySection>
     </section>
   );
+}
+
+function parseOption<T extends number>(raw: string | null, options: readonly T[], fallback: T): T {
+  const value = Number(raw);
+  return options.includes(value as T) ? (value as T) : fallback;
 }
 
 function AccuracySection({
