@@ -12,17 +12,24 @@ export const ingredientForecastAccuracyQueryKey = [
   "ingredient-forecast-accuracy",
 ] as const;
 
+export const ingredientForecastAccuracyQueryKeyWithPeriod = (backtestDays: number) =>
+  [...ingredientForecastAccuracyQueryKey, backtestDays] as const;
+
 export type { IngredientForecastAccuracyView } from "@/lib/application/inventory";
 
-async function fetchIngredientForecastAccuracy(): Promise<IngredientForecastAccuracyView[]> {
+async function fetchIngredientForecastAccuracy(
+  backtestDays: number,
+): Promise<IngredientForecastAccuracyView[]> {
   const supabase = createClient();
-  return loadIngredientForecastAccuracyViews(supabase);
+  return loadIngredientForecastAccuracyViews(supabase, backtestDays);
 }
 
-export function useIngredientForecastAccuracy(): UseQueryResult<IngredientForecastAccuracyView[]> {
+export function useIngredientForecastAccuracy(
+  backtestDays: number = 14,
+): UseQueryResult<IngredientForecastAccuracyView[]> {
   return useQuery({
-    queryKey: ingredientForecastAccuracyQueryKey,
-    queryFn: fetchIngredientForecastAccuracy,
+    queryKey: ingredientForecastAccuracyQueryKeyWithPeriod(backtestDays),
+    queryFn: () => fetchIngredientForecastAccuracy(backtestDays),
     staleTime: 5 * 60 * 1000,
   });
 }
