@@ -44,6 +44,50 @@ export interface DailyMenuDemand {
   quantity: number;
 }
 
+export interface MenuRecipeIngredient {
+  ingredientId: string;
+  quantityPerServing: number;
+}
+
+export interface MenuOptionRecipeIngredient {
+  ingredientId: string;
+  quantityPerSelection: number;
+}
+
+export interface MenuOptionValueForecastInput {
+  optionValueId: string;
+  name: string;
+  isDefault: boolean;
+  selectionRate: number;
+  recipe: readonly MenuOptionRecipeIngredient[];
+}
+
+export interface MenuOptionGroupForecastInput {
+  optionGroupId: string;
+  name: string;
+  selectionType: "single" | "add_on";
+  isRequired: boolean;
+  values: readonly MenuOptionValueForecastInput[];
+}
+
+export interface MenuIngredientDemandForecastInput {
+  menuId: string;
+  name: string;
+  baseRecipe: readonly MenuRecipeIngredient[];
+  optionGroups: readonly MenuOptionGroupForecastInput[];
+  demandForecast: MenuDemandForecastResult;
+}
+
+export interface IngredientDemandForecastDay {
+  date: Date;
+  amount: number;
+}
+
+export interface IngredientDemandForecast {
+  ingredientId: string;
+  dailyPredictions: IngredientDemandForecastDay[];
+}
+
 export interface ForecastInput {
   currentStock: number;
   leadTimeDays: number;
@@ -441,4 +485,106 @@ function buildZeroMenuDemandDays(
       predictedQuantity: 0,
     };
   });
+}
+
+export function forecastIngredientDemandFromMenus(
+  menus: readonly MenuIngredientDemandForecastInput[],
+): IngredientDemandForecast[] {
+  const byIngredient = new Map<string, Map<number, { date: Date; amount: Decimal }>>();
+
+  for (const menu of menus) {
+    const normalizedGroups = menu.optionGroups.map((group) => ({
+      ...group,
+      values: withEffectiveOptionRates(group),
+    }));
+
+    for (const day of menu.demandForecast.dailyPredictions) {
+      const menuQuantity = new Decimal(Math.max(0, day.predictedQuantity));
+      if (menuQuantity.isZero()) continue;
+
+      for (const recipeItem of menu.baseRecipe) {
+        addIngredientDemand(
+          byIngredient,
+          recipeItem.ingredientId,
+          day.date,
+          menuQuantity.times(recipeItem.quantityPerServing),
+        );
+      }
+
+      for (const group of normalizedGroups) {
+        for (const value of group.values) {
+          const optionQuantity = menuQuantity.times(value.effectiveRate);
+          if (optionQuantity.isZero()) continue;
+
+          for (const recipeItem of value.recipe) {
+            addIngredientDemand(
+              byIngredient,
+              recipeItem.ingredientId,
+              day.date,
+              optionQuantity.times(recipeItem.quantityPerSelection),
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(byIngredient.entries())
+    .map(([ingredientId, daily]) => ({
+      ingredientId,
+      dailyPredictions: Array.from(daily.values())
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .map((day) => ({ date: day.date, amount: day.amount.toNumber() })),
+    }))
+    .sort((a, b) => a.ingredientId.localeCompare(b.ingredientId));
+}
+
+function withEffectiveOptionRates(
+  group: MenuOptionGroupForecastInput,
+): Array<MenuOptionValueForecastInput & { effectiveRate: number }> {
+  if (group.selectionType === "add_on") {
+    return group.values.map((value) => ({
+      ...value,
+      effectiveRate: Math.max(0, value.selectionRate),
+    }));
+  }
+
+  const positiveTotal = group.values.reduce(
+    (sum, value) => sum + Math.max(0, value.selectionRate),
+    0,
+  );
+  if (positiveTotal > 0) {
+    return group.values.map((value) => ({
+      ...value,
+      effectiveRate: Math.max(0, value.selectionRate) / positiveTotal,
+    }));
+  }
+
+  const defaults = group.values.filter((value) => value.isDefault);
+  return group.values.map((value) => ({
+    ...value,
+    effectiveRate:
+      defaults.length > 0 && value.isDefault ? 1 / defaults.length : group.isRequired ? 0 : 0,
+  }));
+}
+
+function addIngredientDemand(
+  byIngredient: Map<string, Map<number, { date: Date; amount: Decimal }>>,
+  ingredientId: string,
+  date: Date,
+  amount: Decimal,
+): void {
+  const dateKey = startOfForecastDay(date).getTime();
+  const daily =
+    byIngredient.get(ingredientId) ?? new Map<number, { date: Date; amount: Decimal }>();
+  const existing = daily.get(dateKey);
+  daily.set(dateKey, {
+    date: existing?.date ?? new Date(dateKey),
+    amount: (existing?.amount ?? new Decimal(0)).plus(amount),
+  });
+  byIngredient.set(ingredientId, daily);
+}
+
+function startOfForecastDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }

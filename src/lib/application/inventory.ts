@@ -1,11 +1,16 @@
 import {
+  forecastIngredientDemandFromMenus,
   forecastIngredient,
+  forecastMenuDemand,
   type DailyConsumption,
+  type DailyMenuDemand,
   type ForecastResult,
+  type IngredientDemandForecast,
 } from "@/lib/domain/forecast";
 import {
   applyInventoryReplay as applyInventoryReplayRpc,
   getDepletionForecast,
+  getMenuDemandForecast,
   type ApplyInventoryReplayResult,
 } from "@/lib/supabase/rpc";
 
@@ -56,6 +61,38 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       ...forecast,
     };
   });
+}
+
+export async function loadMenuBasedIngredientDemandForecast(
+  client: RpcClient,
+  horizonDays: number = 7,
+): Promise<IngredientDemandForecast[]> {
+  const { data, error } = await getMenuDemandForecast(client);
+  if (error) throw new Error(error.message);
+
+  const today = new Date();
+  return forecastIngredientDemandFromMenus(
+    (data ?? []).map((row) => {
+      const demandSamples: DailyMenuDemand[] = row.demandSamples.map((sample) => ({
+        date: new Date(sample.date),
+        quantity: Number(sample.quantity),
+      }));
+
+      return {
+        menuId: row.menuId,
+        name: row.name,
+        baseRecipe: row.baseRecipe,
+        optionGroups: row.optionGroups,
+        demandForecast: forecastMenuDemand({
+          demandSamples,
+          daysOff: row.regularDaysOff,
+          signupDate: new Date(row.signedUpAt),
+          today,
+          horizonDays,
+        }),
+      };
+    }),
+  );
 }
 
 export interface ApplyInventoryReplayInput {

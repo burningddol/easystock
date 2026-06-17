@@ -4,6 +4,7 @@ const rpcMocks = vi.hoisted(() => ({
   getCalendarMonth: vi.fn(),
   getTodayDashboard: vi.fn(),
   getDepletionForecast: vi.fn(),
+  getMenuDemandForecast: vi.fn(),
   applyInventoryReplay: vi.fn(),
   applySaleSnapshotRewrite: vi.fn(),
   savePurchase: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock("@/lib/supabase/rpc", () => ({
   getCalendarMonth: rpcMocks.getCalendarMonth,
   getTodayDashboard: rpcMocks.getTodayDashboard,
   getDepletionForecast: rpcMocks.getDepletionForecast,
+  getMenuDemandForecast: rpcMocks.getMenuDemandForecast,
   applyInventoryReplay: rpcMocks.applyInventoryReplay,
   applySaleSnapshotRewrite: rpcMocks.applySaleSnapshotRewrite,
   savePurchase: rpcMocks.savePurchase,
@@ -48,7 +50,11 @@ vi.mock("@/lib/domain/forecast", async () => {
 import { createMenu, removeMenu, updateMenu } from "@/lib/application/menu";
 import { loadTodayDashboard } from "@/lib/application/dashboard";
 import { loadCalendarMonth, withConsecutiveMissingDays } from "@/lib/application/calendar";
-import { applyInventoryReplay, loadDepletionForecast } from "@/lib/application/inventory";
+import {
+  applyInventoryReplay,
+  loadDepletionForecast,
+  loadMenuBasedIngredientDemandForecast,
+} from "@/lib/application/inventory";
 import { submitPurchase } from "@/lib/application/purchase";
 import {
   applySaleSnapshotRewrite,
@@ -354,6 +360,53 @@ describe("application layer", () => {
         stockDeltaTotal: -120,
         avgPriceDeltaTotal: 15.5,
       });
+    });
+
+    it("loadMenuBasedIngredientDemandForecast converts menu demand and options into ingredient demand", async () => {
+      rpcMocks.getMenuDemandForecast.mockResolvedValue({
+        data: [
+          {
+            menuId: "menu-1",
+            name: "과일빙수",
+            price: 12000,
+            isActive: true,
+            baseRecipe: [{ ingredientId: "ice", quantityPerServing: 100 }],
+            optionGroups: [
+              {
+                optionGroupId: "topping",
+                name: "토핑",
+                selectionType: "add_on",
+                isRequired: false,
+                values: [
+                  {
+                    optionValueId: "condensed",
+                    name: "연유",
+                    isDefault: false,
+                    selectionRate: 0.5,
+                    recipe: [{ ingredientId: "condensed", quantityPerSelection: 20 }],
+                  },
+                ],
+              },
+            ],
+            demandSamples: Array.from({ length: 30 }, (_, index) => ({
+              date: `2026-05-${String(index + 1).padStart(2, "0")}`,
+              quantity: 10,
+            })),
+            signedUpAt: "2026-04-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+
+      const result = await loadMenuBasedIngredientDemandForecast({ rpc: {} }, 1);
+
+      expect(result.map((row) => row.ingredientId).sort()).toEqual(["condensed", "ice"]);
+      const ice = result.find((row) => row.ingredientId === "ice")?.dailyPredictions[0]?.amount;
+      const condensed = result.find((row) => row.ingredientId === "condensed")?.dailyPredictions[0]
+        ?.amount;
+      expect(ice).toBeGreaterThan(0);
+      expect(condensed).toBeCloseTo((ice ?? 0) * 0.1);
     });
   });
 
