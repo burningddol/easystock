@@ -77,6 +77,25 @@ export interface MenuForecastAccuracyView {
   }>;
 }
 
+export interface IngredientForecastAccuracyView {
+  ingredientId: string;
+  name: string;
+  unit: "g" | "ml" | "piece";
+  averageAbsoluteError: number | null;
+  meanAbsolutePercentageError: number | null;
+  bias: "over" | "under" | "balanced" | "insufficient_data";
+  evaluatedDayCount: number;
+  actualTotalAmount: number;
+  predictedTotalAmount: number;
+  dailyResults: Array<{
+    date: Date;
+    actualAmount: number;
+    predictedAmount: number;
+    absoluteError: number;
+    absolutePercentageError: number | null;
+  }>;
+}
+
 export async function loadDepletionForecast(client: RpcClient): Promise<IngredientForecastView[]> {
   const { data, error } = await getDepletionForecast(client);
   if (error) throw new Error(error.message);
@@ -270,6 +289,127 @@ export async function loadMenuForecastAccuracyViews(
       const aError = a.meanAbsolutePercentageError;
       const bError = b.meanAbsolutePercentageError;
       return bError - aError;
+    });
+}
+
+export async function loadIngredientForecastAccuracyViews(
+  client: RpcClient,
+  backtestDays: number = MENU_FORECAST_BACKTEST_DAYS,
+): Promise<IngredientForecastAccuracyView[]> {
+  const [menuResult, ingredientResult] = await Promise.all([
+    getMenuDemandForecast(client),
+    getDepletionForecast(client),
+  ]);
+  if (menuResult.error) throw new Error(menuResult.error.message);
+  if (ingredientResult.error) throw new Error(ingredientResult.error.message);
+
+  const menus = menuResult.data ?? [];
+  const ingredients = ingredientResult.data ?? [];
+  const actualByIngredient = new Map(
+    ingredients.map((row) => [
+      row.ingredientId,
+      new Map(
+        row.consumptionSamples.map((sample) => [
+          dateKey(startOfDay(new Date(sample.date))),
+          Number(sample.amount),
+        ]),
+      ),
+    ]),
+  );
+  const latestActualDate =
+    ingredients
+      .flatMap((row) => row.consumptionSamples.map((sample) => startOfDay(new Date(sample.date))))
+      .sort((a, b) => a.getTime() - b.getTime())
+      .at(-1) ?? startOfDay(new Date());
+  const targetDates = Array.from({ length: backtestDays }, (_, index) =>
+    addDays(latestActualDate, index - backtestDays + 1),
+  );
+
+  const predictedByIngredient = new Map<string, Map<string, number>>();
+  for (const targetDate of targetDates) {
+    const trainUntil = addDays(targetDate, -1);
+    const predicted = forecastIngredientDemandFromMenus(
+      menus.map((row) => {
+        const demandSamples: DailyMenuDemand[] = row.demandSamples
+          .map((sample) => ({
+            date: startOfDay(new Date(sample.date)),
+            quantity: Number(sample.quantity),
+          }))
+          .filter((sample) => sample.date.getTime() <= trainUntil.getTime());
+
+        return {
+          menuId: row.menuId,
+          name: row.name,
+          baseRecipe: row.baseRecipe,
+          optionGroups: row.optionGroups,
+          demandForecast: forecastMenuDemand({
+            demandSamples,
+            daysOff: row.regularDaysOff,
+            signupDate: new Date(row.signedUpAt),
+            today: trainUntil,
+            horizonDays: 1,
+          }),
+        };
+      }),
+    );
+
+    for (const ingredient of predicted) {
+      const amount = ingredient.dailyPredictions[0]?.amount ?? 0;
+      const daily = predictedByIngredient.get(ingredient.ingredientId) ?? new Map<string, number>();
+      daily.set(dateKey(targetDate), amount);
+      predictedByIngredient.set(ingredient.ingredientId, daily);
+    }
+  }
+
+  return ingredients
+    .map((ingredient) => {
+      const actualDaily =
+        actualByIngredient.get(ingredient.ingredientId) ?? new Map<string, number>();
+      const predictedDaily =
+        predictedByIngredient.get(ingredient.ingredientId) ?? new Map<string, number>();
+      const dailyResults = targetDates.map((date) => {
+        const key = dateKey(date);
+        const actualAmount = actualDaily.get(key) ?? 0;
+        const predictedAmount = predictedDaily.get(key) ?? 0;
+        const absoluteError = Math.abs(predictedAmount - actualAmount);
+        return {
+          date,
+          actualAmount,
+          predictedAmount,
+          absoluteError,
+          absolutePercentageError:
+            actualAmount > 0 ? absoluteError / Math.max(1, actualAmount) : null,
+        };
+      });
+      const evaluated = dailyResults.filter((result) => result.actualAmount > 0);
+      const actualTotalAmount = sumBy(dailyResults, (result) => result.actualAmount);
+      const predictedTotalAmount = sumBy(dailyResults, (result) => result.predictedAmount);
+      const averageAbsoluteError =
+        evaluated.length > 0
+          ? sumBy(evaluated, (result) => result.absoluteError) / evaluated.length
+          : null;
+      const meanAbsolutePercentageError =
+        evaluated.length > 0
+          ? sumBy(evaluated, (result) => result.absolutePercentageError ?? 0) / evaluated.length
+          : null;
+
+      return {
+        ingredientId: ingredient.ingredientId,
+        name: ingredient.name,
+        unit: ingredient.unit,
+        averageAbsoluteError,
+        meanAbsolutePercentageError,
+        bias: classifyForecastBias(actualTotalAmount, predictedTotalAmount, evaluated.length),
+        evaluatedDayCount: evaluated.length,
+        actualTotalAmount,
+        predictedTotalAmount,
+        dailyResults,
+      };
+    })
+    .sort((a, b) => {
+      if (a.meanAbsolutePercentageError === null) return 1;
+      if (b.meanAbsolutePercentageError === null) return -1;
+      return b.meanAbsolutePercentageError - a.meanAbsolutePercentageError;
     });
 }
 
