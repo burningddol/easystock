@@ -4,6 +4,8 @@
 -- menu demand forecast RPC. The client combines these with menu demand
 -- predictions to produce ingredient demand forecasts.
 
+drop function if exists public.get_menu_demand_forecast();
+
 create or replace function public.get_menu_demand_forecast()
 returns table (
   menu_id uuid,
