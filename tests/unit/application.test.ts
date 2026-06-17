@@ -53,6 +53,7 @@ import { loadCalendarMonth, withConsecutiveMissingDays } from "@/lib/application
 import {
   applyInventoryReplay,
   loadDepletionForecast,
+  loadMenuForecastAccuracyViews,
   loadMenuDemandForecastViews,
   loadMenuBasedIngredientDemandForecast,
 } from "@/lib/application/inventory";
@@ -517,6 +518,38 @@ describe("application layer", () => {
         "large",
         "regular",
       ]);
+    });
+
+    it("loadMenuForecastAccuracyViews backtests predicted demand against actual sales", async () => {
+      rpcMocks.getMenuDemandForecast.mockResolvedValue({
+        data: [
+          {
+            menuId: "menu-1",
+            name: "과일빙수",
+            price: 12000,
+            isActive: true,
+            baseRecipe: [],
+            optionGroups: [],
+            demandSamples: Array.from({ length: 30 }, (_, index) => ({
+              date: `2026-05-${String(index + 1).padStart(2, "0")}`,
+              quantity: 10,
+            })),
+            signedUpAt: "2026-04-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+
+      const [result] = await loadMenuForecastAccuracyViews({ rpc: {} }, 7);
+
+      expect(result?.menuId).toBe("menu-1");
+      expect(result?.dailyResults).toHaveLength(7);
+      expect(result?.evaluatedDayCount).toBe(7);
+      expect(result?.actualTotalQuantity).toBe(70);
+      expect(result?.predictedTotalQuantity).toBeGreaterThan(0);
+      expect(result?.meanAbsolutePercentageError).not.toBeNull();
+      expect(result?.bias).not.toBe("insufficient_data");
     });
   });
 

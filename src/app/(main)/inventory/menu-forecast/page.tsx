@@ -15,9 +15,14 @@ export default function MenuForecastPage(): React.ReactElement {
       <PageHeader
         title="메뉴 수요 예측"
         action={
-          <Link href="/inventory" className={SECONDARY_BUTTON_CLASSES}>
-            재료 예측
-          </Link>
+          <div className="flex gap-stack-tight">
+            <Link href="/inventory/forecast-accuracy" className={SECONDARY_BUTTON_CLASSES}>
+              정확도
+            </Link>
+            <Link href="/inventory" className={SECONDARY_BUTTON_CLASSES}>
+              재료 예측
+            </Link>
+          </div>
         }
       />
 
