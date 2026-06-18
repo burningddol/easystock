@@ -284,6 +284,7 @@ describe("application layer", () => {
           leadTimeVendorName: "신선상회",
           isDefaultLeadTime: false,
           safetyBufferDays: 2,
+          purchaseCoverageDays: 7,
           expectedDepletionDate: new Date("2026-06-10T00:00:00.000Z"),
           status: "caution",
           trend: "rising",
@@ -317,6 +318,7 @@ describe("application layer", () => {
             leadTimeVendorName: "얼음상회",
             isDefaultLeadTime: false,
             safetyBufferDays: 1,
+            purchaseCoverageDays: 14,
             consumptionSamples: [{ date: "2026-06-01", amount: 1 }],
             signedUpAt: "2026-05-01T00:00:00.000Z",
             regularDaysOff: [],
@@ -356,6 +358,7 @@ describe("application layer", () => {
       expect(result?.expectedDepletionDate).toBeInstanceOf(Date);
       expect(result?.status).toBe("critical");
       expect(result?.purchaseRecommendation?.isOrderRecommended).toBe(true);
+      expect(result?.purchaseRecommendation?.targetCoverageDays).toBe(14);
       expect(result?.purchaseRecommendation?.recommendedOrderQuantity).toBeGreaterThan(0);
     });
 

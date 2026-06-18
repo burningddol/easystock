@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { STORE_TYPE_LABELS } from "@/features/auth/schemas";
 import { LogoutButton } from "@/features/settings/components/LogoutButton";
+import { PurchaseCoverageDaysEditor } from "@/features/settings/components/PurchaseCoverageDaysEditor";
 import { RegularDaysOffEditor } from "@/features/settings/components/RegularDaysOffEditor";
 import { SafetyBufferEditor } from "@/features/settings/components/SafetyBufferEditor";
 import { StoreNameEditor } from "@/features/settings/components/StoreNameEditor";
@@ -24,7 +25,7 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
 
   const { data } = await supabase
     .from("users")
-    .select("store_name, store_type, regular_days_off, safety_buffer_days")
+    .select("store_name, store_type, regular_days_off, safety_buffer_days, purchase_coverage_days")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -33,9 +34,11 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
     store_type: StoreType;
     regular_days_off: Weekday[];
     safety_buffer_days: number;
+    purchase_coverage_days: number;
   } | null;
   const initialDaysOff: Weekday[] = profile?.regular_days_off ?? [];
   const safetyBufferDays = profile?.safety_buffer_days ?? 1;
+  const purchaseCoverageDays = profile?.purchase_coverage_days ?? 7;
   const storeName = profile?.store_name ?? "내 가게";
   const storeType = profile?.store_type ?? "cafe";
 
@@ -84,7 +87,7 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
           </p>
         </header>
 
-        <div className="grid gap-stack-tight md:grid-cols-3">
+        <div className="grid gap-stack-tight md:grid-cols-4">
           <RuleCard
             title="정기휴무"
             body="선택한 요일은 미래 시뮬레이션에서 소비 0으로 보고, 과거 평균 계산에서도 제외합니다."
@@ -97,12 +100,20 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
             title="안전여유일"
             body={`현재 ${safetyBufferDays}일로 설정되어 있습니다. 리드타임 뒤에 추가 버퍼를 더해 위험 단계를 더 보수적으로 잡습니다.`}
           />
+          <RuleCard
+            title="발주 커버일"
+            body={`현재 ${purchaseCoverageDays}일로 설정되어 있습니다. 권장 발주량은 리드타임과 안전여유 뒤에 이 기간만큼 더 팔 수 있게 계산합니다.`}
+          />
         </div>
 
         <RegularDaysOffEditor initialDaysOff={initialDaysOff} />
 
         <div className="grid gap-stack-tight border-t border-border pt-stack">
           <SafetyBufferEditor initialSafetyBufferDays={safetyBufferDays} userId={user.id} />
+          <PurchaseCoverageDaysEditor
+            initialPurchaseCoverageDays={purchaseCoverageDays}
+            userId={user.id}
+          />
           <SettingRow
             label="리드타임 기준"
             value={`각 재료는 구매 이력에서 가장 자주 연결된 거래처 리드타임을 따로 사용합니다. 거래처가 아직 없거나 구매 이력이 없으면 기본 1일로 계산합니다.`}
@@ -110,6 +121,10 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
           <SettingRow
             label="위험 단계 계산"
             value={`소진 예상일까지 남은 일수에서 거래처 리드타임과 안전여유 ${safetyBufferDays}일을 함께 빼서 safe / caution / order_needed / critical 단계를 정합니다.`}
+          />
+          <SettingRow
+            label="권장 발주량 계산"
+            value={`예상 수요 기준으로 리드타임과 안전여유를 버틴 뒤 ${purchaseCoverageDays}일치 운영분까지 채우도록 부족 수량을 추천합니다.`}
           />
           <VendorLeadTimeManager />
         </div>

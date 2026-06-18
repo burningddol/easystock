@@ -21,6 +21,7 @@ export default function InventoryOrdersPage(): React.ReactElement {
     (item) => item.purchaseRecommendation?.isOrderRecommended,
   );
   const groups = groupByVendor(recommendedItems);
+  const coverageDays = recommendedItems[0]?.purchaseRecommendation?.targetCoverageDays ?? 7;
 
   return (
     <section className="flex flex-col gap-section">
@@ -40,7 +41,7 @@ export default function InventoryOrdersPage(): React.ReactElement {
 
       <section className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
         <p className="text-body text-ink-1">
-          리드타임, 안전여유, 7일 운영분 기준으로 지금 사야 할 재료만 모았습니다.
+          리드타임, 안전여유, {coverageDays}일 운영분 기준으로 지금 사야 할 재료만 모았습니다.
         </p>
         <p className="mt-1 text-caption text-ink-3">
           거래처가 같은 재료는 한 번에 매입 등록으로 넘길 수 있습니다.

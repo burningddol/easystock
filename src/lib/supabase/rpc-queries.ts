@@ -10,6 +10,7 @@ export interface DepletionForecastRow {
   leadTimeVendorName: string | null;
   isDefaultLeadTime: boolean;
   safetyBufferDays: number;
+  purchaseCoverageDays: number;
   consumptionSamples: Array<{ date: string; amount: number }>;
   signedUpAt: string;
   regularDaysOff: ReadonlyArray<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
@@ -49,6 +50,7 @@ interface DepletionForecastRawRow {
   lead_time_vendor_name: string | null;
   is_default_lead_time: boolean;
   safety_buffer_days?: number | null;
+  purchase_coverage_days?: number | null;
   consumption_samples: Array<{ date: string; amount: number }>;
   signed_up_at: string;
   regular_days_off: Array<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
@@ -311,6 +313,11 @@ export async function getDepletionForecast(
         typeof row.safety_buffer_days === "number" && Number.isFinite(row.safety_buffer_days)
           ? row.safety_buffer_days
           : 1,
+      purchaseCoverageDays:
+        typeof row.purchase_coverage_days === "number" &&
+        Number.isFinite(row.purchase_coverage_days)
+          ? row.purchase_coverage_days
+          : 7,
       consumptionSamples: row.consumption_samples ?? [],
       signedUpAt: row.signed_up_at,
       regularDaysOff: row.regular_days_off ?? [],
