@@ -28,6 +28,11 @@ interface UpdateSafetyBufferDaysInput {
   safetyBufferDays: number;
 }
 
+interface UpdatePurchaseCoverageDaysInput {
+  userId: string;
+  purchaseCoverageDays: number;
+}
+
 export async function invalidateSettingsRelatedQueries(queryClient: QueryClient): Promise<void> {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: todayDashboardQueryKey }),
@@ -78,6 +83,22 @@ async function updateSafetyBufferDays(input: UpdateSafetyBufferDaysInput): Promi
   return data.safety_buffer_days;
 }
 
+async function updatePurchaseCoverageDays(input: UpdatePurchaseCoverageDaysInput): Promise<number> {
+  const supabase = createClient() as unknown as SupabaseClient<Database>;
+  const { data, error } = await supabase
+    .from("users")
+    .update({ purchase_coverage_days: input.purchaseCoverageDays })
+    .eq("id", input.userId)
+    .select("purchase_coverage_days")
+    .single();
+
+  if (error) throw new Error(error.message);
+  if (typeof data?.purchase_coverage_days !== "number") {
+    throw new Error("발주 커버일 저장 결과가 비어 있습니다.");
+  }
+  return data.purchase_coverage_days;
+}
+
 export function useUpdateStoreName(): UseMutationResult<string, Error, UpdateStoreNameInput> {
   const queryClient = useQueryClient();
   return useMutation({
@@ -110,6 +131,20 @@ export function useUpdateSafetyBufferDays(): UseMutationResult<
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateSafetyBufferDays,
+    onSuccess: async () => {
+      await invalidateSettingsRelatedQueries(queryClient);
+    },
+  });
+}
+
+export function useUpdatePurchaseCoverageDays(): UseMutationResult<
+  number,
+  Error,
+  UpdatePurchaseCoverageDaysInput
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updatePurchaseCoverageDays,
     onSuccess: async () => {
       await invalidateSettingsRelatedQueries(queryClient);
     },

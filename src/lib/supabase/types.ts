@@ -612,6 +612,7 @@ export type Database = {
           email: string
           id: string
           permanent_delete_at: string | null
+          purchase_coverage_days: number
           regular_days_off: Database["public"]["Enums"]["weekday"][]
           safety_buffer_days: number
           signed_up_at: string
@@ -626,6 +627,7 @@ export type Database = {
           email: string
           id: string
           permanent_delete_at?: string | null
+          purchase_coverage_days?: number
           regular_days_off?: Database["public"]["Enums"]["weekday"][]
           safety_buffer_days?: number
           signed_up_at?: string
@@ -640,6 +642,7 @@ export type Database = {
           email?: string
           id?: string
           permanent_delete_at?: string | null
+          purchase_coverage_days?: number
           regular_days_off?: Database["public"]["Enums"]["weekday"][]
           safety_buffer_days?: number
           signed_up_at?: string
@@ -760,6 +763,7 @@ export type Database = {
           lead_time_vendor_id: string | null
           lead_time_vendor_name: string | null
           name: string
+          purchase_coverage_days: number
           regular_days_off: Database["public"]["Enums"]["weekday"][]
           safety_buffer_days: number
           signed_up_at: string
