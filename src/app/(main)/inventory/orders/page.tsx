@@ -32,6 +32,9 @@ export default function InventoryOrdersPage(): React.ReactElement {
         title="오늘 주문할 것"
         action={
           <div className="flex gap-stack-tight">
+            <Link href="/inventory/orders/report" className={SECONDARY_BUTTON_CLASSES}>
+              이력
+            </Link>
             <Link href="/inventory" className={SECONDARY_BUTTON_CLASSES}>
               재료 예측
             </Link>

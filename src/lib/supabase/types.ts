@@ -784,6 +784,10 @@ export type Database = {
           signed_up_at: string
         }[]
       }
+      get_order_recommendation_report: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       get_today_dashboard: { Args: never; Returns: Json }
       request_withdrawal: {
         Args: never
