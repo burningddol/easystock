@@ -190,6 +190,9 @@ function buildPurchasePrefillHref(item: IngredientForecastView): string {
     ingredientId: item.ingredientId,
     quantity: String(quantity),
   });
+  if (item.leadTimeVendorId) {
+    params.set("vendorId", item.leadTimeVendorId);
+  }
   return `/purchase?${params.toString()}`;
 }
 

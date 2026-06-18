@@ -30,6 +30,7 @@ export interface IngredientForecastView extends ForecastResult {
   unit: "g" | "ml" | "piece";
   currentStock: number;
   leadTimeDays: number;
+  leadTimeVendorId: string | null;
   leadTimeVendorName: string | null;
   isDefaultLeadTime: boolean;
   safetyBufferDays: number;
@@ -125,6 +126,7 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       unit: row.unit,
       currentStock: row.currentStock,
       leadTimeDays: row.leadTimeDays,
+      leadTimeVendorId: row.leadTimeVendorId,
       leadTimeVendorName: row.leadTimeVendorName,
       isDefaultLeadTime: row.isDefaultLeadTime,
       safetyBufferDays,
