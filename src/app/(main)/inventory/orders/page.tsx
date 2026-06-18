@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
 import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
 import { useDepletionForecast } from "@/features/inventory/hooks/useDepletionForecast";
+import { useOrderRecommendationSnapshot } from "@/features/inventory/hooks/useOrderRecommendationSnapshot";
 import { daysUntilDate, formatDateKoFromIso, formatNumber, localIsoDate } from "@/lib/utils/format";
 import type { IngredientForecastView } from "@/lib/application/inventory";
 
@@ -69,12 +72,13 @@ export default function InventoryOrdersPage(): React.ReactElement {
                 <h2 className="text-title-md text-ink-1">{group.vendorName}</h2>
                 <p className="text-caption text-ink-3">{group.items.length}개 재료 발주 권장</p>
               </div>
-              <Link
-                href={buildPurchaseHref(group.items, group.vendorId)}
-                className="halo-cta self-start rounded-2xl bg-brand-primary px-4 py-3 text-label font-semibold text-white shadow-card transition hover:-translate-y-0.5 sm:self-auto"
+              <OrderPurchaseButton
+                items={group.items}
+                vendorId={group.vendorId}
+                className="halo-cta self-start rounded-2xl bg-brand-primary px-4 py-3 text-label font-semibold text-white shadow-card transition hover:-translate-y-0.5 disabled:opacity-60 sm:self-auto"
               >
                 이 거래처 매입 등록
-              </Link>
+              </OrderPurchaseButton>
             </header>
 
             <ul className="flex flex-col gap-stack-tight">
@@ -99,12 +103,13 @@ export default function InventoryOrdersPage(): React.ReactElement {
                         )}
                         {item.unit}
                       </span>
-                      <Link
-                        href={buildPurchaseHref([item], item.leadTimeVendorId)}
-                        className="rounded-xl border border-border bg-card px-3 py-2 text-label text-ink-2 shadow-soft hover:bg-card-hover"
+                      <OrderPurchaseButton
+                        items={[item]}
+                        vendorId={item.leadTimeVendorId}
+                        className="rounded-xl border border-border bg-card px-3 py-2 text-label text-ink-2 shadow-soft hover:bg-card-hover disabled:opacity-60"
                       >
                         개별 등록
-                      </Link>
+                      </OrderPurchaseButton>
                     </div>
                   </div>
                 </li>
@@ -114,6 +119,50 @@ export default function InventoryOrdersPage(): React.ReactElement {
         ))}
       </div>
     </section>
+  );
+}
+
+function OrderPurchaseButton({
+  items,
+  vendorId,
+  className,
+  children,
+}: {
+  items: readonly IngredientForecastView[];
+  vendorId: string | null;
+  className: string;
+  children: React.ReactNode;
+}): React.ReactElement {
+  const router = useRouter();
+  const snapshot = useOrderRecommendationSnapshot();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  async function handleClick(): Promise<void> {
+    setErrorMessage(null);
+    try {
+      const snapshotId = await snapshot.mutateAsync({ vendorId, items });
+      router.push(buildPurchaseHref(items, vendorId, snapshotId));
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "발주 추천 저장에 실패했어요.");
+    }
+  }
+
+  return (
+    <span className="flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={() => void handleClick()}
+        disabled={snapshot.isPending}
+        className={className}
+      >
+        {snapshot.isPending ? "저장 중..." : children}
+      </button>
+      {errorMessage && (
+        <span role="alert" className="text-caption text-red-deep">
+          {errorMessage}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -143,9 +192,11 @@ function groupByVendor(items: readonly IngredientForecastView[]): OrderGroup[] {
 function buildPurchaseHref(
   items: readonly IngredientForecastView[],
   vendorId: string | null,
+  snapshotId?: string,
 ): string {
   const params = new URLSearchParams();
   if (vendorId) params.set("vendorId", vendorId);
+  if (snapshotId) params.set("snapshotId", snapshotId);
   for (const item of items) {
     const quantity = Math.ceil(item.purchaseRecommendation?.recommendedOrderQuantity ?? 0);
     if (quantity > 0) params.append("item", `${item.ingredientId}:${quantity}`);

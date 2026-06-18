@@ -4,7 +4,10 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { submitPurchase, type SubmitPurchaseInput } from "@/lib/application/purchase";
-import type { SavePurchaseResult } from "@/lib/supabase/rpc";
+import {
+  linkOrderRecommendationSnapshotPurchase,
+  type SavePurchaseResult,
+} from "@/lib/supabase/rpc";
 import { menuListQueryKey } from "@/features/menu/hooks/useMenus";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
 import { todayDashboardQueryKey } from "@/features/dashboard/hooks/useTodayDashboard";
@@ -13,6 +16,7 @@ import type { SavePurchaseInput } from "../schemas";
 
 interface SubmitVariables extends SavePurchaseInput {
   isFirstPurchase: boolean;
+  recommendationSnapshotId?: string | null;
 }
 
 async function submit(input: SubmitVariables): Promise<SavePurchaseResult> {
@@ -22,7 +26,14 @@ async function submit(input: SubmitVariables): Promise<SavePurchaseResult> {
     purchasedAt: input.purchasedAt,
     items: input.items,
   };
-  return submitPurchase(supabase, payload);
+  const result = await submitPurchase(supabase, payload);
+  if (input.recommendationSnapshotId) {
+    await linkOrderRecommendationSnapshotPurchase(supabase, {
+      snapshotId: input.recommendationSnapshotId,
+      purchaseOrderId: result.purchaseOrderId,
+    });
+  }
+  return result;
 }
 
 export function usePurchaseSubmit(): UseMutationResult<SavePurchaseResult, Error, SubmitVariables> {

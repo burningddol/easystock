@@ -24,6 +24,7 @@ export function PurchaseForm(): React.ReactElement {
   const searchParams = useSearchParams();
   const prefilledItems = getPrefilledPurchaseItems(searchParams);
   const prefilledVendorId = searchParams.get("vendorId") ?? "";
+  const recommendationSnapshotId = searchParams.get("snapshotId");
   const { data: vendors } = useVendors();
   const { data: ingredients } = useIngredients();
   const { data: isFirstPurchase } = useIsFirstPurchase();
@@ -54,7 +55,7 @@ export function PurchaseForm(): React.ReactElement {
   function onSubmit(values: SavePurchaseInput): void {
     setSavedAlerts(null);
     submit.mutate(
-      { ...values, isFirstPurchase: isFirstPurchase ?? false },
+      { ...values, isFirstPurchase: isFirstPurchase ?? false, recommendationSnapshotId },
       {
         onSuccess: (result) => {
           setSavedAlerts(result.priceChangeAlerts);
