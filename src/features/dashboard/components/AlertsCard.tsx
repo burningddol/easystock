@@ -112,7 +112,7 @@ function buildAlerts(
       tone: isCritical ? "red" : "amber",
       title: isCritical ? `${item.name} 곧 소진 — 즉시 발주` : `${item.name} 발주 권장`,
       body: depletionBody(item),
-      href: "/inventory",
+      href: "/inventory/orders",
     });
   }
 
@@ -150,7 +150,12 @@ function depletionBody(item: IngredientForecastView): string {
     : item.leadTimeVendorName
       ? `${item.leadTimeVendorName} 기준`
       : "거래처 이력 기준";
-  return `${prefix} · 리드타임 ${item.leadTimeDays}일 (${leadTimeSource})`;
+  const recommendation = item.purchaseRecommendation?.isOrderRecommended
+    ? ` · 권장 ${Math.ceil(item.purchaseRecommendation.recommendedOrderQuantity).toLocaleString(
+        "ko-KR",
+      )}${item.unit} (${item.purchaseRecommendation.targetCoverageDays}일 운영분)`
+    : "";
+  return `${prefix} · 리드타임 ${item.leadTimeDays}일 (${leadTimeSource})${recommendation}`;
 }
 
 function expiryLabel(days: number): string {

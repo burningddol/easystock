@@ -10,8 +10,9 @@ import { AlertsCard } from "@/features/dashboard/components/AlertsCard";
 import { MarginTop3Card } from "@/features/dashboard/components/MarginTop3Card";
 import { MissingSaleBadge } from "@/features/dashboard/components/MissingSaleBadge";
 import { trackEvent } from "@/lib/analytics/ga4";
-import { formatTodayKo } from "@/lib/utils/format";
+import { formatNumber, formatTodayKo } from "@/lib/utils/format";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
+import type { IngredientForecastView } from "@/lib/application/inventory";
 
 /**
  * 홈 (오늘) 대시보드 — patterns.md "홈" 위계 순서대로 렌더.
@@ -55,6 +56,9 @@ export default function TodayPage(): React.ReactElement {
   }
 
   const { data } = dashboard;
+  const orderItems = (forecast.data ?? []).filter(
+    (item) => item.purchaseRecommendation?.isOrderRecommended,
+  );
 
   return (
     <section className="flex flex-col gap-section pb-12">
@@ -94,6 +98,8 @@ export default function TodayPage(): React.ReactElement {
 
       <YesterdayKpiCard yesterday={data.yesterday} weeklyChart={data.weeklyChart} />
 
+      <OrderSummaryCard items={orderItems} isLoading={forecast.isLoading} />
+
       <AlertsCard
         depletionItems={forecast.data ?? []}
         expiryAlerts={data.expiryAlerts}
@@ -107,6 +113,73 @@ export default function TodayPage(): React.ReactElement {
       </nav>
 
       <MarginTop3Card top3={data.top3Menus} lowMargin={data.lowMarginMenu} />
+    </section>
+  );
+}
+
+function OrderSummaryCard({
+  items,
+  isLoading,
+}: {
+  items: readonly IngredientForecastView[];
+  isLoading: boolean;
+}): React.ReactElement {
+  const urgentCount = items.filter((item) => item.status === "critical").length;
+  const coverageDays = items[0]?.purchaseRecommendation?.targetCoverageDays ?? 7;
+  const topItems = items.slice(0, 3);
+
+  return (
+    <section className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-micro uppercase tracking-[0.14em] text-blue-deep">Order</p>
+          <h2 className="mt-1 text-title-md text-ink-1">
+            {isLoading
+              ? "발주 추천 확인 중"
+              : items.length > 0
+                ? `오늘 주문할 재료 ${items.length}개`
+                : "오늘 바로 주문할 재료 없음"}
+          </h2>
+          <p className="mt-1 text-caption text-ink-3">
+            리드타임 + 안전여유 + {coverageDays}일 운영분 기준으로 계산합니다.
+          </p>
+        </div>
+        <Link
+          href="/inventory/orders"
+          className="halo-cta self-start rounded-2xl bg-brand-primary px-4 py-3 text-label font-semibold text-white shadow-card transition hover:-translate-y-0.5 sm:self-auto"
+        >
+          발주 추천 보기
+        </Link>
+      </div>
+
+      {items.length > 0 && (
+        <div className="mt-stack flex flex-col gap-2">
+          {urgentCount > 0 && (
+            <p className="rounded-2xl bg-red-soft px-3 py-2 text-caption text-red-deep">
+              긴급 발주 {urgentCount}개가 있습니다.
+            </p>
+          )}
+          <ul className="flex flex-wrap gap-2">
+            {topItems.map((item) => (
+              <li
+                key={item.ingredientId}
+                className="rounded-full bg-blue-soft px-3 py-1.5 text-caption text-blue-deep"
+              >
+                {item.name}{" "}
+                {formatNumber(
+                  Math.ceil(item.purchaseRecommendation?.recommendedOrderQuantity ?? 0),
+                )}
+                {item.unit}
+              </li>
+            ))}
+            {items.length > topItems.length && (
+              <li className="rounded-full bg-bg px-3 py-1.5 text-caption text-ink-3">
+                +{items.length - topItems.length}개
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
