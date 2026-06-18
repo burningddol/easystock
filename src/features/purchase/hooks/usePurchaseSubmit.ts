@@ -7,6 +7,7 @@ import { submitPurchase, type SubmitPurchaseInput } from "@/lib/application/purc
 import type { SavePurchaseResult } from "@/lib/supabase/rpc";
 import { menuListQueryKey } from "@/features/menu/hooks/useMenus";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
+import { todayDashboardQueryKey } from "@/features/dashboard/hooks/useTodayDashboard";
 import { ingredientListQueryKey } from "./useIngredients";
 import type { SavePurchaseInput } from "../schemas";
 
@@ -43,6 +44,7 @@ export function usePurchaseSubmit(): UseMutationResult<SavePurchaseResult, Error
       void queryClient.invalidateQueries({ queryKey: ingredientListQueryKey });
       void queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey });
       void queryClient.invalidateQueries({ queryKey: menuListQueryKey });
+      void queryClient.invalidateQueries({ queryKey: todayDashboardQueryKey });
     },
   });
 }
