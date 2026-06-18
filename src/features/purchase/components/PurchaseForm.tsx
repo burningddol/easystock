@@ -22,7 +22,8 @@ const todayString = (): string => new Date().toISOString().slice(0, 10);
 export function PurchaseForm(): React.ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const prefilledItem = getPrefilledPurchaseItem(searchParams);
+  const prefilledItems = getPrefilledPurchaseItems(searchParams);
+  const prefilledVendorId = searchParams.get("vendorId") ?? "";
   const { data: vendors } = useVendors();
   const { data: ingredients } = useIngredients();
   const { data: isFirstPurchase } = useIsFirstPurchase();
@@ -41,9 +42,10 @@ export function PurchaseForm(): React.ReactElement {
   } = useForm<SavePurchaseInput>({
     resolver: zodResolver(savePurchaseSchema),
     defaultValues: {
-      vendorId: "",
+      vendorId: prefilledVendorId,
       purchasedAt: todayString(),
-      items: [prefilledItem ?? { ingredientId: "", quantity: 0, amount: 0 }],
+      items:
+        prefilledItems.length > 0 ? prefilledItems : [{ ingredientId: "", quantity: 0, amount: 0 }],
     },
   });
 
@@ -125,9 +127,10 @@ export function PurchaseForm(): React.ReactElement {
           </button>
         </header>
 
-        {prefilledItem && (
+        {prefilledItems.length > 0 && (
           <p className="rounded-2xl bg-blue-soft px-3 py-2 text-caption text-blue-deep">
-            재고 예측의 권장 발주 수량을 첫 항목에 채웠어요. 실제 거래 금액만 입력하면 됩니다.
+            재고 예측의 권장 발주 항목 {prefilledItems.length}개를 채웠어요. 실제 거래 금액만
+            입력하면 됩니다.
           </p>
         )}
 
@@ -168,18 +171,30 @@ export function PurchaseForm(): React.ReactElement {
   );
 }
 
-function getPrefilledPurchaseItem(
+function getPrefilledPurchaseItems(
   searchParams: ReturnType<typeof useSearchParams>,
-): SavePurchaseInput["items"][number] | null {
+): SavePurchaseInput["items"] {
+  const items = searchParams.getAll("item").flatMap(parsePrefilledItem);
+  if (items.length > 0) return items;
+
   const ingredientId = searchParams.get("ingredientId");
   const quantity = Number(searchParams.get("quantity"));
-  if (!ingredientId || !Number.isFinite(quantity) || quantity <= 0) return null;
+  if (!ingredientId || !Number.isFinite(quantity) || quantity <= 0) return [];
 
-  return {
-    ingredientId,
-    quantity,
-    amount: 0,
-  };
+  return [
+    {
+      ingredientId,
+      quantity,
+      amount: 0,
+    },
+  ];
+}
+
+function parsePrefilledItem(raw: string): SavePurchaseInput["items"] {
+  const [ingredientId, quantityRaw] = raw.split(":");
+  const quantity = Number(quantityRaw);
+  if (!ingredientId || !Number.isFinite(quantity) || quantity <= 0) return [];
+  return [{ ingredientId, quantity, amount: 0 }];
 }
 
 interface VendorPickerProps {

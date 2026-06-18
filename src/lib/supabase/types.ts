@@ -757,6 +757,7 @@ export type Database = {
           ingredient_id: string
           is_default_lead_time: boolean
           lead_time_days: number
+          lead_time_vendor_id: string | null
           lead_time_vendor_name: string | null
           name: string
           regular_days_off: Database["public"]["Enums"]["weekday"][]
