@@ -234,6 +234,21 @@ interface SavePurchaseArgs {
   items: ReadonlyArray<{ ingredientId: string; quantity: number; amount: number }>;
 }
 
+export interface SaveOrderRecommendationSnapshotInput {
+  vendorId?: string | null;
+  source: string;
+  items: ReadonlyArray<{
+    ingredientId: string;
+    recommendedQuantity: number;
+    currentStock: number;
+    expectedDepletionDate?: string | null;
+    orderByDate?: string | null;
+    leadTimeDays: number;
+    safetyBufferDays: number;
+    purchaseCoverageDays: number;
+  }>;
+}
+
 export interface PriceChangeAlert {
   ingredientId: string;
   ingredientName: string;
@@ -481,4 +496,34 @@ export function savePurchase(
       })),
     }),
   );
+}
+
+export function saveOrderRecommendationSnapshot(
+  client: ClientLike,
+  args: SaveOrderRecommendationSnapshotInput,
+): Promise<RpcResult<Array<{ snapshot_id: string }>>> {
+  return callRpc(client, "save_order_recommendation_snapshot", {
+    p_vendor_id: args.vendorId ?? null,
+    p_source: args.source,
+    p_items: args.items.map((item) => ({
+      ingredient_id: item.ingredientId,
+      recommended_quantity: item.recommendedQuantity,
+      current_stock: item.currentStock,
+      expected_depletion_date: item.expectedDepletionDate ?? null,
+      order_by_date: item.orderByDate ?? null,
+      lead_time_days: item.leadTimeDays,
+      safety_buffer_days: item.safetyBufferDays,
+      purchase_coverage_days: item.purchaseCoverageDays,
+    })),
+  });
+}
+
+export function linkOrderRecommendationSnapshotPurchase(
+  client: ClientLike,
+  args: { snapshotId: string; purchaseOrderId: string },
+): Promise<RpcResult<Array<{ snapshot_id: string; purchase_order_id: string }>>> {
+  return callRpc(client, "link_order_recommendation_snapshot_purchase", {
+    p_snapshot_id: args.snapshotId,
+    p_purchase_order_id: args.purchaseOrderId,
+  });
 }
