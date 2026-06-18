@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Field } from "@/components/ui/field";
@@ -20,6 +21,8 @@ const todayString = (): string => new Date().toISOString().slice(0, 10);
 
 export function PurchaseForm(): React.ReactElement {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefilledItem = getPrefilledPurchaseItem(searchParams);
   const { data: vendors } = useVendors();
   const { data: ingredients } = useIngredients();
   const { data: isFirstPurchase } = useIsFirstPurchase();
@@ -40,7 +43,7 @@ export function PurchaseForm(): React.ReactElement {
     defaultValues: {
       vendorId: "",
       purchasedAt: todayString(),
-      items: [{ ingredientId: "", quantity: 0, amount: 0 }],
+      items: [prefilledItem ?? { ingredientId: "", quantity: 0, amount: 0 }],
     },
   });
 
@@ -122,6 +125,12 @@ export function PurchaseForm(): React.ReactElement {
           </button>
         </header>
 
+        {prefilledItem && (
+          <p className="rounded-2xl bg-blue-soft px-3 py-2 text-caption text-blue-deep">
+            재고 예측의 권장 발주 수량을 첫 항목에 채웠어요. 실제 거래 금액만 입력하면 됩니다.
+          </p>
+        )}
+
         {fields.map((field, idx) => (
           <ItemRow
             key={field.id}
@@ -157,6 +166,20 @@ export function PurchaseForm(): React.ReactElement {
       </PrimaryButton>
     </form>
   );
+}
+
+function getPrefilledPurchaseItem(
+  searchParams: ReturnType<typeof useSearchParams>,
+): SavePurchaseInput["items"][number] | null {
+  const ingredientId = searchParams.get("ingredientId");
+  const quantity = Number(searchParams.get("quantity"));
+  if (!ingredientId || !Number.isFinite(quantity) || quantity <= 0) return null;
+
+  return {
+    ingredientId,
+    quantity,
+    amount: 0,
+  };
 }
 
 interface VendorPickerProps {
