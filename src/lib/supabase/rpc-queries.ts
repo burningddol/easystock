@@ -40,6 +40,35 @@ export interface MenuDemandForecastRow {
   regularDaysOff: ReadonlyArray<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
 }
 
+export interface OrderRecommendationReportData {
+  summary: {
+    snapshotCount: number;
+    convertedCount: number;
+    pendingCount: number;
+  };
+  snapshots: Array<{
+    snapshotId: string;
+    vendorId: string | null;
+    vendorName: string | null;
+    source: string;
+    purchaseOrderId: string | null;
+    purchasedAt: string | null;
+    createdAt: string;
+    items: Array<{
+      ingredientId: string;
+      ingredientName: string;
+      unit: "g" | "ml" | "piece";
+      recommendedQuantity: number;
+      currentStock: number;
+      expectedDepletionDate: string | null;
+      orderByDate: string | null;
+      leadTimeDays: number;
+      safetyBufferDays: number;
+      purchaseCoverageDays: number;
+    }>;
+  }>;
+}
+
 interface DepletionForecastRawRow {
   ingredient_id: string;
   name: string;
@@ -78,6 +107,35 @@ interface MenuDemandForecastRawRow {
   demand_samples: Array<{ date: string; quantity: number }>;
   signed_up_at: string;
   regular_days_off: Array<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
+}
+
+interface OrderRecommendationReportRaw {
+  summary?: {
+    snapshot_count?: number;
+    converted_count?: number;
+    pending_count?: number;
+  };
+  snapshots?: Array<{
+    snapshot_id: string;
+    vendor_id: string | null;
+    vendor_name: string | null;
+    source: string;
+    purchase_order_id: string | null;
+    purchased_at: string | null;
+    created_at: string;
+    items?: Array<{
+      ingredient_id: string;
+      ingredient_name: string;
+      unit: "g" | "ml" | "piece";
+      recommended_quantity: number;
+      current_stock: number;
+      expected_depletion_date: string | null;
+      order_by_date: string | null;
+      lead_time_days: number;
+      safety_buffer_days: number;
+      purchase_coverage_days: number;
+    }>;
+  }>;
 }
 
 export interface CalendarCumulative {
@@ -363,4 +421,43 @@ export async function getMenuDemandForecast(
     })),
     error: null,
   };
+}
+
+export function getOrderRecommendationReport(
+  client: ClientLike,
+  limit = 30,
+): Promise<RpcResult<OrderRecommendationReportData>> {
+  return callRpcMapped<OrderRecommendationReportRaw, OrderRecommendationReportData>(
+    client,
+    "get_order_recommendation_report",
+    { p_limit: limit },
+    (raw) => ({
+      summary: {
+        snapshotCount: Number(raw.summary?.snapshot_count ?? 0),
+        convertedCount: Number(raw.summary?.converted_count ?? 0),
+        pendingCount: Number(raw.summary?.pending_count ?? 0),
+      },
+      snapshots: (raw.snapshots ?? []).map((snapshot) => ({
+        snapshotId: snapshot.snapshot_id,
+        vendorId: snapshot.vendor_id,
+        vendorName: snapshot.vendor_name,
+        source: snapshot.source,
+        purchaseOrderId: snapshot.purchase_order_id,
+        purchasedAt: snapshot.purchased_at,
+        createdAt: snapshot.created_at,
+        items: (snapshot.items ?? []).map((item) => ({
+          ingredientId: item.ingredient_id,
+          ingredientName: item.ingredient_name,
+          unit: item.unit,
+          recommendedQuantity: numeric(item.recommended_quantity),
+          currentStock: numeric(item.current_stock),
+          expectedDepletionDate: item.expected_depletion_date,
+          orderByDate: item.order_by_date,
+          leadTimeDays: Number(item.lead_time_days),
+          safetyBufferDays: Number(item.safety_buffer_days),
+          purchaseCoverageDays: Number(item.purchase_coverage_days),
+        })),
+      })),
+    }),
+  );
 }
