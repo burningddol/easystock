@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
+import { LoadingText } from "@/components/ui/query-state";
 import { PurchaseForm } from "@/features/purchase/components/PurchaseForm";
 
 export default function PurchasePage(): React.ReactElement {
@@ -16,7 +18,9 @@ export default function PurchasePage(): React.ReactElement {
           </Link>
         </div>
       </header>
-      <PurchaseForm />
+      <Suspense fallback={<LoadingText />}>
+        <PurchaseForm />
+      </Suspense>
     </main>
   );
 }

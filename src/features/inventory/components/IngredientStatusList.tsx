@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { daysUntilDate, formatDateKoFromIso, formatNumber, localIsoDate } from "@/lib/utils/format";
 import type { DepletionStatus } from "@/lib/domain/forecast";
@@ -119,17 +120,25 @@ function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactE
         </p>
       )}
       {item.purchaseRecommendation?.isOrderRecommended && (
-        <div className="mt-2 rounded-2xl border border-blue/20 bg-blue-soft px-3 py-2 text-caption text-blue-deep">
-          <span className="font-semibold">
-            권장 발주{" "}
-            {formatNumber(Math.ceil(item.purchaseRecommendation.recommendedOrderQuantity))}
-            {item.unit}
-          </span>
-          <span className="text-blue-deep/70">
-            {" "}
-            · {formatOrderByDate(item.purchaseRecommendation.orderByDate)}까지 · 리드타임+ 안전여유+
-            {item.purchaseRecommendation.targetCoverageDays}일 운영분 기준
-          </span>
+        <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-blue/20 bg-blue-soft px-3 py-2 text-caption text-blue-deep sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <span className="font-semibold">
+              권장 발주{" "}
+              {formatNumber(Math.ceil(item.purchaseRecommendation.recommendedOrderQuantity))}
+              {item.unit}
+            </span>
+            <span className="text-blue-deep/70">
+              {" "}
+              · {formatOrderByDate(item.purchaseRecommendation.orderByDate)}까지 · 리드타임+
+              안전여유+{item.purchaseRecommendation.targetCoverageDays}일 운영분 기준
+            </span>
+          </div>
+          <Link
+            href={buildPurchasePrefillHref(item)}
+            className="self-start rounded-xl bg-blue px-3 py-2 text-label text-white shadow-soft transition hover:-translate-y-0.5 sm:self-auto"
+          >
+            매입 등록
+          </Link>
         </div>
       )}
     </li>
@@ -173,6 +182,15 @@ function formatDepletion(item: IngredientForecastView): string {
 function formatOrderByDate(date: Date | null): string {
   if (!date) return "발주일 미정";
   return formatDateKoFromIso(localIsoDate(date));
+}
+
+function buildPurchasePrefillHref(item: IngredientForecastView): string {
+  const quantity = Math.ceil(item.purchaseRecommendation?.recommendedOrderQuantity ?? 0);
+  const params = new URLSearchParams({
+    ingredientId: item.ingredientId,
+    quantity: String(quantity),
+  });
+  return `/purchase?${params.toString()}`;
 }
 
 function TrendBadge({ trend }: { trend: "rising" | "falling" }): React.ReactElement {
