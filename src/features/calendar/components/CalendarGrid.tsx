@@ -40,7 +40,7 @@ export function CalendarGrid({
   return (
     <div className="glow-panel flex flex-col gap-stack-tight rounded-[28px] border border-border bg-card p-4 shadow-card">
       <WeekdayHeader />
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1.5">
         {Array.from({ length: leadingBlanks }, (_, i) => (
           <BlankCell key={`lead-${i}`} />
         ))}
@@ -76,7 +76,7 @@ function WeekdayHeader(): React.ReactElement {
 }
 
 function BlankCell(): React.ReactElement {
-  return <div className="aspect-square rounded-xl bg-bg" aria-hidden />;
+  return <div className="min-h-20 rounded-2xl bg-bg sm:min-h-24" aria-hidden />;
 }
 
 interface DayCellProps {
@@ -102,7 +102,7 @@ function DayCell({
   const weekday = date.getDay();
   const isInactive = cell.isFuture || cell.isBeforeSignup || cell.isRegularDayOff;
   const intensityPct = computeIntensityPercent(cell.revenue ?? 0, maxRevenue, isInactive);
-  const isStrongMissing = cell.isMissing && cell.consecutiveMissingDays >= 2;
+  const status = getCellStatus(cell, forecast);
 
   return (
     <button
@@ -110,11 +110,11 @@ function DayCell({
       aria-label={`${cell.date} ${cellAriaSummary(cell)}`}
       onClick={() => onSelect(cell)}
       className={cn(
-        "relative aspect-square rounded-md p-1 text-left transition-colors",
-        "shadow-soft",
+        "relative flex min-h-20 flex-col justify-between rounded-2xl p-2 text-left transition-colors sm:min-h-24 sm:p-2.5",
+        "shadow-soft hover:-translate-y-0.5 hover:shadow-card",
         isSelected ? "bg-ink-1 text-bg" : "text-ink-1",
-        isToday && !isSelected && "border border-blue ring-1 ring-blue",
-        !isToday && "border border-transparent",
+        isToday && !isSelected && "border-2 border-blue ring-2 ring-blue/15",
+        !isToday && "border border-white/70",
       )}
       style={
         isSelected
@@ -122,65 +122,71 @@ function DayCell({
           : { backgroundColor: `color-mix(in srgb, var(--ink-1) ${intensityPct}%, var(--card))` }
       }
     >
-      <span
-        className={cn("text-micro tabular-nums", !isSelected && weekdayTone(weekday, isInactive))}
-      >
-        {day}
-      </span>
+      <div className="flex items-start justify-between gap-1">
+        <span
+          className={cn(
+            "text-body font-semibold tabular-nums sm:text-title-md",
+            !isSelected && weekdayTone(weekday, isInactive),
+          )}
+        >
+          {day}
+        </span>
+        <TopBadges cell={cell} />
+      </div>
 
-      {!isSelected && (
-        <BottomLabel cell={cell} forecast={forecast} isStrongMissing={isStrongMissing} />
-      )}
-
-      <DotIndicators cell={cell} />
+      {!isSelected && status && <CellStatusBadge status={status} />}
     </button>
   );
 }
 
-interface BottomLabelProps {
-  cell: EnrichedCalendarCell;
-  forecast: CalendarMenuForecastSummary | null;
-  isStrongMissing: boolean;
+interface CellStatus {
+  label: string;
+  tone: "red" | "blue" | "ink";
 }
 
-function BottomLabel({
-  cell,
-  forecast,
-  isStrongMissing,
-}: BottomLabelProps): React.ReactElement | null {
-  if (isStrongMissing) {
-    return (
-      <span className="absolute bottom-1 left-1 text-[9px] font-semibold text-red-deep">누락</span>
-    );
-  }
+function getCellStatus(
+  cell: EnrichedCalendarCell,
+  forecast: CalendarMenuForecastSummary | null,
+): CellStatus | null {
+  if (cell.isMissing) return { label: "누락", tone: "red" };
   if (cell.isFuture && forecast && forecast.totalRevenue > 0) {
-    return (
-      <span className="absolute bottom-1 left-1 text-[8px] font-semibold text-blue-deep">
-        예상 {formatNumber(Math.round(forecast.totalRevenue / 10000))}
-      </span>
-    );
+    return {
+      label: `예상 ${formatNumber(Math.round(forecast.totalRevenue / 10000))}만`,
+      tone: "blue",
+    };
   }
   if (cell.revenue !== null && cell.revenue > 0) {
-    return (
-      <span className="absolute bottom-1 left-1 text-[8.5px] tabular-nums text-ink-1">
-        {Math.round(cell.revenue / 10000)}
-      </span>
-    );
+    return { label: `${formatNumber(Math.round(cell.revenue / 10000))}만`, tone: "ink" };
   }
   return null;
 }
 
-interface DotIndicatorsProps {
+function CellStatusBadge({ status }: { status: CellStatus }): React.ReactElement {
+  return (
+    <span
+      className={cn(
+        "w-fit rounded-full px-2 py-1 text-[10px] font-semibold leading-none shadow-soft sm:text-micro",
+        status.tone === "red"
+          ? "bg-red-soft text-red-deep"
+          : status.tone === "blue"
+            ? "bg-blue-soft text-blue-deep"
+            : "bg-white/90 text-ink-1",
+      )}
+    >
+      {status.label}
+    </span>
+  );
+}
+
+interface TopBadgesProps {
   cell: EnrichedCalendarCell;
 }
 
-function DotIndicators({ cell }: DotIndicatorsProps): React.ReactElement | null {
-  const hasMissingDot = cell.isMissing && cell.consecutiveMissingDays < 2;
-  if (!cell.hasPurchase && !hasMissingDot) return null;
+function TopBadges({ cell }: TopBadgesProps): React.ReactElement | null {
+  if (!cell.hasPurchase) return null;
   return (
-    <span className="absolute right-1 top-1 flex gap-0.5">
-      {cell.hasPurchase && <span className="h-1 w-1 rounded-full bg-amber" aria-hidden />}
-      {hasMissingDot && <span className="h-1 w-1 rounded-full bg-red" aria-hidden />}
+    <span className="rounded-full bg-amber-soft px-1.5 py-0.5 text-[9px] font-semibold leading-none text-amber-deep shadow-soft">
+      매입
     </span>
   );
 }
