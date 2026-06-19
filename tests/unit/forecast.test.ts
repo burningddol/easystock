@@ -114,7 +114,7 @@ describe("business day usage model", () => {
     const samples: DailyConsumption[] = [
       ...Array.from({ length: 20 }, (_, index) => ({
         date: new Date(2026, 0, 5 + index * 7), // Monday
-        amount: 100,
+        amount: 50,
       })),
       ...Array.from({ length: 20 }, (_, index) => ({
         date: new Date(2026, 0, 6 + index * 7), // Tuesday
@@ -139,6 +139,61 @@ describe("business day usage model", () => {
     expect(model.usageByWeekday.get("TUE")?.toNumber()).toBeLessThan(
       model.usageByDayType.get("weekday")?.toNumber() ?? 0,
     );
+  });
+
+  it("개별요일 confidence는 prior strength 기반으로 천천히 증가한다", () => {
+    const samples: DailyConsumption[] = [
+      ...Array.from({ length: 20 }, (_, index) => ({
+        date: new Date(2026, 0, 5 + index * 7), // Monday
+        amount: 50,
+      })),
+      ...Array.from({ length: 20 }, (_, index) => ({
+        date: new Date(2026, 0, 6 + index * 7), // Tuesday
+        amount: 20,
+      })),
+      ...Array.from({ length: 20 }, (_, index) => ({
+        date: new Date(2026, 0, 7 + index * 7), // Wednesday
+        amount: 20,
+      })),
+      ...Array.from({ length: 20 }, (_, index) => ({
+        date: new Date(2026, 0, 8 + index * 7), // Thursday
+        amount: 20,
+      })),
+    ];
+
+    const model = computeBusinessDayUsageModel(samples, [], new Date("2026-06-01"));
+    const weekday = model.usageByDayType.get("weekday")?.toNumber() ?? 0;
+    const monday = model.usageByWeekday.get("MON")?.toNumber() ?? 0;
+
+    // balanced preset: confidence = 20 / (20 + 12) = 0.625
+    expect(monday).toBeCloseTo(weekday * 0.375 + 50 * 0.625, 5);
+  });
+
+  it("개별요일 표본이 매우 많아도 confidence는 85%를 넘지 않는다", () => {
+    const samples: DailyConsumption[] = [
+      ...Array.from({ length: 120 }, (_, index) => ({
+        date: new Date(2024, 0, 1 + index * 7), // Monday
+        amount: 50,
+      })),
+      ...Array.from({ length: 120 }, (_, index) => ({
+        date: new Date(2024, 0, 2 + index * 7), // Tuesday
+        amount: 20,
+      })),
+      ...Array.from({ length: 120 }, (_, index) => ({
+        date: new Date(2024, 0, 3 + index * 7), // Wednesday
+        amount: 20,
+      })),
+      ...Array.from({ length: 120 }, (_, index) => ({
+        date: new Date(2024, 0, 4 + index * 7), // Thursday
+        amount: 20,
+      })),
+    ];
+
+    const model = computeBusinessDayUsageModel(samples, [], new Date("2026-06-01"));
+    const weekday = model.usageByDayType.get("weekday")?.toNumber() ?? 0;
+    const monday = model.usageByWeekday.get("MON")?.toNumber() ?? 0;
+
+    expect(monday).toBeCloseTo(weekday * 0.15 + 50 * 0.85, 5);
   });
 
   it("개별요일 표본이 적으면 요일묶음 평균에 가깝게 유지한다", () => {
