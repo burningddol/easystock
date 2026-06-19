@@ -15,7 +15,7 @@ import { isRegularDayOff, weekdayOf, type Weekday } from "./regular-days-off";
  *     - friday: 금
  *     - weekend: 토~일
  *     - 표본 부족 그룹은 전체 영업일 평균으로 shrinkage
- *     - 개별요일 표본이 쌓이면 그룹 평균을 anchor로 최대 90%까지 반영
+ *     - 개별요일 표본이 쌓이면 그룹 평균을 anchor로 최대 85%까지 점진 반영
  *  3. 오늘부터 일별 시뮬레이션 (정기휴무는 소비 0)
  *  4. 리드타임 + 안전여유일 설정값 차감해 status 분류
  *  5. trend는 7일 평균 vs 30일 평균 ±20% 비교, 소진일에는 완만한 계수만 반영
@@ -39,7 +39,7 @@ export type ForecastSensitivity = "stable" | "balanced" | "responsive";
 export interface ForecastTuning {
   recencyDecayDays: number;
   minGroupSampleSize: number;
-  minWeekdaySampleSize: number;
+  weekdayPriorStrength: number;
   maxWeekdayConfidence: number;
   outlierCapMultiplier: number;
 }
@@ -48,22 +48,22 @@ export const FORECAST_TUNING_PRESETS: Record<ForecastSensitivity, ForecastTuning
   stable: {
     recencyDecayDays: 21,
     minGroupSampleSize: 12,
-    minWeekdaySampleSize: 24,
+    weekdayPriorStrength: 16,
     maxWeekdayConfidence: 0.85,
     outlierCapMultiplier: 2.5,
   },
   balanced: {
     recencyDecayDays: DEFAULT_RECENCY_DECAY_DAYS,
     minGroupSampleSize: DEFAULT_MIN_GROUP_SAMPLE_SIZE,
-    minWeekdaySampleSize: 20,
-    maxWeekdayConfidence: 0.9,
+    weekdayPriorStrength: 12,
+    maxWeekdayConfidence: 0.85,
     outlierCapMultiplier: DEFAULT_OUTLIER_CAP_MULTIPLIER,
   },
   responsive: {
     recencyDecayDays: 7,
     minGroupSampleSize: 5,
-    minWeekdaySampleSize: 12,
-    maxWeekdayConfidence: 0.9,
+    weekdayPriorStrength: 8,
+    maxWeekdayConfidence: 0.85,
     outlierCapMultiplier: 4,
   },
 };
@@ -234,7 +234,7 @@ export function businessDayTypeOf(date: Date, daysOff: readonly Weekday[]): Busi
  * - 최근 sample일수록 exp(-daysAgo / 14)로 더 크게 반영
  * - 단체주문 같은 극단값은 중앙값의 3배로 cap
  * - 그룹 표본이 8개 미만이면 전체 영업일 평균과 섞어 안정화
- * - 개별요일 표본이 충분하면 그룹 평균과 섞어 요일 특성을 점진 반영
+ * - 개별요일 표본은 count / (count + prior)로 그룹 평균과 섞어 점진 반영
  */
 export function computeBusinessDayUsageModel(
   samples: readonly DailyConsumption[],
@@ -318,7 +318,7 @@ export function computeBusinessDayUsageModel(
       : bucket.weightedSum.dividedBy(bucket.weightSum);
     const groupAnchor = usageByDayType.get(bucket.dayType) ?? globalAverage;
     const confidence = Math.min(
-      bucket.count / tuning.minWeekdaySampleSize,
+      bucket.count / (bucket.count + tuning.weekdayPriorStrength),
       tuning.maxWeekdayConfidence,
     );
     const stabilized = weekdayAverage.times(confidence).plus(groupAnchor.times(1 - confidence));

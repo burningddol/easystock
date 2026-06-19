@@ -230,7 +230,10 @@ type DepletionForecast = Array<{
 
 **Behavior**:
 1. 가입 후 7일 이내 → 모든 항목 `isColdStart=true` (FR-018)
-2. 그 외 정상 영업일 데이터로 요일별 가중 평균 계산 (FR-012, 정기휴무 제외 FR-042)
+2. 그 외 정상 영업일 데이터로 계층형 최근가중 평균 계산 (FR-012, 정기휴무 제외 FR-042)
+   - 영업일 그룹 anchor: 평일(월~목), 금요일, 주말(토~일)
+   - 개별요일 보정: `count / (count + prior)` shrinkage로 그룹 평균과 혼합
+   - 개별요일 최대 반영 비중: 85%
 3. 거래처 리드타임 + 안전여유 1일 반영
 4. status 분류 (FR-013 발주 알림 기준):
    - critical: 당일/익일 소진

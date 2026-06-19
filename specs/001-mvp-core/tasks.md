@@ -264,7 +264,7 @@ description: "Task list for 001-mvp-core feature implementation"
 
 ### 도메인 로직 (테스트 우선)
 
-- [x] T120 [P] [US4] Write unit test `tests/unit/forecast.test.ts` covering: 요일별 가중 평균, 거래처 리드타임, 안전여유 1일, 콜드스타트(7일 이내), ±20% 급증 감지, 정기휴무 제외 (with synthetic 10+ scenarios per research R4)
+- [x] T120 [P] [US4] Write unit test `tests/unit/forecast.test.ts` covering: 영업일 그룹 + 개별요일 shrinkage 예측, 거래처 리드타임, 안전여유 1일, 콜드스타트(7일 이내), ±20% 급증 감지, 정기휴무 제외 (with synthetic 10+ scenarios per research R4)
 - [x] T121 [US4] Implement domain function `src/lib/domain/forecast.ts` to satisfy T120; consumes regular-days-off helpers
 
 ### 데이터 모델 + RPC
