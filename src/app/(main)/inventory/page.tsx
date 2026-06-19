@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useDepletionForecast } from "@/features/inventory/hooks/useDepletionForecast";
+import { useIngredientForecastAccuracy } from "@/features/inventory/hooks/useIngredientForecastAccuracy";
 import { IngredientStatusList } from "@/features/inventory/components/IngredientStatusList";
 import { ColdStartNotice } from "@/features/inventory/components/ColdStartNotice";
 import { AddIngredientForm } from "@/features/inventory/components/AddIngredientForm";
@@ -12,6 +13,7 @@ import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
 
 export default function InventoryPage(): React.ReactElement {
   const { data, isLoading, error } = useDepletionForecast();
+  const accuracyQuery = useIngredientForecastAccuracy(14);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const isAllColdStart = (data ?? []).length > 0 && (data ?? []).every((d) => d.isColdStart);
@@ -56,7 +58,7 @@ export default function InventoryPage(): React.ReactElement {
 
       {isAllColdStart && <ColdStartNotice />}
 
-      {data && <IngredientStatusList items={data} />}
+      {data && <IngredientStatusList items={data} accuracyItems={accuracyQuery.data ?? []} />}
     </section>
   );
 }

@@ -36,6 +36,8 @@ export function MenuForecastAccuracyList({
         <SummaryTile label="과소예측" value={`${summary.underCount}개`} />
       </section>
 
+      <PriorityNotice item={summary.priorityItem} />
+
       <div className="flex flex-col gap-stack">
         {items.map((item) => (
           <MenuForecastAccuracyCard key={item.menuId} item={item} />
@@ -82,6 +84,8 @@ function MenuForecastAccuracyCard({
         <Metric label="평균 오차" value={formatNullableQuantity(item.averageAbsoluteError)} />
         <Metric label="비교일" value={`${item.evaluatedDayCount}일`} />
       </dl>
+
+      <TuningHint item={item} />
 
       <ol className="mt-stack grid grid-cols-7 gap-1.5">
         {item.dailyResults.slice(-7).map((day) => (
@@ -148,10 +152,36 @@ function BiasBadge({ bias }: { bias: MenuForecastAccuracyView["bias"] }): React.
   );
 }
 
+function PriorityNotice({
+  item,
+}: {
+  item: MenuForecastAccuracyView | null;
+}): React.ReactElement | null {
+  if (!item || item.meanAbsolutePercentageError === null) return null;
+
+  return (
+    <section className="rounded-[24px] border border-amber/30 bg-amber-soft px-4 py-3 shadow-soft">
+      <p className="text-body text-amber-deep">
+        우선 확인: {item.name} · 오차율 {formatPercent(item.meanAbsolutePercentageError)}
+      </p>
+      <p className="mt-1 text-caption text-ink-3">{buildTuningHint(item)}</p>
+    </section>
+  );
+}
+
+function TuningHint({ item }: { item: MenuForecastAccuracyView }): React.ReactElement {
+  return (
+    <p className="mt-stack rounded-2xl border border-border bg-bg px-3 py-2 text-caption text-ink-3">
+      {buildTuningHint(item)}
+    </p>
+  );
+}
+
 function buildSummary(items: readonly MenuForecastAccuracyView[]): {
   meanMape: number | null;
   overCount: number;
   underCount: number;
+  priorityItem: MenuForecastAccuracyView | null;
 } {
   const valid = items.filter((item) => item.meanAbsolutePercentageError !== null);
   return {
@@ -162,7 +192,25 @@ function buildSummary(items: readonly MenuForecastAccuracyView[]): {
         : null,
     overCount: items.filter((item) => item.bias === "over").length,
     underCount: items.filter((item) => item.bias === "under").length,
+    priorityItem:
+      valid.length > 0
+        ? ([...valid].sort(
+            (a, b) => (b.meanAbsolutePercentageError ?? 0) - (a.meanAbsolutePercentageError ?? 0),
+          )[0] ?? null)
+        : null,
   };
+}
+
+function buildTuningHint(item: MenuForecastAccuracyView): string {
+  if (item.evaluatedDayCount < 3) return "판매 비교일이 적습니다. 데이터가 더 쌓인 뒤 판단하세요.";
+  if (item.bias === "under")
+    return "실제 판매가 예측보다 많습니다. 발주량 부족 위험을 먼저 확인하세요.";
+  if (item.bias === "over")
+    return "예측이 실제보다 큽니다. 과발주 가능성이 있어 최근 판매 둔화를 확인하세요.";
+  if ((item.meanAbsolutePercentageError ?? 0) >= 0.5) {
+    return "오차율이 큽니다. 주말/평일 편차나 최근 이벤트성 판매를 확인하세요.";
+  }
+  return "예측 방향은 안정적입니다. 큰 조정 없이 추이를 계속 보세요.";
 }
 
 function barHeight(value: number, maxQuantity: number): number {
