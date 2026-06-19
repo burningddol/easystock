@@ -27,9 +27,6 @@ export default function InventoryPage(): React.ReactElement {
             <Link href="/inventory/orders" className={SECONDARY_BUTTON_CLASSES}>
               발주 추천
             </Link>
-            <Link href="/inventory/menu-forecast" className={SECONDARY_BUTTON_CLASSES}>
-              메뉴 예측
-            </Link>
             <Link href="/inventory/forecast-accuracy" className={SECONDARY_BUTTON_CLASSES}>
               정확도
             </Link>
@@ -43,7 +40,7 @@ export default function InventoryPage(): React.ReactElement {
               type="button"
               onClick={() => setIsAddOpen((v) => !v)}
               aria-expanded={isAddOpen}
-              className="halo-cta rounded-2xl bg-brand-primary px-4 py-3 text-body-regular font-semibold text-white shadow-card transition hover:-translate-y-0.5"
+              className="rounded-2xl bg-blue px-4 py-3 text-body-regular font-semibold text-white shadow-card ring-1 ring-blue-deep/10 transition hover:-translate-y-0.5 hover:bg-blue-deep"
             >
               + 재료
             </button>

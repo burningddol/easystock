@@ -16,9 +16,14 @@ export default function MenuPage(): React.ReactElement {
       <PageHeader
         title="메뉴"
         action={
-          <Link href="/menu/new" className={SECONDARY_BUTTON_CLASSES}>
-            + 추가
-          </Link>
+          <div className="flex gap-stack-tight">
+            <Link href="/inventory/menu-forecast" className={SECONDARY_BUTTON_CLASSES}>
+              메뉴 예측
+            </Link>
+            <Link href="/menu/new" className={SECONDARY_BUTTON_CLASSES}>
+              + 추가
+            </Link>
+          </div>
         }
       />
 
