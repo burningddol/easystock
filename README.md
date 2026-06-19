@@ -153,6 +153,17 @@ specs/001-mvp-core/        spec.md / data-model.md / contracts / tasks.md
 - 즉, 예측 규칙의 단일 출처는 SQL이 아니라 TypeScript 도메인 모듈이며, 단위 테스트도 여기에 집중되어 있습니다.
   - [forecast.test.ts](/Users/yamon/Desktop/projects/ezstock/tests/unit/forecast.test.ts)
 
+## 예측 정확도 백테스트
+
+예측 알고리즘은 `/inventory/forecast-accuracy` 화면에서 실제 판매/소비 이력과 비교할 수 있습니다.
+
+- 메뉴별 백테스트는 [loadMenuForecastAccuracyViews](/Users/yamon/Desktop/projects/ezstock/src/lib/application/inventory.ts)가 수행합니다.
+- 재료별 백테스트는 [loadIngredientForecastAccuracyViews](/Users/yamon/Desktop/projects/ezstock/src/lib/application/inventory.ts)가 수행합니다.
+- 각 비교일은 **그 전날까지의 데이터만 학습 데이터로 사용**해서 하루 뒤 예측값을 다시 만듭니다.
+- 메뉴는 예측 판매 수량과 실제 판매 수량을 비교합니다.
+- 재료는 메뉴 수요 예측, 기본 레시피, 옵션 선택률을 재료 소요량으로 변환한 뒤 실제 소비량과 비교합니다.
+- 화면에는 평균 절대 오차, 평균 절대 백분율 오차, 과대/과소예측 방향을 표시합니다.
+
 ## 디자인 시스템
 
 `.claude/skills/easystock-design-system/` — 토큰·컴포넌트·6개 화면 패턴 단일 진실 공급원. 색·spacing은 [tokens.ts](.claude/skills/easystock-design-system/tokens.ts)에서 import (하드코딩 금지). Pretendard 폰트 강제. PWA manifest의 `theme_color`/`background_color`만 hex literal 예외.
