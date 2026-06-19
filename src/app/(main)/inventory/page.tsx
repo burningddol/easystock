@@ -28,6 +28,9 @@ export default function InventoryPage(): React.ReactElement {
             <Link href="/inventory/menu-forecast" className={SECONDARY_BUTTON_CLASSES}>
               메뉴 예측
             </Link>
+            <Link href="/inventory/forecast-accuracy" className={SECONDARY_BUTTON_CLASSES}>
+              정확도
+            </Link>
             <Link href="/inventory/stock-count" className={SECONDARY_BUTTON_CLASSES}>
               실사
             </Link>
