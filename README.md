@@ -146,6 +146,13 @@ specs/001-mvp-core/        spec.md / data-model.md / contracts / tasks.md
    - 실제 소진일 계산에도 최근 추세를 반영하되, 계수는 `0.85~1.25`로 제한합니다.
    - 그래서 날씨/이벤트로 하루 매출이 튄 경우에도 예측이 과하게 흔들리지 않습니다.
 
+7. **예측 민감도 설정**
+   - 설정 화면에서 `안정적 / 기본 / 민감` 중 하나를 선택할 수 있습니다.
+   - `안정적`은 최근 변동을 천천히 반영하고 이상치 영향을 더 줄입니다.
+   - `기본`은 최근 흐름과 장기 평균을 균형 있게 반영합니다.
+   - `민감`은 최근 판매 변화를 빠르게 반영해 날씨·이벤트 영향이 큰 매장에 맞춥니다.
+   - 실제 파라미터는 [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)의 `FORECAST_TUNING_PRESETS`가 단일 출처입니다.
+
 중요한 구현 포인트:
 
 - 서버 RPC는 **raw 데이터만** 만들고, 최종 `status/trend/isColdStart` 분류는 클라이언트 도메인 함수에서 수행합니다.

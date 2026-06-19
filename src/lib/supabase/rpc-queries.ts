@@ -11,6 +11,7 @@ export interface DepletionForecastRow {
   isDefaultLeadTime: boolean;
   safetyBufferDays: number;
   purchaseCoverageDays: number;
+  forecastSensitivity: "stable" | "balanced" | "responsive";
   consumptionSamples: Array<{ date: string; amount: number }>;
   signedUpAt: string;
   regularDaysOff: ReadonlyArray<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
@@ -36,6 +37,7 @@ export interface MenuDemandForecastRow {
     }>;
   }>;
   demandSamples: Array<{ date: string; quantity: number }>;
+  forecastSensitivity: "stable" | "balanced" | "responsive";
   signedUpAt: string;
   regularDaysOff: ReadonlyArray<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
 }
@@ -80,6 +82,7 @@ interface DepletionForecastRawRow {
   is_default_lead_time: boolean;
   safety_buffer_days?: number | null;
   purchase_coverage_days?: number | null;
+  forecast_sensitivity?: "stable" | "balanced" | "responsive" | null;
   consumption_samples: Array<{ date: string; amount: number }>;
   signed_up_at: string;
   regular_days_off: Array<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
@@ -105,6 +108,7 @@ interface MenuDemandForecastRawRow {
     }> | null;
   }> | null;
   demand_samples: Array<{ date: string; quantity: number }>;
+  forecast_sensitivity?: "stable" | "balanced" | "responsive" | null;
   signed_up_at: string;
   regular_days_off: Array<"MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN">;
 }
@@ -376,6 +380,7 @@ export async function getDepletionForecast(
         Number.isFinite(row.purchase_coverage_days)
           ? row.purchase_coverage_days
           : 7,
+      forecastSensitivity: normalizeForecastSensitivity(row.forecast_sensitivity),
       consumptionSamples: row.consumption_samples ?? [],
       signedUpAt: row.signed_up_at,
       regularDaysOff: row.regular_days_off ?? [],
@@ -416,11 +421,19 @@ export async function getMenuDemandForecast(
         })),
       })),
       demandSamples: row.demand_samples ?? [],
+      forecastSensitivity: normalizeForecastSensitivity(row.forecast_sensitivity),
       signedUpAt: row.signed_up_at,
       regularDaysOff: row.regular_days_off ?? [],
     })),
     error: null,
   };
+}
+
+function normalizeForecastSensitivity(
+  value: string | null | undefined,
+): "stable" | "balanced" | "responsive" {
+  if (value === "stable" || value === "responsive") return value;
+  return "balanced";
 }
 
 export function getOrderRecommendationReport(

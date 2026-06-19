@@ -76,6 +76,24 @@ describe("business day usage model", () => {
     expect(model.fallbackDailyUsage.toNumber()).toBeGreaterThan(80);
   });
 
+  it("예측 민감도가 높을수록 최근 증가분을 더 빠르게 반영한다", () => {
+    const samples: DailyConsumption[] = [
+      { date: daysAgo(50), amount: 20 },
+      { date: daysAgo(40), amount: 20 },
+      { date: daysAgo(30), amount: 20 },
+      { date: daysAgo(3), amount: 100 },
+      { date: daysAgo(2), amount: 100 },
+      { date: daysAgo(1), amount: 100 },
+    ];
+
+    const stable = computeBusinessDayUsageModel(samples, [], today, "stable");
+    const responsive = computeBusinessDayUsageModel(samples, [], today, "responsive");
+
+    expect(responsive.fallbackDailyUsage.toNumber()).toBeGreaterThan(
+      stable.fallbackDailyUsage.toNumber(),
+    );
+  });
+
   it("그룹 표본이 적으면 전체 영업일 평균과 섞어 안정화한다", () => {
     const samples: DailyConsumption[] = [
       { date: new Date("2026-04-03"), amount: 100 },
