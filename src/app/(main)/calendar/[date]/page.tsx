@@ -4,7 +4,12 @@ import Link from "next/link";
 import { differenceInCalendarDays } from "date-fns";
 import { useParams } from "next/navigation";
 import { useCalendarMonth } from "@/features/calendar/hooks/useCalendarMonth";
+import { useMenuDemandForecast } from "@/features/inventory/hooks/useMenuDemandForecast";
 import { useSaleByDate, type SaleWithItems } from "@/features/sale/hooks/useSaleByDate";
+import {
+  buildCalendarMenuForecastByDate,
+  type CalendarMenuForecastSummary,
+} from "@/features/calendar/lib/menu-forecast-calendar";
 import { daysUntilLock, isSaleLocked } from "@/lib/domain/snapshot";
 import { MARGIN_LABEL } from "@/lib/domain/margin";
 import {
@@ -28,8 +33,14 @@ export default function CalendarDateDetailPage(): React.ReactElement {
   const year = parsedDate?.getFullYear() ?? null;
   const month = parsedDate ? parsedDate.getMonth() + 1 : null;
   const todayIso = useTodayIso();
+  const today = todayIso ? (parseLocalDateFromIso(todayIso) ?? new Date()) : new Date();
+  const isFutureDate = parsedDate ? differenceInCalendarDays(parsedDate, today) > 0 : false;
+  const forecastHorizonDays = parsedDate
+    ? Math.min(365, Math.max(7, differenceInCalendarDays(parsedDate, today) + 1))
+    : 7;
   const calendarQuery = useCalendarMonth(year, month);
   const saleQuery = useSaleByDate(date);
+  const menuForecastQuery = useMenuDemandForecast(forecastHorizonDays);
 
   if (!parsedDate) {
     return (
@@ -41,6 +52,8 @@ export default function CalendarDateDetailPage(): React.ReactElement {
   }
 
   const cell = calendarQuery.data?.cells.find((item) => item.date === date) ?? null;
+  const menuForecast =
+    buildCalendarMenuForecastByDate(menuForecastQuery.data ?? []).get(date) ?? null;
   const prevDate = addDaysIso(parsedDate, -1);
   const nextDate = addDaysIso(parsedDate, 1);
 
@@ -60,9 +73,12 @@ export default function CalendarDateDetailPage(): React.ReactElement {
         </div>
       </header>
 
-      {calendarQuery.isLoading || saleQuery.isLoading || !todayIso ? (
+      {calendarQuery.isLoading ||
+      saleQuery.isLoading ||
+      (isFutureDate && menuForecastQuery.isLoading) ||
+      !todayIso ? (
         <p className="text-body-regular text-ink-3">불러오는 중…</p>
-      ) : calendarQuery.error || saleQuery.error ? (
+      ) : calendarQuery.error || saleQuery.error || (isFutureDate && menuForecastQuery.error) ? (
         <Notice tone="red">날짜 상세를 불러오지 못했어요. 잠시 후 다시 시도해주세요.</Notice>
       ) : (
         <DateDetailBody
@@ -70,6 +86,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
           date={date}
           parsedDate={parsedDate}
           sale={saleQuery.data ?? null}
+          menuForecast={menuForecast}
           todayIso={todayIso}
         />
       )}
@@ -82,6 +99,7 @@ interface DateDetailBodyProps {
   date: string;
   parsedDate: Date;
   sale: SaleWithItems | null;
+  menuForecast: CalendarMenuForecastSummary | null;
   todayIso: string;
 }
 
@@ -90,13 +108,14 @@ function DateDetailBody({
   date,
   parsedDate,
   sale,
+  menuForecast,
   todayIso,
 }: DateDetailBodyProps): React.ReactElement {
   const today = parseLocalDateFromIso(todayIso) ?? new Date();
   const daysFromToday = differenceInCalendarDays(parsedDate, today);
 
   if (cell?.isFuture) {
-    return <Notice tone="neutral">아직 오지 않은 날이에요. 미래 데이터는 입력할 수 없어요.</Notice>;
+    return <FutureForecastDetail date={date} forecast={menuForecast} />;
   }
   if (cell?.isBeforeSignup) {
     return <Notice tone="neutral">가입 전 데이터예요.</Notice>;
@@ -108,6 +127,64 @@ function DateDetailBody({
     return <ExistingSaleDetail sale={sale} hasPurchase={cell?.hasPurchase ?? false} />;
   }
   return <MissingSaleDetail date={date} daysFromToday={daysFromToday} />;
+}
+
+function FutureForecastDetail({
+  date,
+  forecast,
+}: {
+  date: string;
+  forecast: CalendarMenuForecastSummary | null;
+}): React.ReactElement {
+  if (!forecast || forecast.items.length === 0) {
+    return (
+      <Notice tone="neutral">
+        아직 오지 않은 날이에요. 예측할 판매 이력이 부족해서 메뉴 소요량을 표시하지 못했어요.
+      </Notice>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-section">
+      <article className="flex flex-col gap-stack rounded-xl border border-border bg-card p-tile">
+        <div className="flex flex-col gap-stack-tight">
+          <p className="text-micro text-ink-3">현재 예측 모델 기준</p>
+          <div className="grid grid-cols-2 gap-stack">
+            <Metric label="예상 매출" value={`${formatWon(forecast.totalRevenue)}원`} />
+            <Metric label="예상 판매" value={`${formatNumber(forecast.totalQuantity)}개`} />
+          </div>
+          <Notice tone="neutral">
+            미래 날짜는 판매 입력은 막고, 현재까지의 판매 이력으로 계산한 예측만 보여줘요.
+          </Notice>
+        </div>
+      </article>
+
+      <article className="flex flex-col gap-stack rounded-xl border border-border bg-card p-tile">
+        <div className="flex items-center justify-between gap-stack">
+          <h2 className="text-title-md text-ink-1">예측 메뉴 소요량</h2>
+          <span className="text-micro text-ink-3">{date}</span>
+        </div>
+        <ul className="flex flex-col gap-stack-tight">
+          {forecast.items.map((item) => (
+            <li key={item.menuId} className="rounded-lg bg-bg p-stack">
+              <div className="flex items-start justify-between gap-stack">
+                <div className="flex flex-col gap-1">
+                  <p className="text-body text-ink-1">{item.name}</p>
+                  <p className="text-micro text-ink-3">
+                    예상 {formatNumber(Number(item.predictedQuantity.toFixed(1)))}개 ×{" "}
+                    {formatWon(item.price)}원
+                  </p>
+                </div>
+                <p className="text-body tabular-nums text-ink-1">
+                  {formatWon(item.predictedRevenue)}원
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </article>
+    </div>
+  );
 }
 
 interface ExistingSaleDetailProps {

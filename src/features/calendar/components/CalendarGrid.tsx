@@ -1,14 +1,16 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { WEEKDAY_KO, parseLocalDateFromIso } from "@/lib/utils/format";
+import { WEEKDAY_KO, formatNumber, parseLocalDateFromIso } from "@/lib/utils/format";
 import type { EnrichedCalendarCell } from "../lib/consecutive-missing";
 import { INTENSITY_LEVELS, INTENSITY_STEP_PCT } from "../lib/intensity";
+import type { CalendarMenuForecastSummary } from "../lib/menu-forecast-calendar";
 
 interface CalendarGridProps {
   year: number;
   month: number;
   cells: readonly EnrichedCalendarCell[];
+  menuForecastByDate?: ReadonlyMap<string, CalendarMenuForecastSummary>;
   selectedDate: string | null;
   todayIso: string | null;
   onSelect: (cell: EnrichedCalendarCell) => void;
@@ -25,6 +27,7 @@ export function CalendarGrid({
   year,
   month,
   cells,
+  menuForecastByDate,
   selectedDate,
   todayIso,
   onSelect,
@@ -45,6 +48,7 @@ export function CalendarGrid({
           <DayCell
             key={cell.date}
             cell={cell}
+            forecast={menuForecastByDate?.get(cell.date) ?? null}
             maxRevenue={maxRevenue}
             isSelected={cell.date === selectedDate}
             isToday={cell.date === todayIso}
@@ -77,6 +81,7 @@ function BlankCell(): React.ReactElement {
 
 interface DayCellProps {
   cell: EnrichedCalendarCell;
+  forecast: CalendarMenuForecastSummary | null;
   maxRevenue: number;
   isSelected: boolean;
   isToday: boolean;
@@ -85,6 +90,7 @@ interface DayCellProps {
 
 function DayCell({
   cell,
+  forecast,
   maxRevenue,
   isSelected,
   isToday,
@@ -122,7 +128,9 @@ function DayCell({
         {day}
       </span>
 
-      {!isSelected && <BottomLabel cell={cell} isStrongMissing={isStrongMissing} />}
+      {!isSelected && (
+        <BottomLabel cell={cell} forecast={forecast} isStrongMissing={isStrongMissing} />
+      )}
 
       <DotIndicators cell={cell} />
     </button>
@@ -131,13 +139,25 @@ function DayCell({
 
 interface BottomLabelProps {
   cell: EnrichedCalendarCell;
+  forecast: CalendarMenuForecastSummary | null;
   isStrongMissing: boolean;
 }
 
-function BottomLabel({ cell, isStrongMissing }: BottomLabelProps): React.ReactElement | null {
+function BottomLabel({
+  cell,
+  forecast,
+  isStrongMissing,
+}: BottomLabelProps): React.ReactElement | null {
   if (isStrongMissing) {
     return (
       <span className="absolute bottom-1 left-1 text-[9px] font-semibold text-red-deep">누락</span>
+    );
+  }
+  if (cell.isFuture && forecast && forecast.totalRevenue > 0) {
+    return (
+      <span className="absolute bottom-1 left-1 text-[8px] font-semibold text-blue-deep">
+        예상 {formatNumber(Math.round(forecast.totalRevenue / 10000))}
+      </span>
     );
   }
   if (cell.revenue !== null && cell.revenue > 0) {
