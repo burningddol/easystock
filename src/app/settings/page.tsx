@@ -3,11 +3,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { STORE_TYPE_LABELS } from "@/features/auth/schemas";
 import { LogoutButton } from "@/features/settings/components/LogoutButton";
+import { ForecastSensitivityEditor } from "@/features/settings/components/ForecastSensitivityEditor";
 import { PurchaseCoverageDaysEditor } from "@/features/settings/components/PurchaseCoverageDaysEditor";
 import { RegularDaysOffEditor } from "@/features/settings/components/RegularDaysOffEditor";
 import { SafetyBufferEditor } from "@/features/settings/components/SafetyBufferEditor";
 import { StoreNameEditor } from "@/features/settings/components/StoreNameEditor";
 import { VendorLeadTimeManager } from "@/features/settings/components/VendorLeadTimeManager";
+import type { ForecastSensitivity } from "@/lib/domain/forecast";
 import type { Weekday } from "@/lib/domain/regular-days-off";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
 
@@ -25,7 +27,9 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
 
   const { data } = await supabase
     .from("users")
-    .select("store_name, store_type, regular_days_off, safety_buffer_days, purchase_coverage_days")
+    .select(
+      "store_name, store_type, regular_days_off, safety_buffer_days, purchase_coverage_days, forecast_sensitivity",
+    )
     .eq("id", user.id)
     .maybeSingle();
 
@@ -35,10 +39,12 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
     regular_days_off: Weekday[];
     safety_buffer_days: number;
     purchase_coverage_days: number;
+    forecast_sensitivity: ForecastSensitivity;
   } | null;
   const initialDaysOff: Weekday[] = profile?.regular_days_off ?? [];
   const safetyBufferDays = profile?.safety_buffer_days ?? 1;
   const purchaseCoverageDays = profile?.purchase_coverage_days ?? 7;
+  const forecastSensitivity = profile?.forecast_sensitivity ?? "balanced";
   const storeName = profile?.store_name ?? "내 가게";
   const storeType = profile?.store_type ?? "cafe";
 
@@ -104,6 +110,10 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
             title="발주 커버일"
             body={`현재 ${purchaseCoverageDays}일로 설정되어 있습니다. 권장 발주량은 리드타임과 안전여유 뒤에 이 기간만큼 더 팔 수 있게 계산합니다.`}
           />
+          <RuleCard
+            title="예측 민감도"
+            body={`현재 ${formatForecastSensitivity(forecastSensitivity)} 모드입니다. 최근 판매 변화를 예측에 반영하는 속도를 조정합니다.`}
+          />
         </div>
 
         <RegularDaysOffEditor initialDaysOff={initialDaysOff} />
@@ -112,6 +122,10 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
           <SafetyBufferEditor initialSafetyBufferDays={safetyBufferDays} userId={user.id} />
           <PurchaseCoverageDaysEditor
             initialPurchaseCoverageDays={purchaseCoverageDays}
+            userId={user.id}
+          />
+          <ForecastSensitivityEditor
+            initialForecastSensitivity={forecastSensitivity}
             userId={user.id}
           />
           <SettingRow
@@ -165,6 +179,12 @@ export default async function SettingsPage(): Promise<React.ReactElement> {
       </section>
     </main>
   );
+}
+
+function formatForecastSensitivity(value: ForecastSensitivity): string {
+  if (value === "stable") return "안정적";
+  if (value === "responsive") return "민감";
+  return "기본";
 }
 
 function SettingRow({

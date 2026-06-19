@@ -24,15 +24,40 @@ const COLD_START_DAYS = 7;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_FORECAST_DAYS = 365;
 const TREND_THRESHOLD = 0.2;
-const RECENCY_DECAY_DAYS = 14;
-const MIN_GROUP_SAMPLE_SIZE = 8;
-const OUTLIER_CAP_MULTIPLIER = 3;
+const DEFAULT_RECENCY_DECAY_DAYS = 14;
+const DEFAULT_MIN_GROUP_SAMPLE_SIZE = 8;
+const DEFAULT_OUTLIER_CAP_MULTIPLIER = 3;
 const TREND_FACTOR_MIN = 0.85;
 const TREND_FACTOR_MAX = 1.25;
 
 export type DepletionStatus = "safe" | "caution" | "order_needed" | "critical";
 export type ConsumptionTrend = "normal" | "rising" | "falling";
 export type BusinessDayType = "weekday" | "friday" | "weekend";
+export type ForecastSensitivity = "stable" | "balanced" | "responsive";
+
+export interface ForecastTuning {
+  recencyDecayDays: number;
+  minGroupSampleSize: number;
+  outlierCapMultiplier: number;
+}
+
+export const FORECAST_TUNING_PRESETS: Record<ForecastSensitivity, ForecastTuning> = {
+  stable: {
+    recencyDecayDays: 21,
+    minGroupSampleSize: 12,
+    outlierCapMultiplier: 2.5,
+  },
+  balanced: {
+    recencyDecayDays: DEFAULT_RECENCY_DECAY_DAYS,
+    minGroupSampleSize: DEFAULT_MIN_GROUP_SAMPLE_SIZE,
+    outlierCapMultiplier: DEFAULT_OUTLIER_CAP_MULTIPLIER,
+  },
+  responsive: {
+    recencyDecayDays: 7,
+    minGroupSampleSize: 5,
+    outlierCapMultiplier: 4,
+  },
+};
 
 export interface DailyConsumption {
   date: Date;
@@ -96,6 +121,7 @@ export interface ForecastInput {
   daysOff: readonly Weekday[];
   signupDate: Date;
   today: Date;
+  sensitivity?: ForecastSensitivity;
 }
 
 export interface ForecastResult {
@@ -127,6 +153,7 @@ export interface MenuDemandForecastInput {
   signupDate: Date;
   today: Date;
   horizonDays?: number;
+  sensitivity?: ForecastSensitivity;
 }
 
 export interface MenuDemandForecastDay {
@@ -202,14 +229,16 @@ export function computeBusinessDayUsageModel(
   samples: readonly DailyConsumption[],
   daysOff: readonly Weekday[],
   today: Date,
+  sensitivity: ForecastSensitivity = "balanced",
 ): UsageForecastModel {
+  const tuning = FORECAST_TUNING_PRESETS[sensitivity];
   const usableSamples = samples
     .filter((sample) => !isRegularDayOff(sample.date, daysOff) && sample.amount > 0)
     .map((sample) => ({
       ...sample,
-      amount: capOutlier(sample.amount, samples),
+      amount: capOutlier(sample.amount, samples, tuning.outlierCapMultiplier),
       dayType: businessDayTypeOf(sample.date, daysOff),
-      weight: recencyWeight(sample.date, today),
+      weight: recencyWeight(sample.date, today, tuning.recencyDecayDays),
     }))
     .filter((sample): sample is DailyConsumption & { dayType: BusinessDayType; weight: number } =>
       Boolean(sample.dayType),
@@ -248,7 +277,7 @@ export function computeBusinessDayUsageModel(
     const groupAverage = bucket.weightSum.isZero()
       ? globalAverage
       : bucket.weightedSum.dividedBy(bucket.weightSum);
-    const confidence = Math.min(bucket.count / MIN_GROUP_SAMPLE_SIZE, 1);
+    const confidence = Math.min(bucket.count / tuning.minGroupSampleSize, 1);
     const stabilized = groupAverage.times(confidence).plus(globalAverage.times(1 - confidence));
     usageByDayType.set(dayType, stabilized);
   }
@@ -259,12 +288,16 @@ export function computeBusinessDayUsageModel(
   };
 }
 
-function recencyWeight(date: Date, today: Date): number {
+function recencyWeight(date: Date, today: Date, decayDays: number): number {
   const daysAgo = Math.max(0, (today.getTime() - date.getTime()) / ONE_DAY_MS);
-  return Math.exp(-daysAgo / RECENCY_DECAY_DAYS);
+  return Math.exp(-daysAgo / decayDays);
 }
 
-function capOutlier(amount: number, samples: readonly DailyConsumption[]): number {
+function capOutlier(
+  amount: number,
+  samples: readonly DailyConsumption[],
+  capMultiplier: number,
+): number {
   const positiveAmounts = samples
     .map((sample) => sample.amount)
     .filter((value) => value > 0)
@@ -273,7 +306,7 @@ function capOutlier(amount: number, samples: readonly DailyConsumption[]): numbe
 
   const median = positiveAmounts[Math.floor(positiveAmounts.length / 2)];
   if (!median || median <= 0) return amount;
-  return Math.min(amount, median * OUTLIER_CAP_MULTIPLIER);
+  return Math.min(amount, median * capMultiplier);
 }
 
 function weightedAverage(samples: readonly { amount: number; weight: number }[]): Decimal {
@@ -489,6 +522,7 @@ export function forecastIngredient(input: ForecastInput): ForecastResult {
     input.consumptionSamples,
     input.daysOff,
     input.today,
+    input.sensitivity,
   );
   const depletionDate = predictDepletionDate({
     currentStock: input.currentStock,
@@ -528,7 +562,12 @@ export function forecastMenuDemand(input: MenuDemandForecastInput): MenuDemandFo
     date: sample.date,
     amount: sample.quantity,
   }));
-  const model = computeBusinessDayUsageModel(consumptionLikeSamples, input.daysOff, input.today);
+  const model = computeBusinessDayUsageModel(
+    consumptionLikeSamples,
+    input.daysOff,
+    input.today,
+    input.sensitivity,
+  );
   const trendFactor = computeTrendFactor(consumptionLikeSamples, input.today);
   const trend = detectTrend(consumptionLikeSamples, input.today);
   const predictions: MenuDemandForecastDay[] = [];

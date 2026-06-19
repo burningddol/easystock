@@ -123,6 +123,7 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       daysOff: row.regularDaysOff,
       signupDate: new Date(row.signedUpAt),
       today,
+      sensitivity: row.forecastSensitivity,
     });
     return {
       ingredientId: row.ingredientId,
@@ -195,6 +196,7 @@ export async function loadMenuDemandForecastViews(
         signupDate: new Date(row.signedUpAt),
         today,
         horizonDays,
+        sensitivity: row.forecastSensitivity,
       });
       const dailyPredictions = forecast.dailyPredictions.map((day) => ({
         date: day.date,
@@ -263,6 +265,7 @@ export async function loadMenuForecastAccuracyViews(
           signupDate: new Date(row.signedUpAt),
           today: trainUntil,
           horizonDays: 1,
+          sensitivity: row.forecastSensitivity,
         });
         const actualQuantity = sampleByDate.get(dateKey(targetDate))?.quantity ?? 0;
         const predictedQuantity = forecast.dailyPredictions[0]?.predictedQuantity ?? 0;
@@ -367,6 +370,7 @@ export async function loadIngredientForecastAccuracyViews(
             signupDate: new Date(row.signedUpAt),
             today: trainUntil,
             horizonDays: 1,
+            sensitivity: row.forecastSensitivity,
           }),
         };
       }),
@@ -458,6 +462,7 @@ export async function loadMenuBasedIngredientDemandForecast(
           signupDate: new Date(row.signedUpAt),
           today,
           horizonDays,
+          sensitivity: row.forecastSensitivity,
         }),
       };
     }),

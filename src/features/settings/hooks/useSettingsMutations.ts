@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
 import { todayDashboardQueryKey } from "@/features/dashboard/hooks/useTodayDashboard";
 import type { Weekday } from "@/lib/domain/regular-days-off";
+import type { ForecastSensitivity } from "@/lib/domain/forecast";
 import { updateRegularDaysOff } from "@/lib/supabase/rpc";
 import type { Database } from "@/lib/supabase/types";
 
@@ -31,6 +32,11 @@ interface UpdateSafetyBufferDaysInput {
 interface UpdatePurchaseCoverageDaysInput {
   userId: string;
   purchaseCoverageDays: number;
+}
+
+interface UpdateForecastSensitivityInput {
+  userId: string;
+  forecastSensitivity: ForecastSensitivity;
 }
 
 export async function invalidateSettingsRelatedQueries(queryClient: QueryClient): Promise<void> {
@@ -99,6 +105,25 @@ async function updatePurchaseCoverageDays(input: UpdatePurchaseCoverageDaysInput
   return data.purchase_coverage_days;
 }
 
+async function updateForecastSensitivity(
+  input: UpdateForecastSensitivityInput,
+): Promise<ForecastSensitivity> {
+  const supabase = createClient() as unknown as SupabaseClient<Database>;
+  const { data, error } = await supabase
+    .from("users")
+    .update({ forecast_sensitivity: input.forecastSensitivity })
+    .eq("id", input.userId)
+    .select("forecast_sensitivity")
+    .single();
+
+  if (error) throw new Error(error.message);
+  const value = data?.forecast_sensitivity;
+  if (value !== "stable" && value !== "balanced" && value !== "responsive") {
+    throw new Error("예측 민감도 저장 결과가 비어 있습니다.");
+  }
+  return value;
+}
+
 export function useUpdateStoreName(): UseMutationResult<string, Error, UpdateStoreNameInput> {
   const queryClient = useQueryClient();
   return useMutation({
@@ -145,6 +170,20 @@ export function useUpdatePurchaseCoverageDays(): UseMutationResult<
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updatePurchaseCoverageDays,
+    onSuccess: async () => {
+      await invalidateSettingsRelatedQueries(queryClient);
+    },
+  });
+}
+
+export function useUpdateForecastSensitivity(): UseMutationResult<
+  ForecastSensitivity,
+  Error,
+  UpdateForecastSensitivityInput
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateForecastSensitivity,
     onSuccess: async () => {
       await invalidateSettingsRelatedQueries(queryClient);
     },

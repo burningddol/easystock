@@ -610,6 +610,7 @@ export type Database = {
           analytics_consent: boolean
           created_at: string
           email: string
+          forecast_sensitivity: "stable" | "balanced" | "responsive"
           id: string
           permanent_delete_at: string | null
           purchase_coverage_days: number
@@ -625,6 +626,7 @@ export type Database = {
           analytics_consent?: boolean
           created_at?: string
           email: string
+          forecast_sensitivity?: "stable" | "balanced" | "responsive"
           id: string
           permanent_delete_at?: string | null
           purchase_coverage_days?: number
@@ -640,6 +642,7 @@ export type Database = {
           analytics_consent?: boolean
           created_at?: string
           email?: string
+          forecast_sensitivity?: "stable" | "balanced" | "responsive"
           id?: string
           permanent_delete_at?: string | null
           purchase_coverage_days?: number
@@ -763,6 +766,7 @@ export type Database = {
           lead_time_vendor_id: string | null
           lead_time_vendor_name: string | null
           name: string
+          forecast_sensitivity: string
           purchase_coverage_days: number
           regular_days_off: Database["public"]["Enums"]["weekday"][]
           safety_buffer_days: number
@@ -780,6 +784,7 @@ export type Database = {
           name: string
           option_groups: Json
           price: number
+          forecast_sensitivity: string
           regular_days_off: Database["public"]["Enums"]["weekday"][]
           signed_up_at: string
         }[]
