@@ -476,7 +476,7 @@ CREATE POLICY "push_subscriptions_isolated" ON public.push_subscriptions USING (
 | `lib/domain/pricing.ts` | `tests/unit/pricing.test.ts` | 가중 이동 평균법 30일 시나리오, 첫 매입(재고 0) edge case, 부동소수점 누적 ≤0.01원 |
 | `lib/domain/margin.ts` | `tests/unit/margin.test.ts` | 메뉴 원가/마진율 계산, 라벨 누락 시 fail (typed return) |
 | `lib/domain/snapshot.ts` | `tests/unit/snapshot.test.ts` | Sale 저장·편집 시 스냅샷 보존, 7일 초과 lock |
-| `lib/domain/forecast.ts` | `tests/unit/forecast.test.ts` | 요일별 가중 평균, 리드타임, 안전여유, 콜드스타트, ±20% 급증 감지 |
+| `lib/domain/forecast.ts` | `tests/unit/forecast.test.ts` | 영업일 그룹 + 개별요일 shrinkage 예측, 리드타임, 안전여유, 콜드스타트, ±20% 급증 감지 |
 | `lib/domain/regular-days-off.ts` | `tests/unit/regular-days-off.test.ts` | 정기휴무 제외 (누락/푸시/예측), 변경 snapshot, 예외 영업 |
 
 | 통합 시나리오 | 테스트 파일 | 검증 |
