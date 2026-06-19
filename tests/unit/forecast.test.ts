@@ -32,6 +32,7 @@ function usageModel(amount: number) {
   ] as const);
   return {
     usageByDayType,
+    usageByWeekday: new Map(),
     fallbackDailyUsage: new Decimal(amount),
   };
 }
@@ -108,6 +109,56 @@ describe("business day usage model", () => {
     expect(model.usageByDayType.get("friday")?.toNumber()).toBeLessThan(100);
     expect(model.usageByDayType.get("friday")?.toNumber()).toBeGreaterThan(10);
   });
+
+  it("개별요일 표본이 쌓이면 그룹 평균에 요일별 평균을 점진 반영한다", () => {
+    const samples: DailyConsumption[] = [
+      ...Array.from({ length: 20 }, (_, index) => ({
+        date: new Date(2026, 0, 5 + index * 7), // Monday
+        amount: 100,
+      })),
+      ...Array.from({ length: 20 }, (_, index) => ({
+        date: new Date(2026, 0, 6 + index * 7), // Tuesday
+        amount: 20,
+      })),
+      ...Array.from({ length: 20 }, (_, index) => ({
+        date: new Date(2026, 0, 7 + index * 7), // Wednesday
+        amount: 20,
+      })),
+      ...Array.from({ length: 20 }, (_, index) => ({
+        date: new Date(2026, 0, 8 + index * 7), // Thursday
+        amount: 20,
+      })),
+    ];
+
+    const model = computeBusinessDayUsageModel(samples, [], new Date("2026-06-01"));
+
+    expect(model.usageByWeekday.get("MON")?.toNumber()).toBeGreaterThan(
+      model.usageByDayType.get("weekday")?.toNumber() ?? 0,
+    );
+    expect(model.usageByWeekday.get("MON")?.toNumber()).toBeLessThan(100);
+    expect(model.usageByWeekday.get("TUE")?.toNumber()).toBeLessThan(
+      model.usageByDayType.get("weekday")?.toNumber() ?? 0,
+    );
+  });
+
+  it("개별요일 표본이 적으면 요일묶음 평균에 가깝게 유지한다", () => {
+    const samples: DailyConsumption[] = [
+      { date: new Date("2026-04-06"), amount: 120 }, // Monday
+      { date: new Date("2026-04-07"), amount: 20 },
+      { date: new Date("2026-04-08"), amount: 20 },
+      { date: new Date("2026-04-09"), amount: 20 },
+      { date: new Date("2026-04-14"), amount: 20 },
+      { date: new Date("2026-04-15"), amount: 20 },
+      { date: new Date("2026-04-16"), amount: 20 },
+    ];
+
+    const model = computeBusinessDayUsageModel(samples, [], today);
+    const monday = model.usageByWeekday.get("MON")?.toNumber() ?? 0;
+    const weekday = model.usageByDayType.get("weekday")?.toNumber() ?? 0;
+
+    expect(monday).toBeGreaterThan(weekday);
+    expect(monday).toBeLessThan(120);
+  });
 });
 
 describe("computeWeekdayUsageAverage", () => {
@@ -177,6 +228,7 @@ describe("predictDepletionDate", () => {
       currentStock: 1_000_000,
       usageModel: {
         usageByDayType: new Map([["weekday", new Decimal(0.001)]] as const),
+        usageByWeekday: new Map(),
         fallbackDailyUsage: new Decimal(0.001),
       },
       today,
@@ -190,6 +242,7 @@ describe("predictDepletionDate", () => {
       currentStock: 100,
       usageModel: {
         usageByDayType: new Map([["weekday", new Decimal(10)]] as const),
+        usageByWeekday: new Map(),
         fallbackDailyUsage: new Decimal(10),
       },
       today,
@@ -205,6 +258,7 @@ describe("predictDepletionDate", () => {
       currentStock: 100,
       usageModel: {
         usageByDayType: new Map(),
+        usageByWeekday: new Map(),
         fallbackDailyUsage: new Decimal(0),
       },
       today,
