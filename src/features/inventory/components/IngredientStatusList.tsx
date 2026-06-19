@@ -6,9 +6,11 @@ import { daysUntilDate, formatDateKoFromIso, formatNumber, localIsoDate } from "
 import type { DepletionStatus } from "@/lib/domain/forecast";
 import { useDeleteIngredient } from "@/features/purchase/hooks/useIngredients";
 import type { IngredientForecastView } from "../hooks/useDepletionForecast";
+import type { IngredientForecastAccuracyView } from "../hooks/useIngredientForecastAccuracy";
 
 interface IngredientStatusListProps {
   items: readonly IngredientForecastView[];
+  accuracyItems?: readonly IngredientForecastAccuracyView[];
 }
 
 const STATUS_GROUP_ORDER: readonly DepletionStatus[] = [
@@ -25,7 +27,10 @@ const STATUS_LABEL: Record<DepletionStatus, string> = {
   safe: "🟢 안전",
 };
 
-export function IngredientStatusList({ items }: IngredientStatusListProps): React.ReactElement {
+export function IngredientStatusList({
+  items,
+  accuracyItems = [],
+}: IngredientStatusListProps): React.ReactElement {
   if (items.length === 0) {
     return (
       <p className="glow-panel rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-3 shadow-soft">
@@ -35,6 +40,9 @@ export function IngredientStatusList({ items }: IngredientStatusListProps): Reac
   }
 
   const grouped = new Map<DepletionStatus, IngredientForecastView[]>();
+  const accuracyByIngredient = new Map(
+    accuracyItems.map((accuracy) => [accuracy.ingredientId, accuracy]),
+  );
   for (const item of items) {
     const list = grouped.get(item.status) ?? [];
     list.push(item);
@@ -56,7 +64,11 @@ export function IngredientStatusList({ items }: IngredientStatusListProps): Reac
             </div>
             <ul className="flex flex-col gap-stack-tight">
               {list.map((item) => (
-                <IngredientRow key={item.ingredientId} item={item} />
+                <IngredientRow
+                  key={item.ingredientId}
+                  item={item}
+                  accuracy={accuracyByIngredient.get(item.ingredientId)}
+                />
               ))}
             </ul>
           </section>
@@ -66,7 +78,13 @@ export function IngredientStatusList({ items }: IngredientStatusListProps): Reac
   );
 }
 
-function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactElement {
+function IngredientRow({
+  item,
+  accuracy,
+}: {
+  item: IngredientForecastView;
+  accuracy?: IngredientForecastAccuracyView;
+}): React.ReactElement {
   const depletionLabel = formatDepletion(item);
   const deleteMutation = useDeleteIngredient();
 
@@ -102,6 +120,7 @@ function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactE
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
             <span className={cn(toneClass(item.status))}>{depletionLabel}</span>
             {item.trend !== "normal" && <TrendBadge trend={item.trend} />}
+            {accuracy && <AccuracyRiskBadge accuracy={accuracy} />}
           </div>
           <button
             type="button"
@@ -143,6 +162,39 @@ function IngredientRow({ item }: { item: IngredientForecastView }): React.ReactE
       )}
     </li>
   );
+}
+
+function AccuracyRiskBadge({
+  accuracy,
+}: {
+  accuracy: IngredientForecastAccuracyView;
+}): React.ReactElement | null {
+  const risk = getAccuracyRisk(accuracy);
+  if (!risk) return null;
+
+  return (
+    <Link
+      href="/inventory/forecast-accuracy"
+      className={cn(
+        "rounded-full px-2 py-0.5 text-micro shadow-soft",
+        risk.tone === "red" ? "bg-red-soft text-red-deep" : "bg-amber-soft text-amber-deep",
+      )}
+    >
+      {risk.label}
+    </Link>
+  );
+}
+
+function getAccuracyRisk(accuracy: IngredientForecastAccuracyView): {
+  label: string;
+  tone: "red" | "amber";
+} | null {
+  if (accuracy.evaluatedDayCount < 3) return { label: "예측 데이터 부족", tone: "amber" };
+  const mape = accuracy.meanAbsolutePercentageError;
+  if (mape === null) return null;
+  if (mape >= 0.8) return { label: "예측 신뢰도 낮음", tone: "red" };
+  if (mape >= 0.5 || accuracy.bias === "under") return { label: "발주량 확인 필요", tone: "amber" };
+  return null;
 }
 
 function formatLeadTimeSource(item: IngredientForecastView): string {
