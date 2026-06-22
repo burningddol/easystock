@@ -11,8 +11,12 @@ import { useMenuForecastAccuracy } from "@/features/inventory/hooks/useMenuForec
 import { PageHeader } from "@/components/ui/page-header";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
 import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
+import { cn } from "@/lib/utils";
 
 const BACKTEST_OPTIONS = [14, 30, 60] as const;
+const ACCURACY_TABS = ["menu", "ingredient"] as const;
+
+type AccuracyTab = (typeof ACCURACY_TABS)[number];
 
 export default function ForecastAccuracyPage(): React.ReactElement {
   return (
@@ -25,8 +29,9 @@ export default function ForecastAccuracyPage(): React.ReactElement {
 function ForecastAccuracyContent(): React.ReactElement {
   const searchParams = useSearchParams();
   const backtestDays = parseOption(searchParams.get("days"), BACKTEST_OPTIONS, 14);
-  const menuQuery = useMenuForecastAccuracy(backtestDays);
-  const ingredientQuery = useIngredientForecastAccuracy(backtestDays);
+  const activeTab = parseTab(searchParams.get("tab"));
+  const menuQuery = useMenuForecastAccuracy(backtestDays, activeTab === "menu");
+  const ingredientQuery = useIngredientForecastAccuracy(backtestDays, activeTab === "ingredient");
 
   return (
     <section className="flex flex-col gap-section">
@@ -41,12 +46,15 @@ function ForecastAccuracyContent(): React.ReactElement {
 
       <section className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
         <p className="text-body text-ink-1">
-          최근 {backtestDays}일 기준으로 메뉴·재료 예측과 실제 판매/소비량을 비교합니다.
+          최근 {backtestDays}일 기준으로 {activeTab === "menu" ? "메뉴 판매" : "재료 소비"} 예측과
+          실제값을 비교합니다.
         </p>
         <p className="mt-1 text-caption text-ink-3">
           각 날짜의 예측은 그 전날까지의 판매 이력만 사용해 다시 계산합니다.
         </p>
       </section>
+
+      <AccuracyTabNav activeTab={activeTab} backtestDays={backtestDays} />
 
       <ForecastPeriodSelector
         label="백테스트 기간"
@@ -55,19 +63,28 @@ function ForecastAccuracyContent(): React.ReactElement {
         options={BACKTEST_OPTIONS}
         suffix="일"
         pathname="/inventory/forecast-accuracy"
+        extraParams={{ tab: activeTab }}
       />
 
-      <AccuracySection title="재료 예측 정확도">
-        {ingredientQuery.isLoading && <LoadingText />}
-        {ingredientQuery.error && <ErrorAlert message={ingredientQuery.error.message} />}
-        {ingredientQuery.data && <IngredientForecastAccuracyList items={ingredientQuery.data} />}
-      </AccuracySection>
-
-      <AccuracySection title="메뉴 예측 정확도">
-        {menuQuery.isLoading && <LoadingText />}
-        {menuQuery.error && <ErrorAlert message={menuQuery.error.message} />}
-        {menuQuery.data && <MenuForecastAccuracyList items={menuQuery.data} />}
-      </AccuracySection>
+      {activeTab === "menu" ? (
+        <AccuracySection
+          title="메뉴 예측 정확도"
+          description="메뉴별 예상 판매량과 실제 판매량을 비교합니다."
+        >
+          {menuQuery.isLoading && <LoadingText />}
+          {menuQuery.error && <ErrorAlert message={menuQuery.error.message} />}
+          {menuQuery.data && <MenuForecastAccuracyList items={menuQuery.data} />}
+        </AccuracySection>
+      ) : (
+        <AccuracySection
+          title="재료 예측 정확도"
+          description="메뉴 수요 예측에서 환산한 재료 소비량과 실제 소비량을 비교합니다."
+        >
+          {ingredientQuery.isLoading && <LoadingText />}
+          {ingredientQuery.error && <ErrorAlert message={ingredientQuery.error.message} />}
+          {ingredientQuery.data && <IngredientForecastAccuracyList items={ingredientQuery.data} />}
+        </AccuracySection>
+      )}
     </section>
   );
 }
@@ -77,16 +94,88 @@ function parseOption<T extends number>(raw: string | null, options: readonly T[]
   return options.includes(value as T) ? (value as T) : fallback;
 }
 
+function parseTab(raw: string | null): AccuracyTab {
+  return ACCURACY_TABS.includes(raw as AccuracyTab) ? (raw as AccuracyTab) : "menu";
+}
+
+function AccuracyTabNav({
+  activeTab,
+  backtestDays,
+}: {
+  activeTab: AccuracyTab;
+  backtestDays: number;
+}): React.ReactElement {
+  return (
+    <nav
+      aria-label="예측 정확도 종류"
+      className="grid gap-stack-tight rounded-[24px] border border-border bg-card p-2 shadow-soft sm:grid-cols-2"
+    >
+      <AccuracyTabLink
+        tab="menu"
+        activeTab={activeTab}
+        backtestDays={backtestDays}
+        title="메뉴 예측"
+        description="판매량·예상 매출 기준"
+      />
+      <AccuracyTabLink
+        tab="ingredient"
+        activeTab={activeTab}
+        backtestDays={backtestDays}
+        title="재료 예측"
+        description="소비량·발주 판단 기준"
+      />
+    </nav>
+  );
+}
+
+function AccuracyTabLink({
+  tab,
+  activeTab,
+  backtestDays,
+  title,
+  description,
+}: {
+  tab: AccuracyTab;
+  activeTab: AccuracyTab;
+  backtestDays: number;
+  title: string;
+  description: string;
+}): React.ReactElement {
+  const selected = tab === activeTab;
+  const params = new URLSearchParams({ tab, days: String(backtestDays) });
+
+  return (
+    <Link
+      href={`/inventory/forecast-accuracy?${params.toString()}`}
+      aria-current={selected ? "page" : undefined}
+      className={cn(
+        "rounded-[20px] px-4 py-3 transition",
+        selected
+          ? "bg-blue text-white shadow-card"
+          : "bg-white text-ink-2 shadow-soft hover:bg-blue-soft hover:text-blue-deep",
+      )}
+    >
+      <span className="block text-body font-semibold">{title}</span>
+      <span className={cn("mt-1 block text-caption", selected ? "text-white/80" : "text-ink-3")}>
+        {description}
+      </span>
+    </Link>
+  );
+}
+
 function AccuracySection({
   title,
+  description,
   children,
 }: {
   title: string;
+  description: string;
   children: React.ReactNode;
 }): React.ReactElement {
   return (
     <section className="flex flex-col gap-stack-tight">
       <h2 className="text-title-md text-ink-1">{title}</h2>
+      <p className="text-caption text-ink-3">{description}</p>
       {children}
     </section>
   );

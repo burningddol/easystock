@@ -26,10 +26,12 @@ async function fetchIngredientForecastAccuracy(
 
 export function useIngredientForecastAccuracy(
   backtestDays: number = 14,
+  enabled: boolean = true,
 ): UseQueryResult<IngredientForecastAccuracyView[]> {
   return useQuery({
     queryKey: ingredientForecastAccuracyQueryKeyWithPeriod(backtestDays),
     queryFn: () => fetchIngredientForecastAccuracy(backtestDays),
+    enabled,
     staleTime: 5 * 60 * 1000,
   });
 }
