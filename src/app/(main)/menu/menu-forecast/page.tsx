@@ -58,7 +58,7 @@ function MenuForecastContent(): React.ReactElement {
         selectedValue={horizonDays}
         options={HORIZON_OPTIONS}
         suffix="일"
-        pathname="/inventory/menu-forecast"
+        pathname="/menu/menu-forecast"
       />
 
       {query.isLoading && <LoadingText />}

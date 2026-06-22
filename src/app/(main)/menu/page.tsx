@@ -17,7 +17,7 @@ export default function MenuPage(): React.ReactElement {
         title="메뉴"
         action={
           <div className="flex gap-stack-tight">
-            <Link href="/inventory/menu-forecast" className={SECONDARY_BUTTON_CLASSES}>
+            <Link href="/menu/menu-forecast" className={SECONDARY_BUTTON_CLASSES}>
               메뉴 예측
             </Link>
             <Link href="/menu/new" className={SECONDARY_BUTTON_CLASSES}>
