@@ -146,6 +146,7 @@ function DayCell({
 
 interface CellStatus {
   label: string;
+  subLabel?: string;
   tone: "red" | "blue" | "ink";
 }
 
@@ -163,7 +164,8 @@ function getCellStatus(
   }
   if (cell.revenue !== null && cell.revenue > 0 && revenueError !== null) {
     return {
-      label: `오차 ${Math.round(revenueError * 100)}%`,
+      label: `${formatNumber(Math.round(cell.revenue / 10000))}만`,
+      subLabel: `오차 ${Math.round(revenueError * 100)}%`,
       tone: revenueError >= 0.35 ? "red" : "blue",
     };
   }
@@ -177,7 +179,7 @@ function CellStatusBadge({ status }: { status: CellStatus }): React.ReactElement
   return (
     <span
       className={cn(
-        "w-fit rounded-full px-2 py-1 text-[10px] font-semibold leading-none shadow-soft sm:text-micro",
+        "flex w-fit flex-col gap-0.5 rounded-xl px-2 py-1 text-[10px] font-semibold leading-none shadow-soft sm:text-micro",
         status.tone === "red"
           ? "bg-red-soft text-red-deep"
           : status.tone === "blue"
@@ -185,7 +187,10 @@ function CellStatusBadge({ status }: { status: CellStatus }): React.ReactElement
             : "bg-white/90 text-ink-1",
       )}
     >
-      {status.label}
+      <span>{status.label}</span>
+      {status.subLabel && (
+        <span className="text-[9px] opacity-80 sm:text-[10px]">{status.subLabel}</span>
+      )}
     </span>
   );
 }
