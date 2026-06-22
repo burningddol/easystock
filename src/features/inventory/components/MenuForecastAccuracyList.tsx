@@ -38,7 +38,7 @@ export function MenuForecastAccuracyList({
   return (
     <div className="flex flex-col gap-section">
       <section className="grid grid-cols-3 gap-stack-tight">
-        <SummaryTile label="평균 WAPE" value={formatPercent(summary.meanWape)} />
+        <SummaryTile label="평균 총량오차" value={formatPercent(summary.meanWape)} />
         <SummaryTile label="과대예측" value={`${summary.overCount}개`} />
         <SummaryTile label="과소예측" value={`${summary.underCount}개`} />
       </section>
@@ -90,7 +90,7 @@ function MenuForecastAccuracyCard({
       </div>
 
       <dl className="mt-stack grid grid-cols-3 gap-stack-tight">
-        <Metric label="WAPE" value={formatPercent(item.weightedAbsolutePercentageError)} />
+        <Metric label="총량오차율" value={formatPercent(item.weightedAbsolutePercentageError)} />
         <Metric
           label="평균 수량오차"
           value={formatNullableQuantity(item.meanAbsoluteQuantityError)}
@@ -199,7 +199,7 @@ function PriorityNotice({
   return (
     <section className="rounded-[24px] border border-amber/30 bg-amber-soft px-4 py-3 shadow-soft">
       <p className="text-body text-amber-deep">
-        우선 확인: {item.name} · WAPE {formatPercent(item.weightedAbsolutePercentageError)}
+        우선 확인: {item.name} · 총량오차율 {formatPercent(item.weightedAbsolutePercentageError)}
       </p>
       <p className="mt-1 text-caption text-ink-3">{buildTuningHint(item)}</p>
     </section>

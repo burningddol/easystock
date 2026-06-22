@@ -40,8 +40,11 @@ export function RevenueForecastAccuracyCard({
 
   return (
     <div className="flex flex-col gap-section">
-      <section className="grid gap-stack-tight sm:grid-cols-4">
-        <SummaryTile label="WAPE" value={formatPercent(data.weightedAbsolutePercentageError)} />
+      <section className="grid gap-stack-tight sm:grid-cols-3">
+        <SummaryTile
+          label="총량오차율"
+          value={formatPercent(data.weightedAbsolutePercentageError)}
+        />
         <SummaryTile
           label="평균 금액오차"
           value={`${formatWon(data.meanAbsoluteWonError ?? 0)}원`}
@@ -65,8 +68,8 @@ export function RevenueForecastAccuracyCard({
         </div>
 
         <p className="mt-stack rounded-2xl border border-border bg-bg px-3 py-2 text-caption text-ink-3">
-          WAPE는 전체 실제 매출 대비 총 오차입니다. 매출이 작은 날 하나에 흔들리는 MAPE보다 운영
-          판단용으로 더 안정적입니다.
+          총량오차율은 비교 기간 전체 실제 매출 대비 총 오차입니다. 하루 매출이 작아 생기는
+          극단값보다 전체 운영 흐름을 더 안정적으로 보여줍니다.
         </p>
 
         <ol className="mt-stack grid grid-cols-7 gap-1.5">

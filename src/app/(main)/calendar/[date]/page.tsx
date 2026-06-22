@@ -349,7 +349,7 @@ function RevenueBacktestComparison({
                 : "bg-blue-soft text-blue-deep",
           )}
         >
-          WAPE{" "}
+          총량오차{" "}
           {summary.weightedAbsolutePercentageError === null
             ? "-"
             : `${Math.round(summary.weightedAbsolutePercentageError * 100)}%`}
