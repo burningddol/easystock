@@ -291,6 +291,13 @@ describe("application layer", () => {
           isColdStart: false,
           forecastSource: "consumption_history",
           purchaseRecommendation: null,
+          basis: {
+            model: "hierarchical_weekday",
+            usableSampleCount: 1,
+            averageWeekdayConfidence: 1 / 13,
+            maxWeekdayConfidence: 1 / 13,
+            confidenceLevel: "collecting",
+          },
         },
       ]);
 

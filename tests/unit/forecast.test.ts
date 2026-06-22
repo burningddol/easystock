@@ -15,10 +15,19 @@ import {
   recommendPurchaseQuantity,
   type DailyConsumption,
   type DailyMenuDemand,
+  type ForecastBasis,
 } from "@/lib/domain/forecast";
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const today = new Date("2026-04-30T00:00:00");
+
+const forecastBasis: ForecastBasis = {
+  model: "hierarchical_weekday",
+  usableSampleCount: 30,
+  averageWeekdayConfidence: 0.6,
+  maxWeekdayConfidence: 0.85,
+  confidenceLevel: "medium",
+};
 
 function daysAgo(days: number): Date {
   return new Date(today.getTime() - days * ONE_DAY);
@@ -657,6 +666,7 @@ describe("forecastIngredientDemandFromMenus", () => {
           fallbackDailyQuantity: 100,
           trend: "normal",
           isColdStart: false,
+          basis: forecastBasis,
         },
       },
     ]);
@@ -711,6 +721,7 @@ describe("forecastIngredientDemandFromMenus", () => {
           fallbackDailyQuantity: 90,
           trend: "normal",
           isColdStart: false,
+          basis: forecastBasis,
         },
       },
     ]);
@@ -763,6 +774,7 @@ describe("forecastIngredientDemandFromMenus", () => {
           fallbackDailyQuantity: 10,
           trend: "normal",
           isColdStart: false,
+          basis: forecastBasis,
         },
       },
     ]);
