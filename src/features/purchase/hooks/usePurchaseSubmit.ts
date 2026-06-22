@@ -10,6 +10,7 @@ import {
 } from "@/lib/supabase/rpc";
 import { menuListQueryKey } from "@/features/menu/hooks/useMenus";
 import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
+import { orderRecommendationReportQueryKey } from "@/features/inventory/hooks/useOrderRecommendationReport";
 import { todayDashboardQueryKey } from "@/features/dashboard/hooks/useTodayDashboard";
 import { ingredientListQueryKey } from "./useIngredients";
 import type { SavePurchaseInput } from "../schemas";
@@ -54,6 +55,7 @@ export function usePurchaseSubmit(): UseMutationResult<SavePurchaseResult, Error
       // 마진 / 재료 목록 모두 stale. 일관 무효화.
       void queryClient.invalidateQueries({ queryKey: ingredientListQueryKey });
       void queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey });
+      void queryClient.invalidateQueries({ queryKey: orderRecommendationReportQueryKey });
       void queryClient.invalidateQueries({ queryKey: menuListQueryKey });
       void queryClient.invalidateQueries({ queryKey: todayDashboardQueryKey });
     },
