@@ -35,6 +35,7 @@ export type DepletionStatus = "safe" | "caution" | "order_needed" | "critical";
 export type ConsumptionTrend = "normal" | "rising" | "falling";
 export type BusinessDayType = "weekday" | "friday" | "weekend";
 export type ForecastSensitivity = "stable" | "balanced" | "responsive";
+export type ForecastConfidenceLevel = "high" | "medium" | "low" | "collecting";
 
 export interface ForecastTuning {
   recencyDecayDays: number;
@@ -138,6 +139,15 @@ export interface ForecastResult {
   status: DepletionStatus;
   trend: ConsumptionTrend;
   isColdStart: boolean;
+  basis: ForecastBasis;
+}
+
+export interface ForecastBasis {
+  model: "hierarchical_weekday";
+  usableSampleCount: number;
+  averageWeekdayConfidence: number;
+  maxWeekdayConfidence: number;
+  confidenceLevel: ForecastConfidenceLevel;
 }
 
 export interface PurchaseRecommendationInput {
@@ -176,6 +186,7 @@ export interface MenuDemandForecastResult {
   fallbackDailyQuantity: number;
   trend: ConsumptionTrend;
   isColdStart: boolean;
+  basis: ForecastBasis;
 }
 
 export interface UsageForecastModel {
@@ -538,6 +549,51 @@ export function computeTrendFactor(samples: readonly DailyConsumption[], today: 
   return clamp(last7Avg.dividedBy(last30Avg).toNumber(), TREND_FACTOR_MIN, TREND_FACTOR_MAX);
 }
 
+export function computeForecastBasis(
+  samples: readonly DailyConsumption[],
+  daysOff: readonly Weekday[],
+  sensitivity: ForecastSensitivity = "balanced",
+): ForecastBasis {
+  const tuning = FORECAST_TUNING_PRESETS[sensitivity];
+  const weekdayCounts = new Map<Weekday, number>();
+  let usableSampleCount = 0;
+
+  for (const sample of samples) {
+    if (sample.amount <= 0 || isRegularDayOff(sample.date, daysOff)) continue;
+    usableSampleCount += 1;
+    const weekday = weekdayOf(sample.date);
+    weekdayCounts.set(weekday, (weekdayCounts.get(weekday) ?? 0) + 1);
+  }
+
+  const confidences = Array.from(weekdayCounts.values()).map((count) =>
+    Math.min(count / (count + tuning.weekdayPriorStrength), tuning.maxWeekdayConfidence),
+  );
+  const averageWeekdayConfidence =
+    confidences.length > 0
+      ? confidences.reduce((sum, confidence) => sum + confidence, 0) / confidences.length
+      : 0;
+  const maxWeekdayConfidence =
+    confidences.length > 0 ? Math.max(...confidences) : tuning.maxWeekdayConfidence;
+
+  return {
+    model: "hierarchical_weekday",
+    usableSampleCount,
+    averageWeekdayConfidence,
+    maxWeekdayConfidence,
+    confidenceLevel: classifyForecastConfidence(usableSampleCount, averageWeekdayConfidence),
+  };
+}
+
+function classifyForecastConfidence(
+  usableSampleCount: number,
+  averageWeekdayConfidence: number,
+): ForecastConfidenceLevel {
+  if (usableSampleCount < COLD_START_DAYS) return "collecting";
+  if (usableSampleCount < 14 || averageWeekdayConfidence < 0.35) return "low";
+  if (usableSampleCount < 30 || averageWeekdayConfidence < 0.65) return "medium";
+  return "high";
+}
+
 function averageOverDays(
   samples: readonly DailyConsumption[],
   today: Date,
@@ -554,12 +610,14 @@ function averageOverDays(
  * 한 재료의 예측 합성 함수 — 호출 측 (UI / RPC) 진입점.
  */
 export function forecastIngredient(input: ForecastInput): ForecastResult {
+  const basis = computeForecastBasis(input.consumptionSamples, input.daysOff, input.sensitivity);
   if (isColdStart(input.signupDate, input.today)) {
     return {
       expectedDepletionDate: null,
       status: "safe",
       trend: "normal",
       isColdStart: true,
+      basis,
     };
   }
 
@@ -583,6 +641,7 @@ export function forecastIngredient(input: ForecastInput): ForecastResult {
     status: classifyStatus(depletionDate, input.leadTimeDays, input.safetyBufferDays, input.today),
     trend,
     isColdStart: false,
+    basis,
   };
 }
 
@@ -595,19 +654,21 @@ export function forecastIngredient(input: ForecastInput): ForecastResult {
  */
 export function forecastMenuDemand(input: MenuDemandForecastInput): MenuDemandForecastResult {
   const horizonDays = input.horizonDays ?? 7;
+  const consumptionLikeSamples = input.demandSamples.map((sample) => ({
+    date: sample.date,
+    amount: sample.quantity,
+  }));
+  const basis = computeForecastBasis(consumptionLikeSamples, input.daysOff, input.sensitivity);
   if (isColdStart(input.signupDate, input.today)) {
     return {
       dailyPredictions: buildZeroMenuDemandDays(input.today, horizonDays, input.daysOff),
       fallbackDailyQuantity: 0,
       trend: "normal",
       isColdStart: true,
+      basis,
     };
   }
 
-  const consumptionLikeSamples = input.demandSamples.map((sample) => ({
-    date: sample.date,
-    amount: sample.quantity,
-  }));
   const model = computeBusinessDayUsageModel(
     consumptionLikeSamples,
     input.daysOff,
@@ -642,6 +703,7 @@ export function forecastMenuDemand(input: MenuDemandForecastInput): MenuDemandFo
     fallbackDailyQuantity: model.fallbackDailyUsage.toNumber(),
     trend,
     isColdStart: false,
+    basis,
   };
 }
 

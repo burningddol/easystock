@@ -1,5 +1,6 @@
 import {
   classifyStatus,
+  computeForecastBasis,
   forecastIngredientDemandFromMenus,
   forecastIngredient,
   forecastMenuDemand,
@@ -7,6 +8,7 @@ import {
   type DailyConsumption,
   type DailyMenuDemand,
   type ForecastResult,
+  type ForecastBasis,
   type IngredientDemandForecast,
   type PurchaseRecommendationResult,
 } from "@/lib/domain/forecast";
@@ -47,6 +49,7 @@ export interface MenuDemandForecastView {
   sevenDayTotalQuantity: number;
   trend: "rising" | "falling" | "normal";
   isColdStart: boolean;
+  basis: ForecastBasis;
   dailyPredictions: Array<{
     date: Date;
     predictedQuantity: number;
@@ -69,6 +72,7 @@ export interface MenuForecastAccuracyView {
   name: string;
   averageAbsoluteError: number | null;
   meanAbsolutePercentageError: number | null;
+  reliability: ForecastReliability;
   bias: "over" | "under" | "balanced" | "insufficient_data";
   evaluatedDayCount: number;
   actualTotalQuantity: number;
@@ -88,6 +92,7 @@ export interface IngredientForecastAccuracyView {
   unit: "g" | "ml" | "piece";
   averageAbsoluteError: number | null;
   meanAbsolutePercentageError: number | null;
+  reliability: ForecastReliability;
   bias: "over" | "under" | "balanced" | "insufficient_data";
   evaluatedDayCount: number;
   actualTotalAmount: number;
@@ -100,6 +105,8 @@ export interface IngredientForecastAccuracyView {
     absolutePercentageError: number | null;
   }>;
 }
+
+export type ForecastReliability = "good" | "watch" | "low" | "insufficient_data";
 
 export async function loadDepletionForecast(client: RpcClient): Promise<IngredientForecastView[]> {
   const { data, error } = await getDepletionForecast(client);
@@ -125,6 +132,8 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       today,
       sensitivity: row.forecastSensitivity,
     });
+    const basis =
+      forecast.basis ?? computeForecastBasis(samples, row.regularDaysOff, row.forecastSensitivity);
     return {
       ingredientId: row.ingredientId,
       name: row.name,
@@ -139,6 +148,7 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
       forecastSource: "consumption_history" as const,
       purchaseRecommendation: null,
       ...forecast,
+      basis,
     };
   });
 
@@ -214,6 +224,7 @@ export async function loadMenuDemandForecastViews(
         ),
         trend: forecast.trend,
         isColdStart: forecast.isColdStart,
+        basis: forecast.basis,
         dailyPredictions,
         optionGroups: row.optionGroups.map((group) => ({
           optionGroupId: group.optionGroupId,
@@ -298,6 +309,7 @@ export async function loadMenuForecastAccuracyViews(
         name: row.name,
         averageAbsoluteError,
         meanAbsolutePercentageError,
+        reliability: classifyForecastReliability(meanAbsolutePercentageError, evaluated.length),
         bias: classifyForecastBias(actualTotalQuantity, predictedTotalQuantity, evaluated.length),
         evaluatedDayCount: evaluated.length,
         actualTotalQuantity,
@@ -422,6 +434,7 @@ export async function loadIngredientForecastAccuracyViews(
         unit: ingredient.unit,
         averageAbsoluteError,
         meanAbsolutePercentageError,
+        reliability: classifyForecastReliability(meanAbsolutePercentageError, evaluated.length),
         bias: classifyForecastBias(actualTotalAmount, predictedTotalAmount, evaluated.length),
         evaluatedDayCount: evaluated.length,
         actualTotalAmount,
@@ -525,6 +538,16 @@ function classifyForecastBias(
   if (ratio >= 1.15) return "over";
   if (ratio <= 0.85) return "under";
   return "balanced";
+}
+
+function classifyForecastReliability(
+  meanAbsolutePercentageError: number | null,
+  evaluatedDayCount: number,
+): ForecastReliability {
+  if (evaluatedDayCount < 3 || meanAbsolutePercentageError === null) return "insufficient_data";
+  if (meanAbsolutePercentageError >= 0.8) return "low";
+  if (meanAbsolutePercentageError >= 0.35) return "watch";
+  return "good";
 }
 
 export interface ApplyInventoryReplayInput {

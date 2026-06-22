@@ -14,6 +14,13 @@ const TREND_LABEL: Record<MenuDemandForecastView["trend"], string> = {
   normal: "보통",
 };
 
+const CONFIDENCE_LABEL: Record<MenuDemandForecastView["basis"]["confidenceLevel"], string> = {
+  high: "신뢰도 높음",
+  medium: "신뢰도 보통",
+  low: "신뢰도 낮음",
+  collecting: "데이터 수집 중",
+};
+
 export function MenuDemandForecastList({ items }: MenuDemandForecastListProps): React.ReactElement {
   if (items.length === 0) {
     return (
@@ -48,8 +55,15 @@ function MenuDemandForecastCard({ item }: { item: MenuDemandForecastView }): Rea
             {formatQuantity(item.tomorrowQuantity)}
           </p>
         </div>
-        <TrendBadge trend={item.trend} isColdStart={item.isColdStart} />
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <TrendBadge trend={item.trend} isColdStart={item.isColdStart} />
+          <ConfidenceBadge level={item.basis.confidenceLevel} />
+        </div>
       </div>
+
+      <p className="mt-stack-tight rounded-2xl border border-border bg-bg px-3 py-2 text-caption text-ink-3">
+        {formatForecastBasis(item)}
+      </p>
 
       <ol className="mt-stack grid grid-cols-7 gap-1.5">
         {item.dailyPredictions.map((day) => (
@@ -80,6 +94,37 @@ function MenuDemandForecastCard({ item }: { item: MenuDemandForecastView }): Rea
       )}
     </article>
   );
+}
+
+function ConfidenceBadge({
+  level,
+}: {
+  level: MenuDemandForecastView["basis"]["confidenceLevel"];
+}): React.ReactElement {
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2 py-0.5 text-micro shadow-soft",
+        level === "high"
+          ? "bg-blue-soft text-blue-deep"
+          : level === "medium"
+            ? "bg-bg text-ink-3"
+            : level === "low"
+              ? "bg-amber-soft text-amber-deep"
+              : "bg-bg text-ink-4",
+      )}
+    >
+      {CONFIDENCE_LABEL[level]}
+    </span>
+  );
+}
+
+function formatForecastBasis(item: MenuDemandForecastView): string {
+  const weekdayConfidence = Math.round(item.basis.averageWeekdayConfidence * 100);
+  if (item.isColdStart) {
+    return `판매 데이터 ${item.basis.usableSampleCount}일 기반 · 가입 초기라 예측을 수집 중입니다.`;
+  }
+  return `판매 데이터 ${item.basis.usableSampleCount}일 기반 · 월~목/금/주말 그룹 평균에 개별요일 보정 ${weekdayConfidence}%를 섞어 계산합니다.`;
 }
 
 function OptionGroupSummary({

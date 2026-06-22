@@ -115,6 +115,7 @@ function IngredientRow({
           </span>
           <span className="text-caption text-ink-3">{formatLeadTimeSource(item)}</span>
           <span className="text-caption text-ink-3">{formatForecastSource(item)}</span>
+          <span className="text-caption text-ink-3">{formatForecastBasis(item)}</span>
         </div>
         <div className="flex items-center gap-stack-tight">
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
@@ -212,6 +213,19 @@ function formatForecastSource(item: IngredientForecastView): string {
   }
   return "최근 재료 사용량 기준";
 }
+
+function formatForecastBasis(item: IngredientForecastView): string {
+  const confidence = Math.round(item.basis.averageWeekdayConfidence * 100);
+  const label = CONFIDENCE_LABEL[item.basis.confidenceLevel];
+  return `${label} · 데이터 ${item.basis.usableSampleCount}일 · 요일 보정 ${confidence}%`;
+}
+
+const CONFIDENCE_LABEL: Record<IngredientForecastView["basis"]["confidenceLevel"], string> = {
+  high: "예측 신뢰도 높음",
+  medium: "예측 신뢰도 보통",
+  low: "예측 신뢰도 낮음",
+  collecting: "예측 데이터 수집 중",
+};
 
 const STATUS_TONE: Record<DepletionStatus, string> = {
   critical: "text-red-deep",

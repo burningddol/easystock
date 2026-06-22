@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { buildCalendarMenuForecastByDate } from "@/features/calendar/lib/menu-forecast-calendar";
 import type { MenuDemandForecastView } from "@/features/inventory/hooks/useMenuDemandForecast";
 
+const basis: MenuDemandForecastView["basis"] = {
+  model: "hierarchical_weekday",
+  usableSampleCount: 30,
+  averageWeekdayConfidence: 0.6,
+  maxWeekdayConfidence: 0.85,
+  confidenceLevel: "medium",
+};
+
 describe("calendar menu forecast summary", () => {
   it("groups menu demand forecasts by date and sums revenue", () => {
     const forecasts: MenuDemandForecastView[] = [
@@ -13,6 +21,7 @@ describe("calendar menu forecast summary", () => {
         sevenDayTotalQuantity: 2,
         trend: "normal",
         isColdStart: false,
+        basis,
         dailyPredictions: [{ date: new Date("2026-06-20T00:00:00"), predictedQuantity: 2 }],
         optionGroups: [],
       },
@@ -24,6 +33,7 @@ describe("calendar menu forecast summary", () => {
         sevenDayTotalQuantity: 1.5,
         trend: "normal",
         isColdStart: false,
+        basis,
         dailyPredictions: [{ date: new Date("2026-06-20T00:00:00"), predictedQuantity: 1.5 }],
         optionGroups: [],
       },

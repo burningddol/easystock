@@ -15,6 +15,13 @@ const BIAS_LABEL: Record<MenuForecastAccuracyView["bias"], string> = {
   insufficient_data: "데이터 부족",
 };
 
+const RELIABILITY_LABEL: Record<MenuForecastAccuracyView["reliability"], string> = {
+  good: "신뢰도 좋음",
+  watch: "주의",
+  low: "신뢰도 낮음",
+  insufficient_data: "데이터 부족",
+};
+
 export function MenuForecastAccuracyList({
   items,
 }: MenuForecastAccuracyListProps): React.ReactElement {
@@ -76,7 +83,10 @@ function MenuForecastAccuracyCard({
             {formatQuantity(item.predictedTotalQuantity)}
           </p>
         </div>
-        <BiasBadge bias={item.bias} />
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <ReliabilityBadge reliability={item.reliability} />
+          <BiasBadge bias={item.bias} />
+        </div>
       </div>
 
       <dl className="mt-stack grid grid-cols-3 gap-stack-tight">
@@ -152,6 +162,29 @@ function BiasBadge({ bias }: { bias: MenuForecastAccuracyView["bias"] }): React.
   );
 }
 
+function ReliabilityBadge({
+  reliability,
+}: {
+  reliability: MenuForecastAccuracyView["reliability"];
+}): React.ReactElement {
+  return (
+    <span
+      className={cn(
+        "shrink-0 rounded-full px-2.5 py-1 text-micro shadow-soft",
+        reliability === "good"
+          ? "bg-blue-soft text-blue-deep"
+          : reliability === "watch"
+            ? "bg-amber-soft text-amber-deep"
+            : reliability === "low"
+              ? "bg-red-soft text-red-deep"
+              : "bg-bg text-ink-3",
+      )}
+    >
+      {RELIABILITY_LABEL[reliability]}
+    </span>
+  );
+}
+
 function PriorityNotice({
   item,
 }: {
@@ -203,6 +236,10 @@ function buildSummary(items: readonly MenuForecastAccuracyView[]): {
 
 function buildTuningHint(item: MenuForecastAccuracyView): string {
   if (item.evaluatedDayCount < 3) return "판매 비교일이 적습니다. 데이터가 더 쌓인 뒤 판단하세요.";
+  if (item.reliability === "low")
+    return "오차율이 매우 큽니다. 이벤트성 판매, 메뉴 옵션, 최근 레시피 변경을 먼저 확인하세요.";
+  if (item.reliability === "watch")
+    return "예측을 참고하되 발주 전 최근 1주 판매 흐름을 한 번 더 확인하세요.";
   if (item.bias === "under")
     return "실제 판매가 예측보다 많습니다. 발주량 부족 위험을 먼저 확인하세요.";
   if (item.bias === "over")
