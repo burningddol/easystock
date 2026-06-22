@@ -1,0 +1,1 @@
+export const CALENDAR_SHORT_FORECAST_DAYS = 7;

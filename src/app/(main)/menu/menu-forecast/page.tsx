@@ -50,6 +50,12 @@ function MenuForecastContent(): React.ReactElement {
         <p className="mt-1 text-caption text-ink-3">
           재료 소진 예측은 이 메뉴 수요와 옵션 선택률을 재료 레시피로 변환해서 계산합니다.
         </p>
+        {horizonDays > 7 && (
+          <p className="mt-3 rounded-2xl border border-amber-soft bg-amber-soft/50 px-3 py-2 text-caption text-amber-deep">
+            14일·30일 예측은 같은 요일 패턴을 반복한 참고용입니다. 실제 발주 판단은 최근 7일 단기
+            예측과 재고 상태를 함께 확인하세요.
+          </p>
+        )}
       </section>
 
       <ForecastPeriodSelector
