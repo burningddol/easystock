@@ -71,8 +71,8 @@ export interface MenuDemandForecastView {
 export interface MenuForecastAccuracyView {
   menuId: string;
   name: string;
-  averageAbsoluteError: number | null;
-  meanAbsolutePercentageError: number | null;
+  meanAbsoluteQuantityError: number | null;
+  weightedAbsolutePercentageError: number | null;
   reliability: ForecastReliability;
   diagnosticReasons: string[];
   bias: "over" | "under" | "balanced" | "insufficient_data";
@@ -83,8 +83,8 @@ export interface MenuForecastAccuracyView {
     date: Date;
     actualQuantity: number;
     predictedQuantity: number;
-    absoluteError: number;
-    absolutePercentageError: number | null;
+    absoluteQuantityError: number;
+    signedQuantityError: number;
   }>;
 }
 
@@ -92,8 +92,12 @@ export interface IngredientForecastAccuracyView {
   ingredientId: string;
   name: string;
   unit: "g" | "ml" | "piece";
-  averageAbsoluteError: number | null;
-  meanAbsolutePercentageError: number | null;
+  meanAbsoluteAmountError: number | null;
+  weightedAbsolutePercentageError: number | null;
+  meanAbsoluteDayEquivalentError: number | null;
+  riskAdjustedDayError: number | null;
+  underPredictedDayCount: number;
+  overPredictedDayCount: number;
   reliability: ForecastReliability;
   diagnosticReasons: string[];
   bias: "over" | "under" | "balanced" | "insufficient_data";
@@ -104,14 +108,14 @@ export interface IngredientForecastAccuracyView {
     date: Date;
     actualAmount: number;
     predictedAmount: number;
-    absoluteError: number;
-    absolutePercentageError: number | null;
+    absoluteAmountError: number;
+    signedAmountError: number;
+    dayEquivalentError: number | null;
   }>;
 }
 
 export interface RevenueForecastAccuracyView {
-  averageAbsoluteError: number | null;
-  meanAbsolutePercentageError: number | null;
+  meanAbsoluteWonError: number | null;
   weightedAbsolutePercentageError: number | null;
   reliability: ForecastReliability;
   bias: "over" | "under" | "balanced" | "insufficient_data";
@@ -122,8 +126,9 @@ export interface RevenueForecastAccuracyView {
     date: Date;
     actualRevenue: number;
     predictedRevenue: number;
-    absoluteError: number;
-    absolutePercentageError: number | null;
+    absoluteWonError: number;
+    signedWonError: number;
+    weightedAbsolutePercentageError: number | null;
   }>;
 }
 
@@ -301,31 +306,31 @@ export async function loadMenuForecastAccuracyViews(
         });
         const actualQuantity = sampleByDate.get(dateKey(targetDate))?.quantity ?? 0;
         const predictedQuantity = forecast.dailyPredictions[0]?.predictedQuantity ?? 0;
-        const absoluteError = Math.abs(predictedQuantity - actualQuantity);
+        const signedQuantityError = predictedQuantity - actualQuantity;
+        const absoluteQuantityError = Math.abs(signedQuantityError);
 
         return {
           date: targetDate,
           actualQuantity,
           predictedQuantity,
-          absoluteError,
-          absolutePercentageError:
-            actualQuantity > 0 ? absoluteError / Math.max(1, actualQuantity) : null,
+          absoluteQuantityError,
+          signedQuantityError,
         };
       });
 
       const evaluated = dailyResults.filter((result) => result.actualQuantity > 0);
       const actualTotalQuantity = sumBy(dailyResults, (result) => result.actualQuantity);
       const predictedTotalQuantity = sumBy(dailyResults, (result) => result.predictedQuantity);
-      const averageAbsoluteError =
+      const meanAbsoluteQuantityError =
         evaluated.length > 0
-          ? sumBy(evaluated, (result) => result.absoluteError) / evaluated.length
+          ? sumBy(evaluated, (result) => result.absoluteQuantityError) / evaluated.length
           : null;
-      const meanAbsolutePercentageError =
-        evaluated.length > 0
-          ? sumBy(evaluated, (result) => result.absolutePercentageError ?? 0) / evaluated.length
-          : null;
+      const weightedAbsolutePercentageError = computeWape(
+        sumBy(dailyResults, (result) => result.absoluteQuantityError),
+        actualTotalQuantity,
+      );
       const reliability = classifyForecastReliability(
-        meanAbsolutePercentageError,
+        weightedAbsolutePercentageError,
         evaluated.length,
       );
       const bias = classifyForecastBias(
@@ -337,8 +342,8 @@ export async function loadMenuForecastAccuracyViews(
       return {
         menuId: row.menuId,
         name: row.name,
-        averageAbsoluteError,
-        meanAbsolutePercentageError,
+        meanAbsoluteQuantityError,
+        weightedAbsolutePercentageError,
         reliability,
         diagnosticReasons: buildForecastDiagnostics({
           kind: "menu",
@@ -354,10 +359,10 @@ export async function loadMenuForecastAccuracyViews(
       };
     })
     .sort((a, b) => {
-      if (a.meanAbsolutePercentageError === null) return 1;
-      if (b.meanAbsolutePercentageError === null) return -1;
-      const aError = a.meanAbsolutePercentageError;
-      const bError = b.meanAbsolutePercentageError;
+      if (a.weightedAbsolutePercentageError === null) return 1;
+      if (b.weightedAbsolutePercentageError === null) return -1;
+      const aError = a.weightedAbsolutePercentageError;
+      const bError = b.weightedAbsolutePercentageError;
       return bError - aError;
     });
 }
@@ -400,38 +405,34 @@ export async function loadRevenueForecastAccuracyView(
       return (forecast.dailyPredictions[0]?.predictedQuantity ?? 0) * row.price;
     });
     const actualRevenue = actualRevenueByDate.get(dateKey(targetDate)) ?? 0;
-    const absoluteError = Math.abs(predictedRevenue - actualRevenue);
+    const signedWonError = predictedRevenue - actualRevenue;
+    const absoluteWonError = Math.abs(signedWonError);
     return {
       date: targetDate,
       actualRevenue,
       predictedRevenue,
-      absoluteError,
-      absolutePercentageError:
-        actualRevenue > 0 ? absoluteError / Math.max(1, actualRevenue) : null,
+      absoluteWonError,
+      signedWonError,
+      weightedAbsolutePercentageError: actualRevenue > 0 ? absoluteWonError / actualRevenue : null,
     };
   });
 
   const evaluated = dailyResults.filter((result) => result.actualRevenue > 0);
   const actualTotalRevenue = sumBy(dailyResults, (result) => result.actualRevenue);
   const predictedTotalRevenue = sumBy(dailyResults, (result) => result.predictedRevenue);
-  const averageAbsoluteError =
+  const meanAbsoluteWonError =
     evaluated.length > 0
-      ? sumBy(evaluated, (result) => result.absoluteError) / evaluated.length
+      ? sumBy(evaluated, (result) => result.absoluteWonError) / evaluated.length
       : null;
-  const meanAbsolutePercentageError =
-    evaluated.length > 0
-      ? sumBy(evaluated, (result) => result.absolutePercentageError ?? 0) / evaluated.length
-      : null;
-  const weightedAbsolutePercentageError =
-    actualTotalRevenue > 0
-      ? sumBy(dailyResults, (result) => result.absoluteError) / actualTotalRevenue
-      : null;
+  const weightedAbsolutePercentageError = computeWape(
+    sumBy(dailyResults, (result) => result.absoluteWonError),
+    actualTotalRevenue,
+  );
 
   return {
-    averageAbsoluteError,
-    meanAbsolutePercentageError,
+    meanAbsoluteWonError,
     weightedAbsolutePercentageError,
-    reliability: classifyForecastReliability(meanAbsolutePercentageError, evaluated.length),
+    reliability: classifyForecastReliability(weightedAbsolutePercentageError, evaluated.length),
     bias: classifyForecastBias(actualTotalRevenue, predictedTotalRevenue, evaluated.length),
     evaluatedDayCount: evaluated.length,
     actualTotalRevenue,
@@ -520,29 +521,50 @@ export async function loadIngredientForecastAccuracyViews(
         const key = dateKey(date);
         const actualAmount = actualDaily.get(key) ?? 0;
         const predictedAmount = predictedDaily.get(key) ?? 0;
-        const absoluteError = Math.abs(predictedAmount - actualAmount);
+        const signedAmountError = predictedAmount - actualAmount;
+        const absoluteAmountError = Math.abs(signedAmountError);
+        const demandBasis = Math.max(actualAmount, predictedAmount);
         return {
           date,
           actualAmount,
           predictedAmount,
-          absoluteError,
-          absolutePercentageError:
-            actualAmount > 0 ? absoluteError / Math.max(1, actualAmount) : null,
+          absoluteAmountError,
+          signedAmountError,
+          dayEquivalentError: demandBasis > 0 ? absoluteAmountError / demandBasis : null,
         };
       });
       const evaluated = dailyResults.filter((result) => result.actualAmount > 0);
       const actualTotalAmount = sumBy(dailyResults, (result) => result.actualAmount);
       const predictedTotalAmount = sumBy(dailyResults, (result) => result.predictedAmount);
-      const averageAbsoluteError =
+      const meanAbsoluteAmountError =
         evaluated.length > 0
-          ? sumBy(evaluated, (result) => result.absoluteError) / evaluated.length
+          ? sumBy(evaluated, (result) => result.absoluteAmountError) / evaluated.length
           : null;
-      const meanAbsolutePercentageError =
-        evaluated.length > 0
-          ? sumBy(evaluated, (result) => result.absolutePercentageError ?? 0) / evaluated.length
+      const weightedAbsolutePercentageError = computeWape(
+        sumBy(dailyResults, (result) => result.absoluteAmountError),
+        actualTotalAmount,
+      );
+      const dayErrorSamples = evaluated.filter((result) => result.dayEquivalentError !== null);
+      const meanAbsoluteDayEquivalentError =
+        dayErrorSamples.length > 0
+          ? sumBy(dayErrorSamples, (result) => result.dayEquivalentError ?? 0) /
+            dayErrorSamples.length
           : null;
+      const riskAdjustedDayError =
+        dayErrorSamples.length > 0
+          ? sumBy(dayErrorSamples, (result) => {
+              const weight = result.signedAmountError < 0 ? 2 : 1;
+              return (result.dayEquivalentError ?? 0) * weight;
+            }) / dayErrorSamples.length
+          : null;
+      const underPredictedDayCount = evaluated.filter(
+        (result) => result.signedAmountError < 0,
+      ).length;
+      const overPredictedDayCount = evaluated.filter(
+        (result) => result.signedAmountError > 0,
+      ).length;
       const reliability = classifyForecastReliability(
-        meanAbsolutePercentageError,
+        weightedAbsolutePercentageError,
         evaluated.length,
       );
       const bias = classifyForecastBias(actualTotalAmount, predictedTotalAmount, evaluated.length);
@@ -551,8 +573,12 @@ export async function loadIngredientForecastAccuracyViews(
         ingredientId: ingredient.ingredientId,
         name: ingredient.name,
         unit: ingredient.unit,
-        averageAbsoluteError,
-        meanAbsolutePercentageError,
+        meanAbsoluteAmountError,
+        weightedAbsolutePercentageError,
+        meanAbsoluteDayEquivalentError,
+        riskAdjustedDayError,
+        underPredictedDayCount,
+        overPredictedDayCount,
         reliability,
         diagnosticReasons: buildForecastDiagnostics({
           kind: "ingredient",
@@ -562,8 +588,8 @@ export async function loadIngredientForecastAccuracyViews(
             date: result.date,
             actualQuantity: result.actualAmount,
             predictedQuantity: result.predictedAmount,
-            absoluteError: result.absoluteError,
-            absolutePercentageError: result.absolutePercentageError,
+            absoluteQuantityError: result.absoluteAmountError,
+            signedQuantityError: result.signedAmountError,
           })),
         }),
         bias,
@@ -574,9 +600,9 @@ export async function loadIngredientForecastAccuracyViews(
       };
     })
     .sort((a, b) => {
-      if (a.meanAbsolutePercentageError === null) return 1;
-      if (b.meanAbsolutePercentageError === null) return -1;
-      return b.meanAbsolutePercentageError - a.meanAbsolutePercentageError;
+      if (a.riskAdjustedDayError === null) return 1;
+      if (b.riskAdjustedDayError === null) return -1;
+      return b.riskAdjustedDayError - a.riskAdjustedDayError;
     });
 }
 
@@ -690,6 +716,10 @@ function sumBy<T>(items: readonly T[], selector: (item: T) => number): number {
   return items.reduce((sum, item) => sum + selector(item), 0);
 }
 
+function computeWape(absoluteErrorTotal: number, actualTotal: number): number | null {
+  return actualTotal > 0 ? absoluteErrorTotal / actualTotal : null;
+}
+
 function classifyForecastBias(
   actualTotalQuantity: number,
   predictedTotalQuantity: number,
@@ -704,12 +734,14 @@ function classifyForecastBias(
 }
 
 function classifyForecastReliability(
-  meanAbsolutePercentageError: number | null,
+  weightedAbsolutePercentageError: number | null,
   evaluatedDayCount: number,
 ): ForecastReliability {
-  if (evaluatedDayCount < 3 || meanAbsolutePercentageError === null) return "insufficient_data";
-  if (meanAbsolutePercentageError >= 0.8) return "low";
-  if (meanAbsolutePercentageError >= 0.35) return "watch";
+  if (evaluatedDayCount < 3 || weightedAbsolutePercentageError === null) {
+    return "insufficient_data";
+  }
+  if (weightedAbsolutePercentageError >= 0.8) return "low";
+  if (weightedAbsolutePercentageError >= 0.35) return "watch";
   return "good";
 }
 
@@ -726,8 +758,8 @@ function buildForecastDiagnostics({
     date: Date;
     actualQuantity: number;
     predictedQuantity: number;
-    absoluteError: number;
-    absolutePercentageError: number | null;
+    absoluteQuantityError: number;
+    signedQuantityError: number;
   }[];
 }): string[] {
   const reasons: string[] = [];
@@ -740,9 +772,9 @@ function buildForecastDiagnostics({
   }
 
   if (reliability === "low") {
-    reasons.push("오차율이 80% 이상이라 예측 신뢰도가 낮습니다.");
+    reasons.push("총량 기준 오차가 80% 이상이라 예측 신뢰도가 낮습니다.");
   } else if (reliability === "watch") {
-    reasons.push("오차율이 35% 이상이라 발주 전 재확인이 필요합니다.");
+    reasons.push("총량 기준 오차가 35% 이상이라 발주 전 재확인이 필요합니다.");
   }
 
   if (bias === "under") {
@@ -770,13 +802,13 @@ function buildForecastDiagnostics({
 }
 
 function findLargestWeekdayError(
-  dailyResults: readonly { date: Date; absoluteError: number }[],
+  dailyResults: readonly { date: Date; absoluteQuantityError: number }[],
 ): string | null {
   const byWeekday = new Map<number, { error: number; count: number }>();
   for (const result of dailyResults) {
     const weekday = result.date.getDay();
     const bucket = byWeekday.get(weekday) ?? { error: 0, count: 0 };
-    bucket.error += result.absoluteError;
+    bucket.error += result.absoluteQuantityError;
     bucket.count += 1;
     byWeekday.set(weekday, bucket);
   }

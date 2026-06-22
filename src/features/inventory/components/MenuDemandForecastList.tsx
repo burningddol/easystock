@@ -116,8 +116,8 @@ function MenuDemandForecastCard({
 }
 
 function AccuracyBadge({ accuracy }: { accuracy: MenuForecastAccuracyView }): React.ReactElement {
-  const mape = accuracy.meanAbsolutePercentageError;
-  const label = mape === null ? "정확도 수집 중" : `오차 ${formatPercent(mape)}`;
+  const wape = accuracy.weightedAbsolutePercentageError;
+  const label = wape === null ? "정확도 수집 중" : `WAPE ${formatPercent(wape)}`;
 
   return (
     <Link

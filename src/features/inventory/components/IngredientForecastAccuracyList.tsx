@@ -39,7 +39,7 @@ export function IngredientForecastAccuracyList({
   return (
     <div className="flex flex-col gap-section">
       <section className="grid grid-cols-3 gap-stack-tight">
-        <SummaryTile label="평균 오차율" value={formatPercent(summary.meanMape)} />
+        <SummaryTile label="평균 WAPE" value={formatPercent(summary.meanWape)} />
         <SummaryTile label="과대예측" value={`${summary.overCount}개`} />
         <SummaryTile label="과소예측" value={`${summary.underCount}개`} />
       </section>
@@ -91,10 +91,10 @@ function IngredientForecastAccuracyCard({
       </div>
 
       <dl className="mt-stack grid grid-cols-3 gap-stack-tight">
-        <Metric label="오차율" value={formatPercent(item.meanAbsolutePercentageError)} />
+        <Metric label="WAPE" value={formatPercent(item.weightedAbsolutePercentageError)} />
         <Metric
-          label="평균 오차"
-          value={formatNullableAmount(item.averageAbsoluteError, item.unit)}
+          label="평균 소비오차"
+          value={formatNullableAmount(item.meanAbsoluteAmountError, item.unit)}
         />
         <Metric label="비교일" value={`${item.evaluatedDayCount}일`} />
       </dl>
@@ -195,12 +195,12 @@ function PriorityNotice({
 }: {
   item: IngredientForecastAccuracyView | null;
 }): React.ReactElement | null {
-  if (!item || item.meanAbsolutePercentageError === null) return null;
+  if (!item || item.weightedAbsolutePercentageError === null) return null;
 
   return (
     <section className="rounded-[24px] border border-amber/30 bg-amber-soft px-4 py-3 shadow-soft">
       <p className="text-body text-amber-deep">
-        우선 확인: {item.name} · 오차율 {formatPercent(item.meanAbsolutePercentageError)}
+        우선 확인: {item.name} · WAPE {formatPercent(item.weightedAbsolutePercentageError)}
       </p>
       <p className="mt-1 text-caption text-ink-3">{buildTuningHint(item)}</p>
     </section>
@@ -233,16 +233,16 @@ function DiagnosticReasons({ reasons }: { reasons: readonly string[] }): React.R
 }
 
 function buildSummary(items: readonly IngredientForecastAccuracyView[]): {
-  meanMape: number | null;
+  meanWape: number | null;
   overCount: number;
   underCount: number;
   priorityItem: IngredientForecastAccuracyView | null;
 } {
-  const valid = items.filter((item) => item.meanAbsolutePercentageError !== null);
+  const valid = items.filter((item) => item.weightedAbsolutePercentageError !== null);
   return {
-    meanMape:
+    meanWape:
       valid.length > 0
-        ? valid.reduce((sum, item) => sum + (item.meanAbsolutePercentageError ?? 0), 0) /
+        ? valid.reduce((sum, item) => sum + (item.weightedAbsolutePercentageError ?? 0), 0) /
           valid.length
         : null,
     overCount: items.filter((item) => item.bias === "over").length,
@@ -250,7 +250,8 @@ function buildSummary(items: readonly IngredientForecastAccuracyView[]): {
     priorityItem:
       valid.length > 0
         ? ([...valid].sort(
-            (a, b) => (b.meanAbsolutePercentageError ?? 0) - (a.meanAbsolutePercentageError ?? 0),
+            (a, b) =>
+              (b.weightedAbsolutePercentageError ?? 0) - (a.weightedAbsolutePercentageError ?? 0),
           )[0] ?? null)
         : null,
   };
@@ -260,15 +261,15 @@ function buildTuningHint(item: IngredientForecastAccuracyView): string {
   if (item.evaluatedDayCount < 3)
     return "소비 비교일이 적습니다. 판매 데이터가 더 쌓인 뒤 판단하세요.";
   if (item.reliability === "low")
-    return "오차율이 매우 큽니다. 옵션 선택률, 레시피 변경, 이벤트성 판매를 먼저 확인하세요.";
+    return "총량 기준 오차가 매우 큽니다. 옵션 선택률, 레시피 변경, 이벤트성 판매를 먼저 확인하세요.";
   if (item.reliability === "watch")
     return "예측을 참고하되 발주 전 최근 1주 소비 흐름을 한 번 더 확인하세요.";
   if (item.bias === "under")
     return "실제 소비가 예측보다 큽니다. 발주량 부족 위험을 먼저 확인하세요.";
   if (item.bias === "over")
     return "예측 소비가 실제보다 큽니다. 과발주 가능성이 있어 최근 판매 둔화를 확인하세요.";
-  if ((item.meanAbsolutePercentageError ?? 0) >= 0.5) {
-    return "오차율이 큽니다. 옵션 선택률, 레시피 변경, 주말/평일 편차를 확인하세요.";
+  if ((item.weightedAbsolutePercentageError ?? 0) >= 0.5) {
+    return "총량 기준 오차가 큽니다. 옵션 선택률, 레시피 변경, 주말/평일 편차를 확인하세요.";
   }
   return "예측 방향은 안정적입니다. 현재 발주 추천을 그대로 참고해도 됩니다.";
 }

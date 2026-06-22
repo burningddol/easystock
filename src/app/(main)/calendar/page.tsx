@@ -49,7 +49,7 @@ export default function CalendarPage(): React.ReactElement {
   const revenueErrorByDate = useMemo(() => {
     const map = new Map<string, number | null>();
     for (const day of revenueAccuracyQuery.data?.dailyResults ?? []) {
-      map.set(localIsoDate(day.date), day.absolutePercentageError);
+      map.set(localIsoDate(day.date), day.weightedAbsolutePercentageError);
     }
     return map;
   }, [revenueAccuracyQuery.data]);

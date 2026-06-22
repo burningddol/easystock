@@ -566,7 +566,8 @@ describe("application layer", () => {
       expect(result?.evaluatedDayCount).toBe(7);
       expect(result?.actualTotalQuantity).toBe(70);
       expect(result?.predictedTotalQuantity).toBeGreaterThan(0);
-      expect(result?.meanAbsolutePercentageError).not.toBeNull();
+      expect(result?.weightedAbsolutePercentageError).not.toBeNull();
+      expect(result?.meanAbsoluteQuantityError).not.toBeNull();
       expect(result?.bias).not.toBe("insufficient_data");
     });
 
@@ -620,7 +621,9 @@ describe("application layer", () => {
       expect(result?.evaluatedDayCount).toBe(7);
       expect(result?.actualTotalAmount).toBe(7000);
       expect(result?.predictedTotalAmount).toBeGreaterThan(0);
-      expect(result?.meanAbsolutePercentageError).not.toBeNull();
+      expect(result?.weightedAbsolutePercentageError).not.toBeNull();
+      expect(result?.meanAbsoluteAmountError).not.toBeNull();
+      expect(result?.meanAbsoluteDayEquivalentError).not.toBeNull();
       expect(result?.bias).not.toBe("insufficient_data");
     });
   });

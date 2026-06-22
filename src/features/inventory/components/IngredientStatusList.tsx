@@ -230,9 +230,9 @@ function AccuracyBadge({
 }
 
 function formatAccuracyLabel(accuracy: IngredientForecastAccuracyView): string {
-  const mape = accuracy.meanAbsolutePercentageError;
-  if (mape === null || accuracy.evaluatedDayCount < 3) return "정확도 수집 중";
-  return `오차 ${Math.round(mape * 100)}%`;
+  const dayError = accuracy.meanAbsoluteDayEquivalentError;
+  if (dayError === null || accuracy.evaluatedDayCount < 3) return "정확도 수집 중";
+  return `평균 ±${Number(dayError.toFixed(1))}일`;
 }
 
 function formatLeadTimeSource(item: IngredientForecastView): string {
