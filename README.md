@@ -142,6 +142,7 @@ specs/001-mvp-core/        spec.md / data-model.md / contracts / tasks.md
    - `order_needed`: buffer = 2
    - `caution`: buffer 3~4
    - `safe`: buffer ≥ 5
+   - 발주 추천 카드는 권장 수량, 발주 기한, 리드타임, 안전여유, 목표 운영일을 함께 보여줘 “왜 이만큼 사야 하는지”를 설명합니다.
 
 6. **최근 사용량 급증/급감 감지 + 완만한 추세 보정**
    - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
