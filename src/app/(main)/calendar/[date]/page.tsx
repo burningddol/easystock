@@ -318,8 +318,8 @@ function ExistingSaleDetail({
 interface RevenueBacktestDateSummary {
   actualRevenue: number;
   predictedRevenue: number;
-  absoluteError: number;
-  absolutePercentageError: number | null;
+  absoluteWonError: number;
+  weightedAbsolutePercentageError: number | null;
   reliability: MenuForecastAccuracyView["reliability"];
   bias: "over" | "under" | "balanced" | "insufficient_data";
 }
@@ -349,16 +349,16 @@ function RevenueBacktestComparison({
                 : "bg-blue-soft text-blue-deep",
           )}
         >
-          오차율{" "}
-          {summary.absolutePercentageError === null
+          WAPE{" "}
+          {summary.weightedAbsolutePercentageError === null
             ? "-"
-            : `${Math.round(summary.absolutePercentageError * 100)}%`}
+            : `${Math.round(summary.weightedAbsolutePercentageError * 100)}%`}
         </span>
       </div>
       <div className="grid grid-cols-3 gap-stack">
         <Metric label="실제 매출" value={`${formatWon(summary.actualRevenue)}원`} />
         <Metric label="예측 매출" value={`${formatWon(summary.predictedRevenue)}원`} />
-        <Metric label="오차" value={`${formatWon(summary.absoluteError)}원`} />
+        <Metric label="오차" value={`${formatWon(summary.absoluteWonError)}원`} />
       </div>
     </article>
   );
@@ -388,10 +388,10 @@ function MenuBacktestComparison({
                 : "bg-blue-soft text-blue-deep",
           )}
         >
-          오차율{" "}
-          {summary.meanAbsolutePercentageError === null
+          평균 수량오차{" "}
+          {summary.meanAbsoluteQuantityError === null
             ? "-"
-            : `${Math.round(summary.meanAbsolutePercentageError * 100)}%`}
+            : `${formatNumber(Number(summary.meanAbsoluteQuantityError.toFixed(1)))}개`}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-stack">
@@ -410,7 +410,7 @@ function MenuBacktestComparison({
                 </p>
               </div>
               <p className="text-caption text-ink-3">
-                오차 {formatNumber(Number(item.absoluteError.toFixed(1)))}개
+                오차 {formatNumber(Number(item.absoluteQuantityError.toFixed(1)))}개
               </p>
             </div>
           </li>
@@ -553,14 +553,14 @@ function Notice({ tone, children }: NoticeProps): React.ReactElement {
 interface MenuBacktestDateSummary {
   actualTotalQuantity: number;
   predictedTotalQuantity: number;
-  meanAbsolutePercentageError: number | null;
+  meanAbsoluteQuantityError: number | null;
   reliability: MenuForecastAccuracyView["reliability"];
   items: Array<{
     menuId: string;
     name: string;
     actualQuantity: number;
     predictedQuantity: number;
-    absoluteError: number;
+    absoluteQuantityError: number;
   }>;
 }
 
@@ -577,8 +577,7 @@ function buildMenuBacktestSummaryForDate(
         name: item.name,
         actualQuantity: result.actualQuantity,
         predictedQuantity: result.predictedQuantity,
-        absoluteError: result.absoluteError,
-        absolutePercentageError: result.absolutePercentageError,
+        absoluteQuantityError: result.absoluteQuantityError,
       };
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -588,18 +587,21 @@ function buildMenuBacktestSummaryForDate(
   const actualTotalQuantity = results.reduce((sum, item) => sum + item.actualQuantity, 0);
   const predictedTotalQuantity = results.reduce((sum, item) => sum + item.predictedQuantity, 0);
   const evaluated = results.filter((item) => item.actualQuantity > 0);
-  const meanAbsolutePercentageError =
+  const meanAbsoluteQuantityError =
     evaluated.length > 0
-      ? evaluated.reduce((sum, item) => sum + (item.absolutePercentageError ?? 0), 0) /
-        evaluated.length
+      ? evaluated.reduce((sum, item) => sum + item.absoluteQuantityError, 0) / evaluated.length
+      : null;
+  const wape =
+    actualTotalQuantity > 0
+      ? results.reduce((sum, item) => sum + item.absoluteQuantityError, 0) / actualTotalQuantity
       : null;
 
   return {
     actualTotalQuantity,
     predictedTotalQuantity,
-    meanAbsolutePercentageError,
-    reliability: classifyDateBacktestReliability(meanAbsolutePercentageError, evaluated.length),
-    items: results.sort((a, b) => b.absoluteError - a.absoluteError),
+    meanAbsoluteQuantityError,
+    reliability: classifyDateBacktestReliability(wape, evaluated.length),
+    items: results.sort((a, b) => b.absoluteQuantityError - a.absoluteQuantityError),
   };
 }
 
@@ -613,9 +615,9 @@ function buildRevenueBacktestSummaryForDate(
   return {
     actualRevenue: result.actualRevenue,
     predictedRevenue: result.predictedRevenue,
-    absoluteError: result.absoluteError,
-    absolutePercentageError: result.absolutePercentageError,
-    reliability: classifyDateBacktestReliability(result.absolutePercentageError, 1),
+    absoluteWonError: result.absoluteWonError,
+    weightedAbsolutePercentageError: result.weightedAbsolutePercentageError,
+    reliability: classifyDateBacktestReliability(result.weightedAbsolutePercentageError, 1),
     bias: classifyRevenueBias(result.actualRevenue, result.predictedRevenue),
   };
 }
@@ -632,12 +634,14 @@ function classifyRevenueBias(
 }
 
 function classifyDateBacktestReliability(
-  meanAbsolutePercentageError: number | null,
+  weightedAbsolutePercentageError: number | null,
   evaluatedItemCount: number,
 ): MenuForecastAccuracyView["reliability"] {
-  if (evaluatedItemCount === 0 || meanAbsolutePercentageError === null) return "insufficient_data";
-  if (meanAbsolutePercentageError >= 0.8) return "low";
-  if (meanAbsolutePercentageError >= 0.35) return "watch";
+  if (evaluatedItemCount === 0 || weightedAbsolutePercentageError === null) {
+    return "insufficient_data";
+  }
+  if (weightedAbsolutePercentageError >= 0.8) return "low";
+  if (weightedAbsolutePercentageError >= 0.35) return "watch";
   return "good";
 }
 

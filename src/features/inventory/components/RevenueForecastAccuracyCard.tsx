@@ -42,8 +42,10 @@ export function RevenueForecastAccuracyCard({
     <div className="flex flex-col gap-section">
       <section className="grid gap-stack-tight sm:grid-cols-4">
         <SummaryTile label="WAPE" value={formatPercent(data.weightedAbsolutePercentageError)} />
-        <SummaryTile label="MAPE" value={formatPercent(data.meanAbsolutePercentageError)} />
-        <SummaryTile label="평균 오차" value={`${formatWon(data.averageAbsoluteError ?? 0)}원`} />
+        <SummaryTile
+          label="평균 금액오차"
+          value={`${formatWon(data.meanAbsoluteWonError ?? 0)}원`}
+        />
         <SummaryTile label="비교일" value={`${data.evaluatedDayCount}일`} />
       </section>
 
@@ -84,7 +86,7 @@ export function RevenueForecastAccuracyCard({
                 />
               </div>
               <span className="text-micro text-ink-3 tabular-nums">
-                {formatPercent(day.absolutePercentageError)}
+                {formatPercent(day.weightedAbsolutePercentageError)}
               </span>
             </li>
           ))}
@@ -121,8 +123,8 @@ export function RevenueForecastAccuracyCard({
                   </p>
                 </div>
                 <span className="rounded-full bg-bg px-3 py-1.5 text-caption font-semibold text-ink-2">
-                  오차 {formatWon(day.absoluteError)}원 ·{" "}
-                  {formatPercent(day.absolutePercentageError)}
+                  오차 {formatWon(day.absoluteWonError)}원 ·{" "}
+                  {formatPercent(day.weightedAbsolutePercentageError)}
                 </span>
               </div>
             </li>
