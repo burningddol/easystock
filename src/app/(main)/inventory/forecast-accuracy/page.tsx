@@ -6,15 +6,17 @@ import { useSearchParams } from "next/navigation";
 import { ForecastPeriodSelector } from "@/features/inventory/components/ForecastPeriodSelector";
 import { IngredientForecastAccuracyList } from "@/features/inventory/components/IngredientForecastAccuracyList";
 import { MenuForecastAccuracyList } from "@/features/inventory/components/MenuForecastAccuracyList";
+import { RevenueForecastAccuracyCard } from "@/features/inventory/components/RevenueForecastAccuracyCard";
 import { useIngredientForecastAccuracy } from "@/features/inventory/hooks/useIngredientForecastAccuracy";
 import { useMenuForecastAccuracy } from "@/features/inventory/hooks/useMenuForecastAccuracy";
+import { useRevenueForecastAccuracy } from "@/features/inventory/hooks/useRevenueForecastAccuracy";
 import { PageHeader } from "@/components/ui/page-header";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
 import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
 import { cn } from "@/lib/utils";
 
 const BACKTEST_OPTIONS = [14, 30, 60] as const;
-const ACCURACY_TABS = ["menu", "ingredient"] as const;
+const ACCURACY_TABS = ["revenue", "menu", "ingredient"] as const;
 
 type AccuracyTab = (typeof ACCURACY_TABS)[number];
 
@@ -30,6 +32,7 @@ function ForecastAccuracyContent(): React.ReactElement {
   const searchParams = useSearchParams();
   const backtestDays = parseOption(searchParams.get("days"), BACKTEST_OPTIONS, 14);
   const activeTab = parseTab(searchParams.get("tab"));
+  const revenueQuery = useRevenueForecastAccuracy(backtestDays, activeTab === "revenue");
   const menuQuery = useMenuForecastAccuracy(backtestDays, activeTab === "menu");
   const ingredientQuery = useIngredientForecastAccuracy(backtestDays, activeTab === "ingredient");
 
@@ -46,8 +49,7 @@ function ForecastAccuracyContent(): React.ReactElement {
 
       <section className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
         <p className="text-body text-ink-1">
-          최근 {backtestDays}일 기준으로 {activeTab === "menu" ? "메뉴 판매" : "재료 소비"} 예측과
-          실제값을 비교합니다.
+          최근 {backtestDays}일 기준으로 {getTabNoun(activeTab)} 예측과 실제값을 비교합니다.
         </p>
         <p className="mt-1 text-caption text-ink-3">
           각 날짜의 예측은 그 전날까지의 판매 이력만 사용해 다시 계산합니다.
@@ -66,7 +68,16 @@ function ForecastAccuracyContent(): React.ReactElement {
         extraParams={{ tab: activeTab }}
       />
 
-      {activeTab === "menu" ? (
+      {activeTab === "revenue" ? (
+        <AccuracySection
+          title="매출 예측 정확도"
+          description="메뉴 수요 예측으로 환산한 예상 매출과 실제 매출을 비교합니다."
+        >
+          {revenueQuery.isLoading && <LoadingText />}
+          {revenueQuery.error && <ErrorAlert message={revenueQuery.error.message} />}
+          {revenueQuery.data && <RevenueForecastAccuracyCard data={revenueQuery.data} />}
+        </AccuracySection>
+      ) : activeTab === "menu" ? (
         <AccuracySection
           title="메뉴 예측 정확도"
           description="메뉴별 예상 판매량과 실제 판매량을 비교합니다."
@@ -95,7 +106,13 @@ function parseOption<T extends number>(raw: string | null, options: readonly T[]
 }
 
 function parseTab(raw: string | null): AccuracyTab {
-  return ACCURACY_TABS.includes(raw as AccuracyTab) ? (raw as AccuracyTab) : "menu";
+  return ACCURACY_TABS.includes(raw as AccuracyTab) ? (raw as AccuracyTab) : "revenue";
+}
+
+function getTabNoun(tab: AccuracyTab): string {
+  if (tab === "revenue") return "매출";
+  if (tab === "menu") return "메뉴 판매";
+  return "재료 소비";
 }
 
 function AccuracyTabNav({
@@ -108,8 +125,15 @@ function AccuracyTabNav({
   return (
     <nav
       aria-label="예측 정확도 종류"
-      className="grid gap-stack-tight rounded-[24px] border border-border bg-card p-2 shadow-soft sm:grid-cols-2"
+      className="grid gap-stack-tight rounded-[24px] border border-border bg-card p-2 shadow-soft md:grid-cols-3"
     >
+      <AccuracyTabLink
+        tab="revenue"
+        activeTab={activeTab}
+        backtestDays={backtestDays}
+        title="매출 예측"
+        description="운영 판단 기준"
+      />
       <AccuracyTabLink
         tab="menu"
         activeTab={activeTab}

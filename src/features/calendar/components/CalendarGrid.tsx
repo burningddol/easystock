@@ -11,6 +11,7 @@ interface CalendarGridProps {
   month: number;
   cells: readonly EnrichedCalendarCell[];
   menuForecastByDate?: ReadonlyMap<string, CalendarMenuForecastSummary>;
+  revenueErrorByDate?: ReadonlyMap<string, number | null>;
   selectedDate: string | null;
   todayIso: string | null;
   onSelect: (cell: EnrichedCalendarCell) => void;
@@ -28,6 +29,7 @@ export function CalendarGrid({
   month,
   cells,
   menuForecastByDate,
+  revenueErrorByDate,
   selectedDate,
   todayIso,
   onSelect,
@@ -49,6 +51,7 @@ export function CalendarGrid({
             key={cell.date}
             cell={cell}
             forecast={menuForecastByDate?.get(cell.date) ?? null}
+            revenueError={revenueErrorByDate?.get(cell.date) ?? null}
             maxRevenue={maxRevenue}
             isSelected={cell.date === selectedDate}
             isToday={cell.date === todayIso}
@@ -82,6 +85,7 @@ function BlankCell(): React.ReactElement {
 interface DayCellProps {
   cell: EnrichedCalendarCell;
   forecast: CalendarMenuForecastSummary | null;
+  revenueError: number | null;
   maxRevenue: number;
   isSelected: boolean;
   isToday: boolean;
@@ -91,6 +95,7 @@ interface DayCellProps {
 function DayCell({
   cell,
   forecast,
+  revenueError,
   maxRevenue,
   isSelected,
   isToday,
@@ -102,7 +107,7 @@ function DayCell({
   const weekday = date.getDay();
   const isInactive = cell.isFuture || cell.isBeforeSignup || cell.isRegularDayOff;
   const intensityPct = computeIntensityPercent(cell.revenue ?? 0, maxRevenue, isInactive);
-  const status = getCellStatus(cell, forecast);
+  const status = getCellStatus(cell, forecast, revenueError);
 
   return (
     <button
@@ -147,12 +152,19 @@ interface CellStatus {
 function getCellStatus(
   cell: EnrichedCalendarCell,
   forecast: CalendarMenuForecastSummary | null,
+  revenueError: number | null,
 ): CellStatus | null {
   if (cell.isMissing) return { label: "누락", tone: "red" };
   if (cell.isFuture && forecast && forecast.totalRevenue > 0) {
     return {
       label: `예상 ${formatNumber(Math.round(forecast.totalRevenue / 10000))}만`,
       tone: "blue",
+    };
+  }
+  if (cell.revenue !== null && cell.revenue > 0 && revenueError !== null) {
+    return {
+      label: `오차 ${Math.round(revenueError * 100)}%`,
+      tone: revenueError >= 0.35 ? "red" : "blue",
     };
   }
   if (cell.revenue !== null && cell.revenue > 0) {

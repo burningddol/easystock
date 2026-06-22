@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useCalendarMonth } from "@/features/calendar/hooks/useCalendarMonth";
 import { useMenuForecastAccuracy } from "@/features/inventory/hooks/useMenuForecastAccuracy";
 import { useMenuDemandForecast } from "@/features/inventory/hooks/useMenuDemandForecast";
+import { useRevenueForecastAccuracy } from "@/features/inventory/hooks/useRevenueForecastAccuracy";
 import { useSaleByDate, type SaleWithItems } from "@/features/sale/hooks/useSaleByDate";
 import {
   buildCalendarMenuForecastByDate,
@@ -25,6 +26,7 @@ import { Metric } from "@/components/ui/metric";
 import { cn } from "@/lib/utils";
 import type { EnrichedCalendarCell } from "@/features/calendar/lib/consecutive-missing";
 import type { MenuForecastAccuracyView } from "@/features/inventory/hooks/useMenuForecastAccuracy";
+import type { RevenueForecastAccuracyView } from "@/features/inventory/hooks/useRevenueForecastAccuracy";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -44,6 +46,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
   const saleQuery = useSaleByDate(date);
   const menuForecastQuery = useMenuDemandForecast(forecastHorizonDays);
   const menuAccuracyQuery = useMenuForecastAccuracy(30);
+  const revenueAccuracyQuery = useRevenueForecastAccuracy(30, !isFutureDate);
 
   if (!parsedDate) {
     return (
@@ -58,6 +61,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
   const menuForecast =
     buildCalendarMenuForecastByDate(menuForecastQuery.data ?? []).get(date) ?? null;
   const menuBacktest = buildMenuBacktestSummaryForDate(date, menuAccuracyQuery.data ?? []);
+  const revenueBacktest = buildRevenueBacktestSummaryForDate(date, revenueAccuracyQuery.data);
   const prevDate = addDaysIso(parsedDate, -1);
   const nextDate = addDaysIso(parsedDate, 1);
 
@@ -92,6 +96,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
           sale={saleQuery.data ?? null}
           menuForecast={menuForecast}
           menuBacktest={menuBacktest}
+          revenueBacktest={revenueBacktest}
           todayIso={todayIso}
         />
       )}
@@ -106,6 +111,7 @@ interface DateDetailBodyProps {
   sale: SaleWithItems | null;
   menuForecast: CalendarMenuForecastSummary | null;
   menuBacktest: MenuBacktestDateSummary | null;
+  revenueBacktest: RevenueBacktestDateSummary | null;
   todayIso: string;
 }
 
@@ -116,6 +122,7 @@ function DateDetailBody({
   sale,
   menuForecast,
   menuBacktest,
+  revenueBacktest,
   todayIso,
 }: DateDetailBodyProps): React.ReactElement {
   const today = parseLocalDateFromIso(todayIso) ?? new Date();
@@ -136,6 +143,7 @@ function DateDetailBody({
         sale={sale}
         hasPurchase={cell?.hasPurchase ?? false}
         menuBacktest={menuBacktest}
+        revenueBacktest={revenueBacktest}
       />
     );
   }
@@ -225,12 +233,14 @@ interface ExistingSaleDetailProps {
   sale: SaleWithItems;
   hasPurchase: boolean;
   menuBacktest: MenuBacktestDateSummary | null;
+  revenueBacktest: RevenueBacktestDateSummary | null;
 }
 
 function ExistingSaleDetail({
   sale,
   hasPurchase,
   menuBacktest,
+  revenueBacktest,
 }: ExistingSaleDetailProps): React.ReactElement {
   const totalRevenue = sale.total_revenue;
   const totalCost = sale.total_cost_snapshot;
@@ -263,6 +273,7 @@ function ExistingSaleDetail({
         )}
       </article>
 
+      {revenueBacktest && <RevenueBacktestComparison summary={revenueBacktest} />}
       {menuBacktest && <MenuBacktestComparison summary={menuBacktest} />}
 
       <article className="flex flex-col gap-stack rounded-xl border border-border bg-card p-tile">
@@ -277,6 +288,55 @@ function ExistingSaleDetail({
         </ul>
       </article>
     </div>
+  );
+}
+
+interface RevenueBacktestDateSummary {
+  actualRevenue: number;
+  predictedRevenue: number;
+  absoluteError: number;
+  absolutePercentageError: number | null;
+  reliability: MenuForecastAccuracyView["reliability"];
+  bias: "over" | "under" | "balanced" | "insufficient_data";
+}
+
+function RevenueBacktestComparison({
+  summary,
+}: {
+  summary: RevenueBacktestDateSummary;
+}): React.ReactElement {
+  return (
+    <article className="flex flex-col gap-stack rounded-xl border border-border bg-card p-tile">
+      <div className="flex items-start justify-between gap-stack">
+        <div>
+          <h2 className="text-title-md text-ink-1">매출 예측 vs 실제</h2>
+          <p className="mt-1 text-caption text-ink-3">
+            백테스트 기준 · {RELIABILITY_LABEL[summary.reliability]} ·{" "}
+            {REVENUE_BIAS_LABEL[summary.bias]}
+          </p>
+        </div>
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 text-micro",
+            summary.reliability === "low"
+              ? "bg-red-soft text-red-deep"
+              : summary.reliability === "watch"
+                ? "bg-amber-soft text-amber-deep"
+                : "bg-blue-soft text-blue-deep",
+          )}
+        >
+          오차율{" "}
+          {summary.absolutePercentageError === null
+            ? "-"
+            : `${Math.round(summary.absolutePercentageError * 100)}%`}
+        </span>
+      </div>
+      <div className="grid grid-cols-3 gap-stack">
+        <Metric label="실제 매출" value={`${formatWon(summary.actualRevenue)}원`} />
+        <Metric label="예측 매출" value={`${formatWon(summary.predictedRevenue)}원`} />
+        <Metric label="오차" value={`${formatWon(summary.absoluteError)}원`} />
+      </div>
+    </article>
   );
 }
 
@@ -519,6 +579,34 @@ function buildMenuBacktestSummaryForDate(
   };
 }
 
+function buildRevenueBacktestSummaryForDate(
+  date: string,
+  data: RevenueForecastAccuracyView | undefined,
+): RevenueBacktestDateSummary | null {
+  const result = data?.dailyResults.find((day) => localIsoDate(day.date) === date);
+  if (!result || result.actualRevenue <= 0) return null;
+
+  return {
+    actualRevenue: result.actualRevenue,
+    predictedRevenue: result.predictedRevenue,
+    absoluteError: result.absoluteError,
+    absolutePercentageError: result.absolutePercentageError,
+    reliability: classifyDateBacktestReliability(result.absolutePercentageError, 1),
+    bias: classifyRevenueBias(result.actualRevenue, result.predictedRevenue),
+  };
+}
+
+function classifyRevenueBias(
+  actualRevenue: number,
+  predictedRevenue: number,
+): RevenueBacktestDateSummary["bias"] {
+  if (actualRevenue <= 0) return "insufficient_data";
+  const ratio = predictedRevenue / actualRevenue;
+  if (ratio >= 1.15) return "over";
+  if (ratio <= 0.85) return "under";
+  return "balanced";
+}
+
 function classifyDateBacktestReliability(
   meanAbsolutePercentageError: number | null,
   evaluatedItemCount: number,
@@ -540,6 +628,13 @@ const RELIABILITY_LABEL: Record<MenuForecastAccuracyView["reliability"], string>
   good: "신뢰도 좋음",
   watch: "주의",
   low: "신뢰도 낮음",
+  insufficient_data: "데이터 부족",
+};
+
+const REVENUE_BIAS_LABEL: Record<RevenueBacktestDateSummary["bias"], string> = {
+  over: "과대예측",
+  under: "과소예측",
+  balanced: "균형",
   insufficient_data: "데이터 부족",
 };
 
