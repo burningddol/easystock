@@ -15,6 +15,7 @@ import {
 import {
   applyInventoryReplay as applyInventoryReplayRpc,
   getDepletionForecast,
+  getCalendarMonth,
   getMenuDemandForecast,
   type ApplyInventoryReplayResult,
 } from "@/lib/supabase/rpc";
@@ -103,6 +104,24 @@ export interface IngredientForecastAccuracyView {
     date: Date;
     actualAmount: number;
     predictedAmount: number;
+    absoluteError: number;
+    absolutePercentageError: number | null;
+  }>;
+}
+
+export interface RevenueForecastAccuracyView {
+  averageAbsoluteError: number | null;
+  meanAbsolutePercentageError: number | null;
+  weightedAbsolutePercentageError: number | null;
+  reliability: ForecastReliability;
+  bias: "over" | "under" | "balanced" | "insufficient_data";
+  evaluatedDayCount: number;
+  actualTotalRevenue: number;
+  predictedTotalRevenue: number;
+  dailyResults: Array<{
+    date: Date;
+    actualRevenue: number;
+    predictedRevenue: number;
     absoluteError: number;
     absolutePercentageError: number | null;
   }>;
@@ -343,6 +362,84 @@ export async function loadMenuForecastAccuracyViews(
     });
 }
 
+export async function loadRevenueForecastAccuracyView(
+  client: RpcClient,
+  backtestDays: number = MENU_FORECAST_BACKTEST_DAYS,
+): Promise<RevenueForecastAccuracyView> {
+  const { data, error } = await getMenuDemandForecast(client);
+  if (error) throw new Error(error.message);
+
+  const menus = data ?? [];
+  const latestSampleDate =
+    menus
+      .flatMap((row) => row.demandSamples.map((sample) => startOfDay(new Date(sample.date))))
+      .sort((a, b) => a.getTime() - b.getTime())
+      .at(-1) ?? startOfDay(new Date());
+  const targetDates = Array.from({ length: backtestDays }, (_, index) =>
+    addDays(latestSampleDate, index - backtestDays + 1),
+  );
+  const actualRevenueByDate = await loadActualRevenueByDate(client, targetDates);
+
+  const dailyResults = targetDates.map((targetDate) => {
+    const trainUntil = addDays(targetDate, -1);
+    const predictedRevenue = sumBy(menus, (row) => {
+      const demandSamples: DailyMenuDemand[] = row.demandSamples
+        .map((sample) => ({
+          date: startOfDay(new Date(sample.date)),
+          quantity: Number(sample.quantity),
+        }))
+        .filter((sample) => sample.date.getTime() <= trainUntil.getTime());
+      const forecast = forecastMenuDemand({
+        demandSamples,
+        daysOff: row.regularDaysOff,
+        signupDate: new Date(row.signedUpAt),
+        today: trainUntil,
+        horizonDays: 1,
+        sensitivity: row.forecastSensitivity,
+      });
+      return (forecast.dailyPredictions[0]?.predictedQuantity ?? 0) * row.price;
+    });
+    const actualRevenue = actualRevenueByDate.get(dateKey(targetDate)) ?? 0;
+    const absoluteError = Math.abs(predictedRevenue - actualRevenue);
+    return {
+      date: targetDate,
+      actualRevenue,
+      predictedRevenue,
+      absoluteError,
+      absolutePercentageError:
+        actualRevenue > 0 ? absoluteError / Math.max(1, actualRevenue) : null,
+    };
+  });
+
+  const evaluated = dailyResults.filter((result) => result.actualRevenue > 0);
+  const actualTotalRevenue = sumBy(dailyResults, (result) => result.actualRevenue);
+  const predictedTotalRevenue = sumBy(dailyResults, (result) => result.predictedRevenue);
+  const averageAbsoluteError =
+    evaluated.length > 0
+      ? sumBy(evaluated, (result) => result.absoluteError) / evaluated.length
+      : null;
+  const meanAbsolutePercentageError =
+    evaluated.length > 0
+      ? sumBy(evaluated, (result) => result.absolutePercentageError ?? 0) / evaluated.length
+      : null;
+  const weightedAbsolutePercentageError =
+    actualTotalRevenue > 0
+      ? sumBy(dailyResults, (result) => result.absoluteError) / actualTotalRevenue
+      : null;
+
+  return {
+    averageAbsoluteError,
+    meanAbsolutePercentageError,
+    weightedAbsolutePercentageError,
+    reliability: classifyForecastReliability(meanAbsolutePercentageError, evaluated.length),
+    bias: classifyForecastBias(actualTotalRevenue, predictedTotalRevenue, evaluated.length),
+    evaluatedDayCount: evaluated.length,
+    actualTotalRevenue,
+    predictedTotalRevenue,
+    dailyResults,
+  };
+}
+
 export async function loadIngredientForecastAccuracyViews(
   client: RpcClient,
   backtestDays: number = MENU_FORECAST_BACKTEST_DAYS,
@@ -481,6 +578,38 @@ export async function loadIngredientForecastAccuracyViews(
       if (b.meanAbsolutePercentageError === null) return -1;
       return b.meanAbsolutePercentageError - a.meanAbsolutePercentageError;
     });
+}
+
+async function loadActualRevenueByDate(
+  client: RpcClient,
+  targetDates: readonly Date[],
+): Promise<Map<string, number>> {
+  const months = uniqueMonths(targetDates);
+  const results = await Promise.all(
+    months.map(({ year, month }) => getCalendarMonth(client, { year, month })),
+  );
+  const revenueByDate = new Map<string, number>();
+  for (const result of results) {
+    if (result.error) throw new Error(result.error.message);
+    for (const cell of result.data?.cells ?? []) {
+      revenueByDate.set(cell.date, cell.revenue ?? 0);
+    }
+  }
+  return revenueByDate;
+}
+
+function uniqueMonths(dates: readonly Date[]): Array<{ year: number; month: number }> {
+  const seen = new Set<string>();
+  const months: Array<{ year: number; month: number }> = [];
+  for (const date of dates) {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const key = `${year}-${month}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    months.push({ year, month });
+  }
+  return months;
 }
 
 export async function loadMenuBasedIngredientDemandForecast(

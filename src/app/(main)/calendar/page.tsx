@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { differenceInCalendarDays } from "date-fns";
 import { useCalendarMonth } from "@/features/calendar/hooks/useCalendarMonth";
 import { useMenuDemandForecast } from "@/features/inventory/hooks/useMenuDemandForecast";
+import { useRevenueForecastAccuracy } from "@/features/inventory/hooks/useRevenueForecastAccuracy";
 import { MonthHeader } from "@/features/calendar/components/MonthHeader";
 import { MonthCumulativeCard } from "@/features/calendar/components/MonthCumulativeCard";
 import { CalendarGrid } from "@/features/calendar/components/CalendarGrid";
 import { CalendarLegend } from "@/features/calendar/components/CalendarLegend";
 import { buildCalendarMenuForecastByDate } from "@/features/calendar/lib/menu-forecast-calendar";
 import { trackEvent } from "@/lib/analytics/ga4";
-import { parseLocalDateFromIso } from "@/lib/utils/format";
+import { localIsoDate, parseLocalDateFromIso } from "@/lib/utils/format";
 import { useTodayIso } from "@/lib/utils/use-today-iso";
 import type { EnrichedCalendarCell } from "@/features/calendar/lib/consecutive-missing";
 
@@ -41,10 +42,18 @@ export default function CalendarPage(): React.ReactElement {
 
   const query = useCalendarMonth(year, month);
   const menuForecastQuery = useMenuDemandForecast(forecastHorizonDays);
+  const revenueAccuracyQuery = useRevenueForecastAccuracy(30);
   const menuForecastByDate = useMemo(
     () => buildCalendarMenuForecastByDate(menuForecastQuery.data ?? []),
     [menuForecastQuery.data],
   );
+  const revenueErrorByDate = useMemo(() => {
+    const map = new Map<string, number | null>();
+    for (const day of revenueAccuracyQuery.data?.dailyResults ?? []) {
+      map.set(localIsoDate(day.date), day.absolutePercentageError);
+    }
+    return map;
+  }, [revenueAccuracyQuery.data]);
 
   // primitive deps로 month 변경 + operating_days 변경에만 발화. 동일 데이터 refetch엔 skip.
   const operatingDays = query.data?.cumulative.operatingDays ?? null;
@@ -116,6 +125,7 @@ export default function CalendarPage(): React.ReactElement {
         month={month}
         cells={query.data.cells}
         menuForecastByDate={menuForecastByDate}
+        revenueErrorByDate={revenueErrorByDate}
         selectedDate={null}
         todayIso={todayIso}
         onSelect={handleSelect}

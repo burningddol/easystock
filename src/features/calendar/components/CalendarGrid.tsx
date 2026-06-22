@@ -11,6 +11,7 @@ interface CalendarGridProps {
   month: number;
   cells: readonly EnrichedCalendarCell[];
   menuForecastByDate?: ReadonlyMap<string, CalendarMenuForecastSummary>;
+  revenueErrorByDate?: ReadonlyMap<string, number | null>;
   selectedDate: string | null;
   todayIso: string | null;
   onSelect: (cell: EnrichedCalendarCell) => void;
@@ -28,6 +29,7 @@ export function CalendarGrid({
   month,
   cells,
   menuForecastByDate,
+  revenueErrorByDate,
   selectedDate,
   todayIso,
   onSelect,
@@ -49,6 +51,7 @@ export function CalendarGrid({
             key={cell.date}
             cell={cell}
             forecast={menuForecastByDate?.get(cell.date) ?? null}
+            revenueError={revenueErrorByDate?.get(cell.date) ?? null}
             maxRevenue={maxRevenue}
             isSelected={cell.date === selectedDate}
             isToday={cell.date === todayIso}
@@ -82,6 +85,7 @@ function BlankCell(): React.ReactElement {
 interface DayCellProps {
   cell: EnrichedCalendarCell;
   forecast: CalendarMenuForecastSummary | null;
+  revenueError: number | null;
   maxRevenue: number;
   isSelected: boolean;
   isToday: boolean;
@@ -91,6 +95,7 @@ interface DayCellProps {
 function DayCell({
   cell,
   forecast,
+  revenueError,
   maxRevenue,
   isSelected,
   isToday,
@@ -102,7 +107,7 @@ function DayCell({
   const weekday = date.getDay();
   const isInactive = cell.isFuture || cell.isBeforeSignup || cell.isRegularDayOff;
   const intensityPct = computeIntensityPercent(cell.revenue ?? 0, maxRevenue, isInactive);
-  const status = getCellStatus(cell, forecast);
+  const tags = getCellTags(cell, forecast, revenueError);
 
   return (
     <button
@@ -134,46 +139,63 @@ function DayCell({
         <TopBadges cell={cell} />
       </div>
 
-      {!isSelected && status && <CellStatusBadge status={status} />}
+      {!isSelected && tags.length > 0 && <CellStatusTags tags={tags} />}
     </button>
   );
 }
 
-interface CellStatus {
+interface CellStatusTag {
   label: string;
   tone: "red" | "blue" | "ink";
 }
 
-function getCellStatus(
+function getCellTags(
   cell: EnrichedCalendarCell,
   forecast: CalendarMenuForecastSummary | null,
-): CellStatus | null {
-  if (cell.isMissing) return { label: "누락", tone: "red" };
+  revenueError: number | null,
+): CellStatusTag[] {
+  if (cell.isMissing) return [{ label: "누락", tone: "red" }];
   if (cell.isFuture && forecast && forecast.totalRevenue > 0) {
-    return {
-      label: `예상 ${formatNumber(Math.round(forecast.totalRevenue / 10000))}만`,
-      tone: "blue",
-    };
+    return [
+      {
+        label: `예상 ${formatNumber(Math.round(forecast.totalRevenue / 10000))}만`,
+        tone: "blue",
+      },
+    ];
+  }
+  if (cell.revenue !== null && cell.revenue > 0 && revenueError !== null) {
+    return [
+      { label: `매출 ${formatNumber(Math.round(cell.revenue / 10000))}만`, tone: "ink" },
+      {
+        label: `오차 ${Math.round(revenueError * 100)}%`,
+        tone: revenueError >= 0.35 ? "red" : "blue",
+      },
+    ];
   }
   if (cell.revenue !== null && cell.revenue > 0) {
-    return { label: `${formatNumber(Math.round(cell.revenue / 10000))}만`, tone: "ink" };
+    return [{ label: `매출 ${formatNumber(Math.round(cell.revenue / 10000))}만`, tone: "ink" }];
   }
-  return null;
+  return [];
 }
 
-function CellStatusBadge({ status }: { status: CellStatus }): React.ReactElement {
+function CellStatusTags({ tags }: { tags: readonly CellStatusTag[] }): React.ReactElement {
   return (
-    <span
-      className={cn(
-        "w-fit rounded-full px-2 py-1 text-[10px] font-semibold leading-none shadow-soft sm:text-micro",
-        status.tone === "red"
-          ? "bg-red-soft text-red-deep"
-          : status.tone === "blue"
-            ? "bg-blue-soft text-blue-deep"
-            : "bg-white/90 text-ink-1",
-      )}
-    >
-      {status.label}
+    <span className="flex flex-col items-start gap-1">
+      {tags.map((tag) => (
+        <span
+          key={tag.label}
+          className={cn(
+            "w-fit rounded-full px-2 py-1 text-[10px] font-semibold leading-none shadow-soft sm:text-micro",
+            tag.tone === "red"
+              ? "bg-red-soft text-red-deep"
+              : tag.tone === "blue"
+                ? "bg-blue-soft text-blue-deep"
+                : "bg-white/90 text-ink-1",
+          )}
+        >
+          {tag.label}
+        </span>
+      ))}
     </span>
   );
 }
