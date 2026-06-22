@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { loadMenus, type LookupClient, type MenuRowWithRecipe } from "@/lib/application/lookups";
-import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
+import { invalidateMenuWriteRelatedQueries } from "@/lib/query-invalidation";
 
 /**
  * 사용자 메뉴 + 레시피 + 재료 단가를 한 번에 fetch.
@@ -39,6 +39,5 @@ export function useMenus(): UseQueryResult<MenuRowWithRecipe[]> {
  * 어디서든 같은 패턴 일관 사용.
  */
 export function invalidateMenuCaches(queryClient: ReturnType<typeof useQueryClient>): void {
-  void queryClient.invalidateQueries({ queryKey: menuListQueryKey });
-  void queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey });
+  invalidateMenuWriteRelatedQueries(queryClient);
 }

@@ -10,7 +10,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { loadIngredients, type IngredientRow, type LookupClient } from "@/lib/application/lookups";
 import { deleteIngredient, saveIngredient } from "@/lib/supabase/rpc";
-import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
+import { invalidateIngredientWriteRelatedQueries } from "@/lib/query-invalidation";
 import type { IngredientInput } from "../schemas";
 
 export type { IngredientRow } from "@/lib/application/lookups";
@@ -44,9 +44,7 @@ async function createIngredient(input: IngredientInput): Promise<IngredientRow> 
 }
 
 function invalidateIngredientCaches(queryClient: ReturnType<typeof useQueryClient>): void {
-  // 재료 목록 + 소진 예측 둘 다 무효화 — 두 쿼리는 모두 ingredients 테이블에 의존.
-  void queryClient.invalidateQueries({ queryKey: ingredientListQueryKey });
-  void queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey });
+  invalidateIngredientWriteRelatedQueries(queryClient);
 }
 
 export function useCreateIngredient(): UseMutationResult<IngredientRow, Error, IngredientInput> {

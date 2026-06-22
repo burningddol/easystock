@@ -10,7 +10,7 @@ import {
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { loadVendors, type LookupClient, type VendorRow } from "@/lib/application/lookups";
-import { invalidateSettingsRelatedQueries } from "@/features/settings/hooks/useSettingsMutations";
+import { invalidateVendorWriteRelatedQueries } from "@/lib/query-invalidation";
 import { saveVendor } from "@/lib/supabase/rpc";
 import type { Database } from "@/lib/supabase/types";
 import type { VendorInput } from "../schemas";
@@ -70,9 +70,8 @@ export function useCreateVendor(): UseMutationResult<VendorRow, Error, VendorInp
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createVendor,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: vendorListQueryKey });
-      await invalidateSettingsRelatedQueries(queryClient);
+    onSuccess: () => {
+      invalidateVendorWriteRelatedQueries(queryClient);
     },
   });
 }
@@ -85,9 +84,8 @@ export function useUpdateVendorLeadTime(): UseMutationResult<
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateVendorLeadTime,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: vendorListQueryKey });
-      await invalidateSettingsRelatedQueries(queryClient);
+    onSuccess: () => {
+      invalidateVendorWriteRelatedQueries(queryClient);
     },
   });
 }
