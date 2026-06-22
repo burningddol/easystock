@@ -4,6 +4,7 @@ import Link from "next/link";
 import { differenceInCalendarDays } from "date-fns";
 import { useParams } from "next/navigation";
 import { useCalendarMonth } from "@/features/calendar/hooks/useCalendarMonth";
+import { useMenuForecastAccuracy } from "@/features/inventory/hooks/useMenuForecastAccuracy";
 import { useMenuDemandForecast } from "@/features/inventory/hooks/useMenuDemandForecast";
 import { useSaleByDate, type SaleWithItems } from "@/features/sale/hooks/useSaleByDate";
 import {
@@ -23,6 +24,7 @@ import { useTodayIso } from "@/lib/utils/use-today-iso";
 import { Metric } from "@/components/ui/metric";
 import { cn } from "@/lib/utils";
 import type { EnrichedCalendarCell } from "@/features/calendar/lib/consecutive-missing";
+import type { MenuForecastAccuracyView } from "@/features/inventory/hooks/useMenuForecastAccuracy";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -41,6 +43,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
   const calendarQuery = useCalendarMonth(year, month);
   const saleQuery = useSaleByDate(date);
   const menuForecastQuery = useMenuDemandForecast(forecastHorizonDays);
+  const menuAccuracyQuery = useMenuForecastAccuracy(30);
 
   if (!parsedDate) {
     return (
@@ -54,6 +57,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
   const cell = calendarQuery.data?.cells.find((item) => item.date === date) ?? null;
   const menuForecast =
     buildCalendarMenuForecastByDate(menuForecastQuery.data ?? []).get(date) ?? null;
+  const menuBacktest = buildMenuBacktestSummaryForDate(date, menuAccuracyQuery.data ?? []);
   const prevDate = addDaysIso(parsedDate, -1);
   const nextDate = addDaysIso(parsedDate, 1);
 
@@ -87,6 +91,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
           parsedDate={parsedDate}
           sale={saleQuery.data ?? null}
           menuForecast={menuForecast}
+          menuBacktest={menuBacktest}
           todayIso={todayIso}
         />
       )}
@@ -100,6 +105,7 @@ interface DateDetailBodyProps {
   parsedDate: Date;
   sale: SaleWithItems | null;
   menuForecast: CalendarMenuForecastSummary | null;
+  menuBacktest: MenuBacktestDateSummary | null;
   todayIso: string;
 }
 
@@ -109,6 +115,7 @@ function DateDetailBody({
   parsedDate,
   sale,
   menuForecast,
+  menuBacktest,
   todayIso,
 }: DateDetailBodyProps): React.ReactElement {
   const today = parseLocalDateFromIso(todayIso) ?? new Date();
@@ -124,7 +131,13 @@ function DateDetailBody({
     return <Notice tone="neutral">정기휴무일이에요.</Notice>;
   }
   if (sale) {
-    return <ExistingSaleDetail sale={sale} hasPurchase={cell?.hasPurchase ?? false} />;
+    return (
+      <ExistingSaleDetail
+        sale={sale}
+        hasPurchase={cell?.hasPurchase ?? false}
+        menuBacktest={menuBacktest}
+      />
+    );
   }
   return <MissingSaleDetail date={date} daysFromToday={daysFromToday} />;
 }
@@ -156,6 +169,7 @@ function FutureForecastDetail({
           <Notice tone="neutral">
             미래 날짜는 판매 입력은 막고, 현재까지의 판매 이력으로 계산한 예측만 보여줘요.
           </Notice>
+          <ForecastConfidenceNote forecast={forecast} />
         </div>
       </article>
 
@@ -174,6 +188,10 @@ function FutureForecastDetail({
                     예상 {formatNumber(Number(item.predictedQuantity.toFixed(1)))}개 ×{" "}
                     {formatWon(item.price)}원
                   </p>
+                  <p className="text-micro text-ink-4">
+                    {CONFIDENCE_LABEL[item.confidenceLevel]} · 데이터 {item.usableSampleCount}일 ·
+                    요일 보정 {Math.round(item.weekdayConfidence * 100)}%
+                  </p>
                 </div>
                 <p className="text-body tabular-nums text-ink-1">
                   {formatWon(item.predictedRevenue)}원
@@ -187,12 +205,33 @@ function FutureForecastDetail({
   );
 }
 
+function ForecastConfidenceNote({
+  forecast,
+}: {
+  forecast: CalendarMenuForecastSummary;
+}): React.ReactElement {
+  return (
+    <div className="rounded-2xl border border-border bg-bg px-3 py-2 text-caption text-ink-3">
+      <p className="font-semibold text-ink-2">{CONFIDENCE_LABEL[forecast.confidenceLevel]}</p>
+      <p className="mt-1">
+        메뉴별 최소 데이터 {forecast.minSampleCount}일 · 평균 요일 보정{" "}
+        {Math.round(forecast.averageWeekdayConfidence * 100)}% 기준입니다.
+      </p>
+    </div>
+  );
+}
+
 interface ExistingSaleDetailProps {
   sale: SaleWithItems;
   hasPurchase: boolean;
+  menuBacktest: MenuBacktestDateSummary | null;
 }
 
-function ExistingSaleDetail({ sale, hasPurchase }: ExistingSaleDetailProps): React.ReactElement {
+function ExistingSaleDetail({
+  sale,
+  hasPurchase,
+  menuBacktest,
+}: ExistingSaleDetailProps): React.ReactElement {
   const totalRevenue = sale.total_revenue;
   const totalCost = sale.total_cost_snapshot;
   const netProfit = totalRevenue - totalCost;
@@ -224,6 +263,8 @@ function ExistingSaleDetail({ sale, hasPurchase }: ExistingSaleDetailProps): Rea
         )}
       </article>
 
+      {menuBacktest && <MenuBacktestComparison summary={menuBacktest} />}
+
       <article className="flex flex-col gap-stack rounded-xl border border-border bg-card p-tile">
         <div className="flex items-center justify-between gap-stack">
           <h2 className="text-title-md text-ink-1">판매 내역</h2>
@@ -236,6 +277,53 @@ function ExistingSaleDetail({ sale, hasPurchase }: ExistingSaleDetailProps): Rea
         </ul>
       </article>
     </div>
+  );
+}
+
+function MenuBacktestComparison({
+  summary,
+}: {
+  summary: MenuBacktestDateSummary;
+}): React.ReactElement {
+  return (
+    <article className="flex flex-col gap-stack rounded-xl border border-border bg-card p-tile">
+      <div className="flex items-start justify-between gap-stack">
+        <div>
+          <h2 className="text-title-md text-ink-1">당시 예측 vs 실제</h2>
+          <p className="mt-1 text-caption text-ink-3">
+            백테스트 기준 · {RELIABILITY_LABEL[summary.reliability]}
+          </p>
+        </div>
+        <span className="rounded-full bg-blue-soft px-2.5 py-1 text-micro text-blue-deep">
+          오차율{" "}
+          {summary.meanAbsolutePercentageError === null
+            ? "-"
+            : `${Math.round(summary.meanAbsolutePercentageError * 100)}%`}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-stack">
+        <Metric label="실제 판매" value={`${formatNumber(summary.actualTotalQuantity)}개`} />
+        <Metric label="예측 판매" value={`${formatNumber(summary.predictedTotalQuantity)}개`} />
+      </div>
+      <ul className="flex flex-col gap-stack-tight">
+        {summary.items.slice(0, 5).map((item) => (
+          <li key={item.menuId} className="rounded-lg bg-bg p-stack">
+            <div className="flex items-start justify-between gap-stack">
+              <div>
+                <p className="text-body text-ink-1">{item.name}</p>
+                <p className="text-micro text-ink-3">
+                  실제 {formatNumber(item.actualQuantity)}개 · 예측{" "}
+                  {formatNumber(Number(item.predictedQuantity.toFixed(1)))}개
+                </p>
+              </div>
+              <p className="text-caption text-ink-3">
+                오차 {formatNumber(Number(item.absoluteError.toFixed(1)))}개
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </article>
   );
 }
 
@@ -363,6 +451,83 @@ function Notice({ tone, children }: NoticeProps): React.ReactElement {
     </div>
   );
 }
+
+interface MenuBacktestDateSummary {
+  actualTotalQuantity: number;
+  predictedTotalQuantity: number;
+  meanAbsolutePercentageError: number | null;
+  reliability: MenuForecastAccuracyView["reliability"];
+  items: Array<{
+    menuId: string;
+    name: string;
+    actualQuantity: number;
+    predictedQuantity: number;
+    absoluteError: number;
+  }>;
+}
+
+function buildMenuBacktestSummaryForDate(
+  date: string,
+  items: readonly MenuForecastAccuracyView[],
+): MenuBacktestDateSummary | null {
+  const results = items
+    .map((item) => {
+      const result = item.dailyResults.find((day) => localIsoDate(day.date) === date);
+      if (!result) return null;
+      return {
+        menuId: item.menuId,
+        name: item.name,
+        actualQuantity: result.actualQuantity,
+        predictedQuantity: result.predictedQuantity,
+        absoluteError: result.absoluteError,
+        absolutePercentageError: result.absolutePercentageError,
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+
+  if (results.length === 0) return null;
+
+  const actualTotalQuantity = results.reduce((sum, item) => sum + item.actualQuantity, 0);
+  const predictedTotalQuantity = results.reduce((sum, item) => sum + item.predictedQuantity, 0);
+  const evaluated = results.filter((item) => item.actualQuantity > 0);
+  const meanAbsolutePercentageError =
+    evaluated.length > 0
+      ? evaluated.reduce((sum, item) => sum + (item.absolutePercentageError ?? 0), 0) /
+        evaluated.length
+      : null;
+
+  return {
+    actualTotalQuantity,
+    predictedTotalQuantity,
+    meanAbsolutePercentageError,
+    reliability: classifyBacktestReliability(meanAbsolutePercentageError, evaluated.length),
+    items: results.sort((a, b) => b.absoluteError - a.absoluteError),
+  };
+}
+
+function classifyBacktestReliability(
+  meanAbsolutePercentageError: number | null,
+  evaluatedDayCount: number,
+): MenuForecastAccuracyView["reliability"] {
+  if (evaluatedDayCount < 3 || meanAbsolutePercentageError === null) return "insufficient_data";
+  if (meanAbsolutePercentageError >= 0.8) return "low";
+  if (meanAbsolutePercentageError >= 0.35) return "watch";
+  return "good";
+}
+
+const CONFIDENCE_LABEL: Record<CalendarMenuForecastSummary["confidenceLevel"], string> = {
+  high: "예측 신뢰도 높음",
+  medium: "예측 신뢰도 보통",
+  low: "예측 신뢰도 낮음",
+  collecting: "예측 데이터 수집 중",
+};
+
+const RELIABILITY_LABEL: Record<MenuForecastAccuracyView["reliability"], string> = {
+  good: "신뢰도 좋음",
+  watch: "주의",
+  low: "신뢰도 낮음",
+  insufficient_data: "데이터 부족",
+};
 
 function addDaysIso(date: Date, delta: number): string {
   const next = new Date(date);

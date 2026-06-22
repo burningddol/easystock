@@ -100,6 +100,7 @@ function IngredientForecastAccuracyCard({
       </dl>
 
       <TuningHint item={item} />
+      <DiagnosticReasons reasons={item.diagnosticReasons} />
 
       <ol className="mt-stack grid grid-cols-7 gap-1.5">
         {item.dailyResults.slice(-7).map((day) => (
@@ -211,6 +212,23 @@ function TuningHint({ item }: { item: IngredientForecastAccuracyView }): React.R
     <p className="mt-stack rounded-2xl border border-border bg-bg px-3 py-2 text-caption text-ink-3">
       {buildTuningHint(item)}
     </p>
+  );
+}
+
+function DiagnosticReasons({ reasons }: { reasons: readonly string[] }): React.ReactElement | null {
+  if (reasons.length === 0) return null;
+
+  return (
+    <div className="mt-stack-tight rounded-2xl border border-border bg-bg px-3 py-2">
+      <p className="text-micro font-semibold text-ink-2">원인 후보</p>
+      <ul className="mt-1 flex flex-col gap-1">
+        {reasons.map((reason) => (
+          <li key={reason} className="text-caption text-ink-3">
+            {reason}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
