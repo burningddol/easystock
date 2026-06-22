@@ -33,7 +33,7 @@ function MenuForecastContent(): React.ReactElement {
         title="메뉴 수요 예측"
         action={
           <div className="flex gap-stack-tight">
-            <Link href="/inventory/forecast-accuracy" className={SECONDARY_BUTTON_CLASSES}>
+            <Link href="/inventory/forecast-accuracy?tab=menu" className={SECONDARY_BUTTON_CLASSES}>
               정확도
             </Link>
             <Link href="/inventory" className={SECONDARY_BUTTON_CLASSES}>
