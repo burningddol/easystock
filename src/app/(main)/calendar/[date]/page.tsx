@@ -294,7 +294,16 @@ function MenuBacktestComparison({
             백테스트 기준 · {RELIABILITY_LABEL[summary.reliability]}
           </p>
         </div>
-        <span className="rounded-full bg-blue-soft px-2.5 py-1 text-micro text-blue-deep">
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 text-micro",
+            summary.reliability === "low"
+              ? "bg-red-soft text-red-deep"
+              : summary.reliability === "watch"
+                ? "bg-amber-soft text-amber-deep"
+                : "bg-blue-soft text-blue-deep",
+          )}
+        >
           오차율{" "}
           {summary.meanAbsolutePercentageError === null
             ? "-"
@@ -323,6 +332,11 @@ function MenuBacktestComparison({
           </li>
         ))}
       </ul>
+      {summary.items.length > 5 && (
+        <p className="text-caption text-ink-3">
+          오차가 큰 메뉴 5개만 먼저 보여줘요. 전체 비교는 예측 정확도 화면에서 확인하세요.
+        </p>
+      )}
     </article>
   );
 }
@@ -500,16 +514,16 @@ function buildMenuBacktestSummaryForDate(
     actualTotalQuantity,
     predictedTotalQuantity,
     meanAbsolutePercentageError,
-    reliability: classifyBacktestReliability(meanAbsolutePercentageError, evaluated.length),
+    reliability: classifyDateBacktestReliability(meanAbsolutePercentageError, evaluated.length),
     items: results.sort((a, b) => b.absoluteError - a.absoluteError),
   };
 }
 
-function classifyBacktestReliability(
+function classifyDateBacktestReliability(
   meanAbsolutePercentageError: number | null,
-  evaluatedDayCount: number,
+  evaluatedItemCount: number,
 ): MenuForecastAccuracyView["reliability"] {
-  if (evaluatedDayCount < 3 || meanAbsolutePercentageError === null) return "insufficient_data";
+  if (evaluatedItemCount === 0 || meanAbsolutePercentageError === null) return "insufficient_data";
   if (meanAbsolutePercentageError >= 0.8) return "low";
   if (meanAbsolutePercentageError >= 0.35) return "watch";
   return "good";

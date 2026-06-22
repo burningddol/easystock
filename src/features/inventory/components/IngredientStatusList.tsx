@@ -102,9 +102,9 @@ function IngredientRow({
   }
 
   return (
-    <li className="glow-panel flex flex-col gap-1 rounded-[24px] border border-border bg-card px-tile py-stack shadow-card">
-      <div className="flex items-center justify-between gap-stack">
-        <div className="flex flex-col gap-1">
+    <li className="glow-panel flex flex-col gap-stack-tight rounded-[24px] border border-border bg-card px-tile py-stack shadow-card">
+      <div className="flex items-start justify-between gap-stack">
+        <div className="min-w-0 flex flex-col gap-1">
           <span className="text-body text-ink-1">{item.name}</span>
           <span className="text-caption text-ink-3 tabular-nums">
             현재 {formatNumber(item.currentStock)}
@@ -117,7 +117,7 @@ function IngredientRow({
           <span className="text-caption text-ink-3">{formatForecastSource(item)}</span>
           <span className="text-caption text-ink-3">{formatForecastBasis(item)}</span>
         </div>
-        <div className="flex items-center gap-stack-tight">
+        <div className="flex shrink-0 items-center gap-stack-tight">
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
             <span className={cn(toneClass(item.status))}>{depletionLabel}</span>
             {item.trend !== "normal" && <TrendBadge trend={item.trend} />}
@@ -140,28 +140,66 @@ function IngredientRow({
         </p>
       )}
       {item.purchaseRecommendation?.isOrderRecommended && (
-        <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-blue/20 bg-blue-soft px-3 py-2 text-caption text-blue-deep sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <span className="font-semibold">
-              권장 발주{" "}
-              {formatNumber(Math.ceil(item.purchaseRecommendation.recommendedOrderQuantity))}
-              {item.unit}
-            </span>
-            <span className="text-blue-deep/70">
-              {" "}
-              · {formatOrderByDate(item.purchaseRecommendation.orderByDate)}까지 · 리드타임+
-              안전여유+{item.purchaseRecommendation.targetCoverageDays}일 운영분 기준
-            </span>
-          </div>
-          <Link
-            href={buildPurchasePrefillHref(item)}
-            className="self-start rounded-xl bg-blue px-3 py-2 text-label text-white shadow-soft transition hover:-translate-y-0.5 sm:self-auto"
-          >
-            매입 등록
-          </Link>
-        </div>
+        <OrderRecommendationCard item={item} depletionLabel={depletionLabel} />
       )}
     </li>
+  );
+}
+
+function OrderRecommendationCard({
+  item,
+  depletionLabel,
+}: {
+  item: IngredientForecastView;
+  depletionLabel: string;
+}): React.ReactElement | null {
+  const recommendation = item.purchaseRecommendation;
+  if (!recommendation?.isOrderRecommended) return null;
+
+  const quantity = Math.ceil(recommendation.recommendedOrderQuantity);
+  const orderByLabel = formatOrderByDate(recommendation.orderByDate);
+
+  return (
+    <div className="rounded-[22px] border border-blue/20 bg-blue-soft px-3 py-3 text-blue-deep shadow-soft">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-caption font-semibold">권장 발주</p>
+          <p className="mt-1 text-title-md tabular-nums">
+            {formatNumber(quantity)}
+            {item.unit}
+          </p>
+          <p className="mt-1 text-caption text-blue-deep/75">
+            {orderByLabel}까지 발주 · {depletionLabel}
+          </p>
+        </div>
+        <Link
+          href={buildPurchasePrefillHref(item)}
+          className="flex shrink-0 items-center justify-center rounded-xl bg-blue px-4 py-2.5 text-label text-white shadow-soft transition hover:-translate-y-0.5"
+        >
+          매입 등록
+        </Link>
+      </div>
+
+      <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+        <OrderFactor label="리드타임" value={`${item.leadTimeDays}일`} />
+        <OrderFactor label="안전여유" value={`${item.safetyBufferDays}일`} />
+        <OrderFactor label="목표운영" value={`${recommendation.targetCoverageDays}일`} />
+      </dl>
+
+      <p className="mt-3 text-caption leading-relaxed text-blue-deep/75">
+        현재 재고에서 리드타임, 안전여유, 목표 운영일 동안의 예상 소요량을 뺀 부족분만 추천합니다.{" "}
+        {formatLeadTimeSource(item)}
+      </p>
+    </div>
+  );
+}
+
+function OrderFactor({ label, value }: { label: string; value: string }): React.ReactElement {
+  return (
+    <div className="rounded-2xl bg-white/70 px-2 py-2 shadow-soft">
+      <dt className="text-micro text-blue-deep/60">{label}</dt>
+      <dd className="mt-0.5 text-caption font-semibold tabular-nums text-blue-deep">{value}</dd>
+    </div>
   );
 }
 
