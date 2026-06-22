@@ -8,8 +8,7 @@ import {
 } from "@tanstack/react-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
-import { todayDashboardQueryKey } from "@/features/dashboard/hooks/useTodayDashboard";
+import { invalidateSettingsWriteRelatedQueries } from "@/lib/query-invalidation";
 import type { Weekday } from "@/lib/domain/regular-days-off";
 import type { ForecastSensitivity } from "@/lib/domain/forecast";
 import { updateRegularDaysOff } from "@/lib/supabase/rpc";
@@ -39,12 +38,8 @@ interface UpdateForecastSensitivityInput {
   forecastSensitivity: ForecastSensitivity;
 }
 
-export async function invalidateSettingsRelatedQueries(queryClient: QueryClient): Promise<void> {
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: todayDashboardQueryKey }),
-    queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey }),
-    queryClient.invalidateQueries({ queryKey: ["calendar"] }),
-  ]);
+export function invalidateSettingsRelatedQueries(queryClient: QueryClient): void {
+  invalidateSettingsWriteRelatedQueries(queryClient);
 }
 
 async function updateStoreName(input: UpdateStoreNameInput): Promise<string> {
@@ -128,8 +123,8 @@ export function useUpdateStoreName(): UseMutationResult<string, Error, UpdateSto
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateStoreName,
-    onSuccess: async () => {
-      await invalidateSettingsRelatedQueries(queryClient);
+    onSuccess: () => {
+      invalidateSettingsRelatedQueries(queryClient);
     },
   });
 }
@@ -142,8 +137,8 @@ export function useUpdateRegularDaysOff(): UseMutationResult<
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: persistRegularDaysOff,
-    onSuccess: async () => {
-      await invalidateSettingsRelatedQueries(queryClient);
+    onSuccess: () => {
+      invalidateSettingsRelatedQueries(queryClient);
     },
   });
 }
@@ -156,8 +151,8 @@ export function useUpdateSafetyBufferDays(): UseMutationResult<
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateSafetyBufferDays,
-    onSuccess: async () => {
-      await invalidateSettingsRelatedQueries(queryClient);
+    onSuccess: () => {
+      invalidateSettingsRelatedQueries(queryClient);
     },
   });
 }
@@ -170,8 +165,8 @@ export function useUpdatePurchaseCoverageDays(): UseMutationResult<
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updatePurchaseCoverageDays,
-    onSuccess: async () => {
-      await invalidateSettingsRelatedQueries(queryClient);
+    onSuccess: () => {
+      invalidateSettingsRelatedQueries(queryClient);
     },
   });
 }
@@ -184,8 +179,8 @@ export function useUpdateForecastSensitivity(): UseMutationResult<
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateForecastSensitivity,
-    onSuccess: async () => {
-      await invalidateSettingsRelatedQueries(queryClient);
+    onSuccess: () => {
+      invalidateSettingsRelatedQueries(queryClient);
     },
   });
 }

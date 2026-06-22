@@ -4,16 +4,13 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics/ga4";
 import { requestPushPermissionAndSubscribe } from "@/lib/push/client";
+import { invalidateSaleWriteRelatedQueries } from "@/lib/query-invalidation";
 import {
   submitSale,
   type SaleClient,
   type SubmitSaleInput,
   type SubmitSaleResult,
 } from "@/lib/application/sale";
-import { menuListQueryKey } from "@/features/menu/hooks/useMenus";
-import { ingredientListQueryKey } from "@/features/purchase/hooks/useIngredients";
-import { depletionForecastQueryKey } from "@/features/inventory/hooks/useDepletionForecast";
-import { salesQueryKey } from "./_keys";
 import type { SaveSaleInput } from "../schemas";
 
 interface SubmitVariables extends SaveSaleInput {
@@ -49,12 +46,7 @@ export function useSaleSubmit(): UseMutationResult<SubmitSaleResult, Error, Subm
         trackEvent("retroactive_sale_complete", { sold_at: input.soldAt });
       }
 
-      // sale 저장은 재료 재고 차감 + 단가 history insert까지 트리거 → menu 캐시 외에
-      // ingredient/forecast도 함께 무효화해야 inventory 페이지가 즉시 반영.
-      void queryClient.invalidateQueries({ queryKey: menuListQueryKey });
-      void queryClient.invalidateQueries({ queryKey: ingredientListQueryKey });
-      void queryClient.invalidateQueries({ queryKey: depletionForecastQueryKey });
-      void queryClient.invalidateQueries({ queryKey: salesQueryKey });
+      invalidateSaleWriteRelatedQueries(queryClient);
     },
   });
 }

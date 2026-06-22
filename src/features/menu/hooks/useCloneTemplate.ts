@@ -4,7 +4,7 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { createClient } from "@/lib/supabase/client";
 import { cloneMenuTemplate } from "@/lib/supabase/rpc";
 import { trackEvent } from "@/lib/analytics/ga4";
-import { ingredientListQueryKey } from "@/features/purchase/hooks/useIngredients";
+import { invalidateIngredientWriteRelatedQueries } from "@/lib/query-invalidation";
 import { invalidateMenuCaches } from "./useMenus";
 import type { CloneTemplateInput } from "../schemas";
 
@@ -39,8 +39,7 @@ export function useCloneTemplate(): UseMutationResult<CloneResult, Error, CloneT
         new_menus: result.newMenuCount,
       });
       invalidateMenuCaches(queryClient);
-      // 템플릿은 메뉴 + 재료를 함께 생성 → 재료 목록도 무효화.
-      void queryClient.invalidateQueries({ queryKey: ingredientListQueryKey });
+      invalidateIngredientWriteRelatedQueries(queryClient);
     },
   });
 }
