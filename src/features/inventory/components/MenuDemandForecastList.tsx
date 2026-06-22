@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { formatNumber, WEEKDAY_KO } from "@/lib/utils/format";
 import type { MenuDemandForecastView } from "../hooks/useMenuDemandForecast";
+import type { MenuForecastAccuracyView } from "../hooks/useMenuForecastAccuracy";
 
 interface MenuDemandForecastListProps {
   items: readonly MenuDemandForecastView[];
+  accuracyItems?: readonly MenuForecastAccuracyView[];
 }
 
 const TREND_LABEL: Record<MenuDemandForecastView["trend"], string> = {
@@ -21,7 +24,10 @@ const CONFIDENCE_LABEL: Record<MenuDemandForecastView["basis"]["confidenceLevel"
   collecting: "데이터 수집 중",
 };
 
-export function MenuDemandForecastList({ items }: MenuDemandForecastListProps): React.ReactElement {
+export function MenuDemandForecastList({
+  items,
+  accuracyItems = [],
+}: MenuDemandForecastListProps): React.ReactElement {
   if (items.length === 0) {
     return (
       <p className="glow-panel rounded-2xl border border-border bg-card px-stack py-stack text-body-regular text-ink-3 shadow-soft">
@@ -30,16 +36,28 @@ export function MenuDemandForecastList({ items }: MenuDemandForecastListProps): 
     );
   }
 
+  const accuracyByMenu = new Map(accuracyItems.map((accuracy) => [accuracy.menuId, accuracy]));
+
   return (
     <div className="flex flex-col gap-stack">
       {items.map((item) => (
-        <MenuDemandForecastCard key={item.menuId} item={item} />
+        <MenuDemandForecastCard
+          key={item.menuId}
+          item={item}
+          accuracy={accuracyByMenu.get(item.menuId)}
+        />
       ))}
     </div>
   );
 }
 
-function MenuDemandForecastCard({ item }: { item: MenuDemandForecastView }): React.ReactElement {
+function MenuDemandForecastCard({
+  item,
+  accuracy,
+}: {
+  item: MenuDemandForecastView;
+  accuracy?: MenuForecastAccuracyView;
+}): React.ReactElement {
   const maxDailyQuantity = Math.max(
     1,
     ...item.dailyPredictions.map((day) => day.predictedQuantity),
@@ -58,6 +76,7 @@ function MenuDemandForecastCard({ item }: { item: MenuDemandForecastView }): Rea
         <div className="flex shrink-0 flex-col items-end gap-1">
           <TrendBadge trend={item.trend} isColdStart={item.isColdStart} />
           <ConfidenceBadge level={item.basis.confidenceLevel} />
+          {accuracy && <AccuracyBadge accuracy={accuracy} />}
         </div>
       </div>
 
@@ -93,6 +112,29 @@ function MenuDemandForecastCard({ item }: { item: MenuDemandForecastView }): Rea
         </div>
       )}
     </article>
+  );
+}
+
+function AccuracyBadge({ accuracy }: { accuracy: MenuForecastAccuracyView }): React.ReactElement {
+  const mape = accuracy.meanAbsolutePercentageError;
+  const label = mape === null ? "정확도 수집 중" : `오차 ${formatPercent(mape)}`;
+
+  return (
+    <Link
+      href="/inventory/forecast-accuracy?tab=menu"
+      className={cn(
+        "rounded-full px-2 py-0.5 text-micro shadow-soft",
+        accuracy.reliability === "good"
+          ? "bg-blue-soft text-blue-deep"
+          : accuracy.reliability === "watch"
+            ? "bg-amber-soft text-amber-deep"
+            : accuracy.reliability === "low"
+              ? "bg-red-soft text-red-deep"
+              : "bg-bg text-ink-3",
+      )}
+    >
+      {label}
+    </Link>
   );
 }
 
@@ -194,6 +236,10 @@ function formatQuantity(value: number): string {
 }
 
 function formatRate(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 

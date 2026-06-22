@@ -121,7 +121,7 @@ function IngredientRow({
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
             <span className={cn(toneClass(item.status))}>{depletionLabel}</span>
             {item.trend !== "normal" && <TrendBadge trend={item.trend} />}
-            {accuracy && <AccuracyRiskBadge accuracy={accuracy} />}
+            {accuracy && <AccuracyBadge accuracy={accuracy} />}
           </div>
           <button
             type="button"
@@ -203,37 +203,36 @@ function OrderFactor({ label, value }: { label: string; value: string }): React.
   );
 }
 
-function AccuracyRiskBadge({
+function AccuracyBadge({
   accuracy,
 }: {
   accuracy: IngredientForecastAccuracyView;
-}): React.ReactElement | null {
-  const risk = getAccuracyRisk(accuracy);
-  if (!risk) return null;
+}): React.ReactElement {
+  const label = formatAccuracyLabel(accuracy);
 
   return (
     <Link
-      href="/inventory/forecast-accuracy"
+      href="/inventory/forecast-accuracy?tab=ingredient"
       className={cn(
         "rounded-full px-2 py-0.5 text-micro shadow-soft",
-        risk.tone === "red" ? "bg-red-soft text-red-deep" : "bg-amber-soft text-amber-deep",
+        accuracy.reliability === "good"
+          ? "bg-blue-soft text-blue-deep"
+          : accuracy.reliability === "watch"
+            ? "bg-amber-soft text-amber-deep"
+            : accuracy.reliability === "low"
+              ? "bg-red-soft text-red-deep"
+              : "bg-bg text-ink-3",
       )}
     >
-      {risk.label}
+      {label}
     </Link>
   );
 }
 
-function getAccuracyRisk(accuracy: IngredientForecastAccuracyView): {
-  label: string;
-  tone: "red" | "amber";
-} | null {
-  if (accuracy.evaluatedDayCount < 3) return { label: "예측 데이터 부족", tone: "amber" };
+function formatAccuracyLabel(accuracy: IngredientForecastAccuracyView): string {
   const mape = accuracy.meanAbsolutePercentageError;
-  if (mape === null) return null;
-  if (mape >= 0.8) return { label: "예측 신뢰도 낮음", tone: "red" };
-  if (mape >= 0.5 || accuracy.bias === "under") return { label: "발주량 확인 필요", tone: "amber" };
-  return null;
+  if (mape === null || accuracy.evaluatedDayCount < 3) return "정확도 수집 중";
+  return `오차 ${Math.round(mape * 100)}%`;
 }
 
 function formatLeadTimeSource(item: IngredientForecastView): string {

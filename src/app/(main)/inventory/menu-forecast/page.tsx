@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { ForecastPeriodSelector } from "@/features/inventory/components/ForecastPeriodSelector";
 import { MenuDemandForecastList } from "@/features/inventory/components/MenuDemandForecastList";
 import { useMenuDemandForecast } from "@/features/inventory/hooks/useMenuDemandForecast";
+import { useMenuForecastAccuracy } from "@/features/inventory/hooks/useMenuForecastAccuracy";
 import { PageHeader } from "@/components/ui/page-header";
 import { SECONDARY_BUTTON_CLASSES } from "@/components/ui/button-classes";
 import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
@@ -24,6 +25,7 @@ function MenuForecastContent(): React.ReactElement {
   const searchParams = useSearchParams();
   const horizonDays = parseOption(searchParams.get("horizon"), HORIZON_OPTIONS, 7);
   const query = useMenuDemandForecast(horizonDays);
+  const accuracyQuery = useMenuForecastAccuracy(14);
 
   return (
     <section className="flex flex-col gap-section">
@@ -61,7 +63,9 @@ function MenuForecastContent(): React.ReactElement {
 
       {query.isLoading && <LoadingText />}
       {query.error && <ErrorAlert message={query.error.message} />}
-      {query.data && <MenuDemandForecastList items={query.data} />}
+      {query.data && (
+        <MenuDemandForecastList items={query.data} accuracyItems={accuracyQuery.data ?? []} />
+      )}
     </section>
   );
 }
