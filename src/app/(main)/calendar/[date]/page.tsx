@@ -12,6 +12,7 @@ import {
   buildCalendarMenuForecastByDate,
   type CalendarMenuForecastSummary,
 } from "@/features/calendar/lib/menu-forecast-calendar";
+import { CALENDAR_SHORT_FORECAST_DAYS } from "@/features/calendar/lib/forecast-window";
 import { daysUntilLock, isSaleLocked } from "@/lib/domain/snapshot";
 import { MARGIN_LABEL } from "@/lib/domain/margin";
 import {
@@ -38,10 +39,12 @@ export default function CalendarDateDetailPage(): React.ReactElement {
   const month = parsedDate ? parsedDate.getMonth() + 1 : null;
   const todayIso = useTodayIso();
   const today = todayIso ? (parseLocalDateFromIso(todayIso) ?? new Date()) : new Date();
-  const isFutureDate = parsedDate ? differenceInCalendarDays(parsedDate, today) > 0 : false;
-  const forecastHorizonDays = parsedDate
-    ? Math.min(365, Math.max(7, differenceInCalendarDays(parsedDate, today) + 1))
-    : 7;
+  const daysFromToday = parsedDate ? differenceInCalendarDays(parsedDate, today) : 0;
+  const isFutureDate = daysFromToday > 0;
+  const isShortForecastDate = isFutureDate && daysFromToday <= CALENDAR_SHORT_FORECAST_DAYS;
+  const forecastHorizonDays = isShortForecastDate
+    ? Math.max(CALENDAR_SHORT_FORECAST_DAYS, daysFromToday + 1)
+    : CALENDAR_SHORT_FORECAST_DAYS;
   const calendarQuery = useCalendarMonth(year, month);
   const saleQuery = useSaleByDate(date);
   const menuForecastQuery = useMenuDemandForecast(forecastHorizonDays);
@@ -98,6 +101,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
           menuBacktest={menuBacktest}
           revenueBacktest={revenueBacktest}
           todayIso={todayIso}
+          isShortForecastDate={isShortForecastDate}
         />
       )}
     </section>
@@ -113,6 +117,7 @@ interface DateDetailBodyProps {
   menuBacktest: MenuBacktestDateSummary | null;
   revenueBacktest: RevenueBacktestDateSummary | null;
   todayIso: string;
+  isShortForecastDate: boolean;
 }
 
 function DateDetailBody({
@@ -124,12 +129,19 @@ function DateDetailBody({
   menuBacktest,
   revenueBacktest,
   todayIso,
+  isShortForecastDate,
 }: DateDetailBodyProps): React.ReactElement {
   const today = parseLocalDateFromIso(todayIso) ?? new Date();
   const daysFromToday = differenceInCalendarDays(parsedDate, today);
 
   if (cell?.isFuture) {
-    return <FutureForecastDetail date={date} forecast={menuForecast} />;
+    return (
+      <FutureForecastDetail
+        date={date}
+        forecast={isShortForecastDate ? menuForecast : null}
+        isShortForecastDate={isShortForecastDate}
+      />
+    );
   }
   if (cell?.isBeforeSignup) {
     return <Notice tone="neutral">가입 전 데이터예요.</Notice>;
@@ -153,10 +165,21 @@ function DateDetailBody({
 function FutureForecastDetail({
   date,
   forecast,
+  isShortForecastDate,
 }: {
   date: string;
   forecast: CalendarMenuForecastSummary | null;
+  isShortForecastDate: boolean;
 }): React.ReactElement {
+  if (!isShortForecastDate) {
+    return (
+      <Notice tone="neutral">
+        캘린더는 오늘부터 {CALENDAR_SHORT_FORECAST_DAYS}일 이내 단기 예측만 보여줘요. 14일·30일 장기
+        참고치는 메뉴 수요 예측 화면에서 확인해 주세요.
+      </Notice>
+    );
+  }
+
   if (!forecast || forecast.items.length === 0) {
     return (
       <Notice tone="neutral">
@@ -175,7 +198,8 @@ function FutureForecastDetail({
             <Metric label="예상 판매" value={`${formatNumber(forecast.totalQuantity)}개`} />
           </div>
           <Notice tone="neutral">
-            미래 날짜는 판매 입력은 막고, 현재까지의 판매 이력으로 계산한 예측만 보여줘요.
+            캘린더는 오늘부터 {CALENDAR_SHORT_FORECAST_DAYS}일 이내 단기 예측만 보여줘요. 장기
+            구간은 메뉴 수요 예측 화면에서 참고용으로 확인하세요.
           </Notice>
           <ForecastConfidenceNote forecast={forecast} />
         </div>

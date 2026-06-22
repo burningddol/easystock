@@ -1,6 +1,7 @@
 "use client";
 
 import { INTENSITY_LEVELS, INTENSITY_STEP_PCT } from "../lib/intensity";
+import { CALENDAR_SHORT_FORECAST_DAYS } from "../lib/forecast-window";
 
 /**
  * 캘린더 범례 — 인텐시티 5단계 + 매입/누락 도트 설명.
@@ -19,6 +20,9 @@ export function CalendarLegend(): React.ReactElement {
         <DotKey tone="amber" label="매입 있음" />
         <DotKey tone="red" label="판매 미입력" />
       </div>
+      <p className="text-micro text-ink-4">
+        예상 매출은 오늘부터 {CALENDAR_SHORT_FORECAST_DAYS}일 이내 단기 예측만 표시합니다.
+      </p>
     </section>
   );
 }

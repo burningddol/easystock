@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { differenceInCalendarDays } from "date-fns";
 import { useCalendarMonth } from "@/features/calendar/hooks/useCalendarMonth";
 import { useMenuDemandForecast } from "@/features/inventory/hooks/useMenuDemandForecast";
 import { useRevenueForecastAccuracy } from "@/features/inventory/hooks/useRevenueForecastAccuracy";
@@ -11,8 +10,9 @@ import { MonthCumulativeCard } from "@/features/calendar/components/MonthCumulat
 import { CalendarGrid } from "@/features/calendar/components/CalendarGrid";
 import { CalendarLegend } from "@/features/calendar/components/CalendarLegend";
 import { buildCalendarMenuForecastByDate } from "@/features/calendar/lib/menu-forecast-calendar";
+import { CALENDAR_SHORT_FORECAST_DAYS } from "@/features/calendar/lib/forecast-window";
 import { trackEvent } from "@/lib/analytics/ga4";
-import { localIsoDate, parseLocalDateFromIso } from "@/lib/utils/format";
+import { localIsoDate } from "@/lib/utils/format";
 import { useTodayIso } from "@/lib/utils/use-today-iso";
 import type { EnrichedCalendarCell } from "@/features/calendar/lib/consecutive-missing";
 
@@ -31,7 +31,6 @@ export default function CalendarPage(): React.ReactElement {
   const todayIso = useTodayIso();
   const [year, setYear] = useState<number | null>(null);
   const [month, setMonth] = useState<number | null>(null);
-  const forecastHorizonDays = computeForecastHorizonDays(year, month, todayIso);
 
   // 초기 mount 시 클라이언트 시각으로 현재 연/월 세팅 (SSR/CSR drift 차단)
   useEffect(() => {
@@ -41,7 +40,7 @@ export default function CalendarPage(): React.ReactElement {
   }, []);
 
   const query = useCalendarMonth(year, month);
-  const menuForecastQuery = useMenuDemandForecast(forecastHorizonDays);
+  const menuForecastQuery = useMenuDemandForecast(CALENDAR_SHORT_FORECAST_DAYS);
   const revenueAccuracyQuery = useRevenueForecastAccuracy(30);
   const menuForecastByDate = useMemo(
     () => buildCalendarMenuForecastByDate(menuForecastQuery.data ?? []),
@@ -133,15 +132,4 @@ export default function CalendarPage(): React.ReactElement {
       <CalendarLegend />
     </section>
   );
-}
-
-function computeForecastHorizonDays(
-  year: number | null,
-  month: number | null,
-  todayIso: string | null,
-): number {
-  if (year === null || month === null || !todayIso) return 60;
-  const today = parseLocalDateFromIso(todayIso) ?? new Date();
-  const monthEnd = new Date(year, month, 0);
-  return Math.min(365, Math.max(7, differenceInCalendarDays(monthEnd, today) + 1));
 }
