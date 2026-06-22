@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, type UseMutationResult } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { localIsoDate } from "@/lib/utils/format";
 import {
@@ -8,6 +8,7 @@ import {
   type SaveOrderRecommendationSnapshotInput,
 } from "@/lib/supabase/rpc";
 import type { IngredientForecastView } from "@/lib/application/inventory";
+import { orderRecommendationReportQueryKey } from "./useOrderRecommendationReport";
 
 interface SaveOrderRecommendationSnapshotVariables {
   vendorId: string | null;
@@ -58,5 +59,11 @@ export function useOrderRecommendationSnapshot(): UseMutationResult<
   Error,
   SaveOrderRecommendationSnapshotVariables
 > {
-  return useMutation({ mutationFn: saveSnapshot });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveSnapshot,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: orderRecommendationReportQueryKey });
+    },
+  });
 }

@@ -22,6 +22,7 @@ export function useDepletionForecast(): UseQueryResult<IngredientForecastView[]>
   return useQuery({
     queryKey: depletionForecastQueryKey,
     queryFn: fetchDepletionForecast,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
+    refetchOnMount: "always",
   });
 }

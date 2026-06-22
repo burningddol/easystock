@@ -16,6 +16,8 @@ interface OrderGroup {
   vendorId: string | null;
   vendorName: string;
   items: IngredientForecastView[];
+  recommendedTotal: number;
+  earliestOrderByDate: Date | null;
 }
 
 export default function InventoryOrdersPage(): React.ReactElement {
@@ -65,63 +67,133 @@ export default function InventoryOrdersPage(): React.ReactElement {
 
       <div className="flex flex-col gap-section">
         {groups.map((group) => (
-          <section
-            key={group.key}
-            className="glow-panel flex flex-col gap-stack-tight rounded-[28px] border border-border bg-card p-5 shadow-card"
-          >
-            <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-micro uppercase tracking-[0.14em] text-blue-deep">Vendor</p>
-                <h2 className="text-title-md text-ink-1">{group.vendorName}</h2>
-                <p className="text-caption text-ink-3">{group.items.length}개 재료 발주 권장</p>
-              </div>
-              <OrderPurchaseButton
-                items={group.items}
-                vendorId={group.vendorId}
-                className="halo-cta self-start rounded-2xl bg-brand-primary px-4 py-3 text-label font-semibold text-white shadow-card transition hover:-translate-y-0.5 disabled:opacity-60 sm:self-auto"
-              >
-                이 거래처 매입 등록
-              </OrderPurchaseButton>
-            </header>
-
-            <ul className="flex flex-col gap-stack-tight">
-              {group.items.map((item) => (
-                <li
-                  key={item.ingredientId}
-                  className="rounded-2xl border border-border bg-card px-4 py-3 shadow-soft"
-                >
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-body text-ink-1">{item.name}</p>
-                      <p className="text-caption text-ink-3">
-                        현재 {formatNumber(item.currentStock)}
-                        {item.unit} · {formatDepletion(item)} ·{" "}
-                        {formatOrderByDate(item.purchaseRecommendation?.orderByDate ?? null)}까지
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-stack-tight">
-                      <span className="rounded-full bg-blue-soft px-3 py-1.5 text-caption font-semibold text-blue-deep">
-                        {formatNumber(
-                          Math.ceil(item.purchaseRecommendation?.recommendedOrderQuantity ?? 0),
-                        )}
-                        {item.unit}
-                      </span>
-                      <OrderPurchaseButton
-                        items={[item]}
-                        vendorId={item.leadTimeVendorId}
-                        className="rounded-xl border border-border bg-card px-3 py-2 text-label text-ink-2 shadow-soft hover:bg-card-hover disabled:opacity-60"
-                      >
-                        개별 등록
-                      </OrderPurchaseButton>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <OrderGroupCard key={group.key} group={group} />
         ))}
       </div>
     </section>
+  );
+}
+
+function OrderGroupCard({ group }: { group: OrderGroup }): React.ReactElement {
+  const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const checkedCount = group.items.filter((item) => checkedIds.has(item.ingredientId)).length;
+
+  function toggleItem(ingredientId: string): void {
+    setCheckedIds((current) => {
+      const next = new Set(current);
+      if (next.has(ingredientId)) next.delete(ingredientId);
+      else next.add(ingredientId);
+      return next;
+    });
+  }
+
+  async function copyOrderMemo(): Promise<void> {
+    setCopyMessage(null);
+    const memo = buildOrderMemo(group);
+    try {
+      await navigator.clipboard.writeText(memo);
+      setCopyMessage("발주 메모를 복사했어요.");
+    } catch {
+      setCopyMessage("복사 권한이 없어 직접 선택해서 복사해 주세요.");
+    }
+  }
+
+  return (
+    <section className="glow-panel flex flex-col gap-stack rounded-[28px] border border-border bg-card p-5 shadow-card">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-micro uppercase tracking-[0.14em] text-blue-deep">Vendor</p>
+          <h2 className="mt-1 text-title-md text-ink-1">{group.vendorName}</h2>
+          <p className="mt-1 text-caption text-ink-3">
+            {group.items.length}개 재료 · 총 권장 {formatNumber(group.recommendedTotal)} 단위
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-stack-tight">
+          <button
+            type="button"
+            onClick={() => void copyOrderMemo()}
+            className="rounded-2xl border border-border bg-card px-4 py-3 text-label font-semibold text-ink-2 shadow-soft transition hover:bg-card-hover"
+          >
+            발주 메모 복사
+          </button>
+          <OrderPurchaseButton
+            items={group.items}
+            vendorId={group.vendorId}
+            className="halo-cta rounded-2xl bg-brand-primary px-4 py-3 text-label font-semibold text-white shadow-card transition hover:-translate-y-0.5 disabled:opacity-60"
+          >
+            이 거래처 매입 등록
+          </OrderPurchaseButton>
+        </div>
+      </header>
+
+      <div className="grid gap-stack-tight sm:grid-cols-3">
+        <OrderMeta label="발주 마감" value={formatOrderByDate(group.earliestOrderByDate)} />
+        <OrderMeta label="체크 완료" value={`${checkedCount}/${group.items.length}개`} />
+        <OrderMeta
+          label="처리 방식"
+          value={group.vendorId ? "거래처 자동 선택" : "거래처 선택 필요"}
+        />
+      </div>
+
+      {copyMessage && (
+        <p className="rounded-2xl bg-blue-soft px-3 py-2 text-caption text-blue-deep">
+          {copyMessage}
+        </p>
+      )}
+
+      <ul className="flex flex-col gap-stack-tight">
+        {group.items.map((item) => (
+          <li
+            key={item.ingredientId}
+            className="rounded-2xl border border-border bg-white/90 px-4 py-3 shadow-soft"
+          >
+            <label className="flex cursor-pointer flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={checkedIds.has(item.ingredientId)}
+                  onChange={() => toggleItem(item.ingredientId)}
+                  className="mt-1 h-5 w-5 rounded border-border text-brand-primary"
+                />
+                <div>
+                  <p className="text-body font-semibold text-ink-1">{item.name}</p>
+                  <p className="text-caption text-ink-3">
+                    현재 {formatNumber(item.currentStock)}
+                    {item.unit} · {formatDepletion(item)} ·{" "}
+                    {formatOrderByDate(item.purchaseRecommendation?.orderByDate ?? null)}까지
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-stack-tight pl-8 sm:pl-0">
+                <span className="rounded-full bg-blue-soft px-3 py-1.5 text-caption font-semibold text-blue-deep">
+                  {formatNumber(
+                    Math.ceil(item.purchaseRecommendation?.recommendedOrderQuantity ?? 0),
+                  )}
+                  {item.unit}
+                </span>
+                <OrderPurchaseButton
+                  items={[item]}
+                  vendorId={item.leadTimeVendorId}
+                  className="rounded-xl border border-border bg-card px-3 py-2 text-label text-ink-2 shadow-soft hover:bg-card-hover disabled:opacity-60"
+                >
+                  개별 등록
+                </OrderPurchaseButton>
+              </div>
+            </label>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function OrderMeta({ label, value }: { label: string; value: string }): React.ReactElement {
+  return (
+    <div className="rounded-2xl border border-border bg-bg px-4 py-3 shadow-soft">
+      <p className="text-caption text-ink-3">{label}</p>
+      <p className="mt-1 text-body font-semibold text-ink-1">{value}</p>
+    </div>
   );
 }
 
@@ -180,8 +252,15 @@ function groupByVendor(items: readonly IngredientForecastView[]): OrderGroup[] {
         vendorId: item.leadTimeVendorId,
         vendorName: item.leadTimeVendorName ?? "거래처 선택 필요",
         items: [],
+        recommendedTotal: 0,
+        earliestOrderByDate: null,
       } satisfies OrderGroup);
     group.items.push(item);
+    group.recommendedTotal += Math.ceil(item.purchaseRecommendation?.recommendedOrderQuantity ?? 0);
+    group.earliestOrderByDate = minDate(
+      group.earliestOrderByDate,
+      item.purchaseRecommendation?.orderByDate ?? null,
+    );
     groups.set(key, group);
   }
 
@@ -190,6 +269,25 @@ function groupByVendor(items: readonly IngredientForecastView[]): OrderGroup[] {
     if (!a.vendorId && b.vendorId) return 1;
     return a.vendorName.localeCompare(b.vendorName, "ko");
   });
+}
+
+function buildOrderMemo(group: OrderGroup): string {
+  const lines = [
+    `[이지스톡 발주] ${group.vendorName}`,
+    `발주 마감: ${formatOrderByDate(group.earliestOrderByDate)}`,
+    "",
+    ...group.items.map((item) => {
+      const quantity = Math.ceil(item.purchaseRecommendation?.recommendedOrderQuantity ?? 0);
+      return `- ${item.name}: ${formatNumber(quantity)}${item.unit} (${formatDepletion(item)})`;
+    }),
+  ];
+  return lines.join("\n");
+}
+
+function minDate(current: Date | null, next: Date | null): Date | null {
+  if (!current) return next;
+  if (!next) return current;
+  return next.getTime() < current.getTime() ? next : current;
 }
 
 function buildPurchaseHref(
