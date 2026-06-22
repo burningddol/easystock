@@ -10,6 +10,7 @@ interface ForecastPeriodSelectorProps {
   options: readonly number[];
   suffix: string;
   pathname: string;
+  extraParams?: Record<string, string>;
 }
 
 export function ForecastPeriodSelector({
@@ -19,6 +20,7 @@ export function ForecastPeriodSelector({
   options,
   suffix,
   pathname,
+  extraParams,
 }: ForecastPeriodSelectorProps): React.ReactElement {
   return (
     <div className="rounded-[24px] border border-border bg-card px-4 py-4 shadow-soft">
@@ -29,7 +31,7 @@ export function ForecastPeriodSelector({
           return (
             <Link
               key={option}
-              href={`${pathname}?${queryKey}=${option}`}
+              href={buildHref(pathname, queryKey, option, extraParams)}
               aria-current={selected ? "page" : undefined}
               className={cn(
                 "rounded-2xl px-3 py-2 text-caption font-semibold shadow-soft transition",
@@ -46,4 +48,15 @@ export function ForecastPeriodSelector({
       </div>
     </div>
   );
+}
+
+function buildHref(
+  pathname: string,
+  queryKey: string,
+  value: number,
+  extraParams?: Record<string, string>,
+): string {
+  const params = new URLSearchParams(extraParams);
+  params.set(queryKey, String(value));
+  return `${pathname}?${params.toString()}`;
 }

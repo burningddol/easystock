@@ -21,10 +21,12 @@ async function fetchMenuForecastAccuracy(
 
 export function useMenuForecastAccuracy(
   backtestDays: number = 14,
+  enabled: boolean = true,
 ): UseQueryResult<MenuForecastAccuracyView[]> {
   return useQuery({
     queryKey: menuForecastAccuracyQueryKey(backtestDays),
     queryFn: () => fetchMenuForecastAccuracy(backtestDays),
+    enabled,
     staleTime: 5 * 60 * 1000,
   });
 }
