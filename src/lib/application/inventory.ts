@@ -73,6 +73,7 @@ export interface MenuForecastAccuracyView {
   averageAbsoluteError: number | null;
   meanAbsolutePercentageError: number | null;
   reliability: ForecastReliability;
+  diagnosticReasons: string[];
   bias: "over" | "under" | "balanced" | "insufficient_data";
   evaluatedDayCount: number;
   actualTotalQuantity: number;
@@ -93,6 +94,7 @@ export interface IngredientForecastAccuracyView {
   averageAbsoluteError: number | null;
   meanAbsolutePercentageError: number | null;
   reliability: ForecastReliability;
+  diagnosticReasons: string[];
   bias: "over" | "under" | "balanced" | "insufficient_data";
   evaluatedDayCount: number;
   actualTotalAmount: number;
@@ -303,14 +305,29 @@ export async function loadMenuForecastAccuracyViews(
         evaluated.length > 0
           ? sumBy(evaluated, (result) => result.absolutePercentageError ?? 0) / evaluated.length
           : null;
+      const reliability = classifyForecastReliability(
+        meanAbsolutePercentageError,
+        evaluated.length,
+      );
+      const bias = classifyForecastBias(
+        actualTotalQuantity,
+        predictedTotalQuantity,
+        evaluated.length,
+      );
 
       return {
         menuId: row.menuId,
         name: row.name,
         averageAbsoluteError,
         meanAbsolutePercentageError,
-        reliability: classifyForecastReliability(meanAbsolutePercentageError, evaluated.length),
-        bias: classifyForecastBias(actualTotalQuantity, predictedTotalQuantity, evaluated.length),
+        reliability,
+        diagnosticReasons: buildForecastDiagnostics({
+          kind: "menu",
+          reliability,
+          bias,
+          dailyResults,
+        }),
+        bias,
         evaluatedDayCount: evaluated.length,
         actualTotalQuantity,
         predictedTotalQuantity,
@@ -427,6 +444,11 @@ export async function loadIngredientForecastAccuracyViews(
         evaluated.length > 0
           ? sumBy(evaluated, (result) => result.absolutePercentageError ?? 0) / evaluated.length
           : null;
+      const reliability = classifyForecastReliability(
+        meanAbsolutePercentageError,
+        evaluated.length,
+      );
+      const bias = classifyForecastBias(actualTotalAmount, predictedTotalAmount, evaluated.length);
 
       return {
         ingredientId: ingredient.ingredientId,
@@ -434,8 +456,20 @@ export async function loadIngredientForecastAccuracyViews(
         unit: ingredient.unit,
         averageAbsoluteError,
         meanAbsolutePercentageError,
-        reliability: classifyForecastReliability(meanAbsolutePercentageError, evaluated.length),
-        bias: classifyForecastBias(actualTotalAmount, predictedTotalAmount, evaluated.length),
+        reliability,
+        diagnosticReasons: buildForecastDiagnostics({
+          kind: "ingredient",
+          reliability,
+          bias,
+          dailyResults: dailyResults.map((result) => ({
+            date: result.date,
+            actualQuantity: result.actualAmount,
+            predictedQuantity: result.predictedAmount,
+            absoluteError: result.absoluteError,
+            absolutePercentageError: result.absolutePercentageError,
+          })),
+        }),
+        bias,
         evaluatedDayCount: evaluated.length,
         actualTotalAmount,
         predictedTotalAmount,
@@ -548,6 +582,82 @@ function classifyForecastReliability(
   if (meanAbsolutePercentageError >= 0.8) return "low";
   if (meanAbsolutePercentageError >= 0.35) return "watch";
   return "good";
+}
+
+function buildForecastDiagnostics({
+  kind,
+  reliability,
+  bias,
+  dailyResults,
+}: {
+  kind: "menu" | "ingredient";
+  reliability: ForecastReliability;
+  bias: MenuForecastAccuracyView["bias"];
+  dailyResults: readonly {
+    date: Date;
+    actualQuantity: number;
+    predictedQuantity: number;
+    absoluteError: number;
+    absolutePercentageError: number | null;
+  }[];
+}): string[] {
+  const reasons: string[] = [];
+  const evaluated = dailyResults.filter((result) => result.actualQuantity > 0);
+  const noun = kind === "menu" ? "판매" : "소비";
+
+  if (evaluated.length < 3) {
+    reasons.push(`비교 가능한 ${noun}일이 3일 미만입니다.`);
+    return reasons;
+  }
+
+  if (reliability === "low") {
+    reasons.push("오차율이 80% 이상이라 예측 신뢰도가 낮습니다.");
+  } else if (reliability === "watch") {
+    reasons.push("오차율이 35% 이상이라 발주 전 재확인이 필요합니다.");
+  }
+
+  if (bias === "under") {
+    reasons.push(`실제 ${noun}가 예측보다 많아 부족 위험이 있습니다.`);
+  } else if (bias === "over") {
+    reasons.push(`예측 ${noun}가 실제보다 많아 과발주 위험이 있습니다.`);
+  }
+
+  const weekdayHotspot = findLargestWeekdayError(evaluated);
+  if (weekdayHotspot) {
+    reasons.push(`${weekdayHotspot}요일 오차가 가장 큽니다.`);
+  }
+
+  const missingActualDays = dailyResults.filter(
+    (result) => result.actualQuantity === 0 && result.predictedQuantity > 0,
+  ).length;
+  if (missingActualDays >= 2) {
+    reasons.push(`예측은 있었지만 실제 ${noun}가 없던 날이 ${missingActualDays}일 있습니다.`);
+  }
+
+  if (reasons.length === 0) {
+    reasons.push("최근 비교 구간에서는 큰 편향 없이 안정적입니다.");
+  }
+  return reasons.slice(0, 3);
+}
+
+function findLargestWeekdayError(
+  dailyResults: readonly { date: Date; absoluteError: number }[],
+): string | null {
+  const byWeekday = new Map<number, { error: number; count: number }>();
+  for (const result of dailyResults) {
+    const weekday = result.date.getDay();
+    const bucket = byWeekday.get(weekday) ?? { error: 0, count: 0 };
+    bucket.error += result.absoluteError;
+    bucket.count += 1;
+    byWeekday.set(weekday, bucket);
+  }
+
+  const ranked = Array.from(byWeekday.entries())
+    .map(([weekday, bucket]) => ({ weekday, averageError: bucket.error / bucket.count }))
+    .sort((a, b) => b.averageError - a.averageError);
+  const top = ranked[0];
+  if (!top || top.averageError <= 0) return null;
+  return ["일", "월", "화", "수", "목", "금", "토"][top.weekday] ?? null;
 }
 
 export interface ApplyInventoryReplayInput {
