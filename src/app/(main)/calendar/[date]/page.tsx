@@ -273,9 +273,6 @@ function ExistingSaleDetail({
         )}
       </article>
 
-      {revenueBacktest && <RevenueBacktestComparison summary={revenueBacktest} />}
-      {menuBacktest && <MenuBacktestComparison summary={menuBacktest} />}
-
       <article className="flex flex-col gap-stack rounded-xl border border-border bg-card p-tile">
         <div className="flex items-center justify-between gap-stack">
           <h2 className="text-title-md text-ink-1">판매 내역</h2>
@@ -287,6 +284,9 @@ function ExistingSaleDetail({
           ))}
         </ul>
       </article>
+
+      {revenueBacktest && <RevenueBacktestComparison summary={revenueBacktest} />}
+      {menuBacktest && <MenuBacktestComparison summary={menuBacktest} />}
     </div>
   );
 }
