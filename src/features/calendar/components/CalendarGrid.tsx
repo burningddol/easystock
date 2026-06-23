@@ -198,8 +198,9 @@ function formatForecastRevenueRange(revenue: number, meanAbsoluteWonError: numbe
 }
 
 function formatSignedWonError(signedWonError: number): string {
-  const prefix = signedWonError >= 0 ? "+" : "-";
-  return `${prefix}${formatNumber(Math.round(Math.abs(signedWonError) / 10000))}만`;
+  const actualVsForecast = -signedWonError;
+  const prefix = actualVsForecast >= 0 ? "+" : "-";
+  return `${prefix}${formatNumber(Math.round(Math.abs(actualVsForecast) / 10000))}만`;
 }
 
 function CellStatusTags({ tags }: { tags: readonly CellStatusTag[] }): React.ReactElement {

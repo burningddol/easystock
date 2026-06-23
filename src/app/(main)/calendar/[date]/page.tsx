@@ -651,9 +651,10 @@ function formatRevenueForecastRange(revenue: number, meanAbsoluteWonError: numbe
 }
 
 function formatSignedRevenueError(signedWonError: number): string {
+  const actualVsForecast = -signedWonError;
   const amount = `${formatWon(Math.abs(signedWonError))}원`;
-  if (signedWonError > 0) return `${amount} 높게 예측`;
-  if (signedWonError < 0) return `${amount} 낮게 예측`;
+  if (actualVsForecast > 0) return `예상보다 ${amount} 더 나옴`;
+  if (actualVsForecast < 0) return `예상보다 ${amount} 덜 나옴`;
   return "정확히 일치";
 }
 
