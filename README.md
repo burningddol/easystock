@@ -99,91 +99,157 @@ specs/001-mvp-core/        spec.md / data-model.md / contracts / tasks.md
 
 상세는 [.specify/memory/constitution.md](.specify/memory/constitution.md).
 
-## 재료 소진 예측 알고리즘
+## 통계·예측 알고리즘
 
-이지스톡의 소진 예측은 단순 최근 7일 평균이 아니라, **실제 판매 이력에서 재료별 일일 소비량을 만들고, 정기휴무·최근 추세·거래처 리드타임까지 반영한 뒤 하루씩 시뮬레이션**하는 방식입니다. 스펙 기준은 `FR-012`, `FR-013`, `FR-018`, `FR-025`, `FR-042`이고, 실제 구현 단일 출처는 [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)입니다.
+이지스톡의 예측은 “최근 며칠 평균” 하나로 끝내지 않습니다. 실제 구현은 **메뉴 수요 예측 → 옵션 선택률 반영 → 재료 소요량 환산 → 소진일/발주 판단 → 백테스트 정확도 표시** 흐름으로 연결됩니다. 핵심 구현 단일 출처는 [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)와 [inventory.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/application/inventory.ts)입니다.
 
-핵심 흐름은 이렇습니다.
+### 1. 원천 데이터
 
-1. **서버에서 raw 데이터 수집**
-   - [021_get_depletion_forecast_rpc.sql](/Users/yamon/Desktop/projects/ezstock/supabase/migrations/021_get_depletion_forecast_rpc.sql)
-   - 각 재료별로 `current_stock`, `signed_up_at`, `regular_days_off`, `safety_buffer_days`, 최근 90일 `consumption_samples`를 반환합니다.
-   - `consumption_samples`는 `sale_items.quantity × recipe_items.quantity_per_serving`를 날짜별로 합산한 값입니다.
-   - 거래처 리드타임은 해당 재료에 대해 **가장 자주 사용한 vendor의 리드타임**을 쓰고, 이력이 없으면 기본 `1일`을 사용합니다.
+- 메뉴 수요 예측은 메뉴별 과거 판매 수량(`demandSamples`)을 사용합니다.
+- 재료 소진 예측은 판매 항목과 레시피를 곱해 만든 일별 재료 소비량(`consumptionSamples`)을 사용합니다.
+- 매출 예측은 메뉴별 예측 판매량에 현재 메뉴 가격을 곱해 합산합니다.
+- 서버 RPC는 current stock, 판매/소비 sample, 정기휴무, 리드타임, 설정값 같은 raw 데이터를 반환하고, 최종 예측 규칙은 TypeScript 도메인 함수에서 계산합니다.
+- 관련 진입점: [useDepletionForecast.ts](/Users/yamon/Desktop/projects/ezstock/src/features/inventory/hooks/useDepletionForecast.ts), [useMenuDemandForecast.ts](/Users/yamon/Desktop/projects/ezstock/src/features/inventory/hooks/useMenuDemandForecast.ts)
 
-2. **가입 후 7일은 콜드스타트로 예측 중지**
-   - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
-   - 가입 후 `7일 미만`이면 `isColdStart=true`로 처리하고, 소진일 예측은 돌리지 않습니다.
-   - 그래서 재료 화면에는 “데이터 수집 중” 안내가 먼저 뜹니다.
+### 2. 콜드스타트
 
-3. **정기휴무를 제외한 계층형 최근가중 평균 계산**
-   - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
-   - 기본 anchor는 빙수집/카페 운영 패턴에 맞춘 `평일(월~목)`, `금요일`, `주말(토~일)` 그룹입니다.
-   - 개별요일 표본이 충분히 쌓이면 `월/화/수/목/금/토/일` 평균을 그룹 평균과 섞어 점진 반영합니다.
-   - 개별요일 비중은 `요일 표본 수 / (요일 표본 수 + prior)` 공식으로 점진 증가합니다.
-   - 기본 prior는 `12`라서 표본 5건은 약 29%, 10건은 약 45%, 20건은 약 63%, 40건은 약 77%만 개별요일을 반영합니다.
-   - 데이터가 충분히 쌓여도 개별요일은 최대 85%까지만 반영해, 그룹 평균을 안정화 anchor로 남깁니다.
-   - 최근 sample일수록 `exp(-daysAgo / 14)` 방식으로 더 큰 가중치를 줍니다.
-   - 정기휴무일은 평균 산정에서 제외합니다.
-   - 단체주문 같은 극단값은 중앙값의 3배로 cap해서 예측 폭주를 완화합니다.
-   - 그룹 표본이 8개 미만이면 **전체 영업일 평균과 섞는 shrinkage**를 적용해, 가맹점 초기 데이터가 적을 때도 예측이 과하게 튀지 않게 합니다.
+- 가입 후 `7일 미만`은 콜드스타트로 봅니다.
+- 이 기간에는 소진일을 무리하게 찍지 않고 “데이터 수집 중”으로 표시합니다.
+- 정확히 7일이 되는 경계부터는 예측을 시작합니다.
+- 신뢰도도 판매/소비 표본 수와 요일 보정 비율을 함께 보고 `높음 / 보통 / 낮음 / 수집 중`으로 표시합니다.
 
-4. **오늘부터 하루씩 재고 소진 시뮬레이션**
-   - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
-   - 내일부터 최대 365일까지 하루씩 진행하면서, 영업일이면 그 날짜의 개별요일 평균을 우선 쓰고 데이터가 부족하면 영업일 타입 평균으로 fallback합니다.
-   - 정기휴무는 소비 0으로 건너뜁니다.
-   - 재고가 `0 이하`가 되는 첫 날짜를 예상 소진일로 잡습니다.
+### 3. 계층형 요일 예측 모델
 
-5. **리드타임 + 안전여유 1일로 상태 분류**
-   - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
-   - 소진일까지 남은 일수에서 `거래처 리드타임 + 설정된 안전여유일`을 뺀 `buffer`로 상태를 나눕니다.
-   - 기본값은 `안전여유 1일`이고, 설정 화면에서 `0~7일` 범위로 조정할 수 있습니다.
-   - `critical`: buffer ≤ 1
-   - `order_needed`: buffer = 2
-   - `caution`: buffer 3~4
-   - `safe`: buffer ≥ 5
-   - 발주 추천 카드는 권장 수량, 발주 기한, 리드타임, 안전여유, 목표 운영일을 함께 보여줘 “왜 이만큼 사야 하는지”를 설명합니다.
+운영 예측의 기본 단위는 개별 요일 7개가 아니라 다음 3개 그룹입니다.
 
-6. **최근 사용량 급증/급감 감지 + 완만한 추세 보정**
-   - [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
-   - 최근 7일 평균과 30일 평균을 비교합니다.
-   - 비율 차이가 `±20%`를 넘으면 `rising` 또는 `falling`으로 분류합니다.
-   - 실제 소진일 계산에도 최근 추세를 반영하되, 계수는 `0.85~1.25`로 제한합니다.
-   - 그래서 날씨/이벤트로 하루 매출이 튄 경우에도 예측이 과하게 흔들리지 않습니다.
+- `weekday`: 월~목
+- `friday`: 금요일
+- `weekend`: 토~일
 
-7. **예측 민감도 설정**
-   - 설정 화면에서 `안정적 / 기본 / 민감` 중 하나를 선택할 수 있습니다.
-   - `안정적`은 최근 변동을 천천히 반영하고 이상치 영향을 더 줄입니다.
-   - `기본`은 최근 흐름과 장기 평균을 균형 있게 반영합니다.
-   - `민감`은 최근 판매 변화를 빠르게 반영해 날씨·이벤트 영향이 큰 매장에 맞춥니다.
-   - 설정 화면에는 각 모드의 최근가중 기간, 요일 prior, 이상치 cap 설명을 함께 보여줍니다.
-   - 실제 파라미터는 [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)의 `FORECAST_TUNING_PRESETS`가 단일 출처입니다.
+이렇게 묶는 이유는 작은 매장 데이터에서는 월요일, 화요일처럼 요일을 완전히 쪼개면 표본이 너무 적어 날씨·단체주문·누락 입력에 과민해지기 때문입니다. 대신 그룹 평균을 안정적인 anchor로 두고, 개별요일 데이터가 쌓일수록 점진 반영합니다.
 
-8. **예측 신뢰도와 근거 표시**
-   - 메뉴 수요 예측과 재료 소진 예측에는 `신뢰도 높음 / 보통 / 낮음 / 데이터 수집 중` 라벨을 표시합니다.
-   - 신뢰도는 사용 가능한 판매 데이터 일수와 개별요일 보정 비율을 함께 보고 산정합니다.
-   - 화면에는 “데이터 N일 · 요일 보정 X%”처럼 예측 근거를 함께 보여줘, 점주가 예측을 얼마나 믿어도 되는지 판단할 수 있게 합니다.
+계산 방식:
 
-중요한 구현 포인트:
+- 최근 sample일수록 `exp(-daysAgo / decayDays)`로 더 큰 가중치를 줍니다.
+- 기본 모드의 `decayDays`는 `14`입니다.
+- 단체주문 같은 극단값은 중앙값 기반 cap으로 완화합니다.
+- 그룹 표본이 부족하면 전체 영업일 평균과 섞어 초기 예측 폭주를 줄입니다.
+- 개별요일 반영 비중은 `요일 표본 수 / (요일 표본 수 + prior)`입니다.
+- 기본 `prior=12`라서 표본 5건은 약 29%, 10건은 약 45%, 20건은 약 63%, 40건은 약 77%만 개별요일을 반영합니다.
+- 개별요일 비중은 최대 `85%`까지만 허용해 그룹 평균을 안정화 anchor로 남깁니다.
 
-- 서버 RPC는 **raw 데이터만** 만들고, 최종 `status/trend/isColdStart` 분류는 클라이언트 도메인 함수에서 수행합니다.
-  - [useDepletionForecast.ts](/Users/yamon/Desktop/projects/ezstock/src/features/inventory/hooks/useDepletionForecast.ts)
-- 즉, 예측 규칙의 단일 출처는 SQL이 아니라 TypeScript 도메인 모듈이며, 단위 테스트도 여기에 집중되어 있습니다.
-  - [forecast.test.ts](/Users/yamon/Desktop/projects/ezstock/tests/unit/forecast.test.ts)
+### 4. 예측 민감도 설정
 
-## 예측 정확도 백테스트
+설정 화면의 `안정적 / 기본 / 민감`은 같은 모델의 파라미터만 바꿉니다.
 
-예측 알고리즘은 `/inventory/forecast-accuracy` 화면에서 실제 판매/소비 이력과 비교할 수 있습니다.
+| 모드   | 최근가중 반감 성격 | 그룹 최소 표본 | 요일 prior |   이상치 cap | 용도                           |
+| ------ | ------------------ | -------------: | ---------: | -----------: | ------------------------------ |
+| 안정적 | 느리게 반영        |             12 |         16 | 중앙값 2.5배 | 판매 변동이 작고 안정적인 매장 |
+| 기본   | 균형               |              8 |         12 |   중앙값 3배 | 일반 카페/빙수집 기본값        |
+| 민감   | 빠르게 반영        |              5 |          8 |   중앙값 4배 | 날씨·이벤트 영향이 큰 매장     |
 
-- 메뉴별 백테스트는 [loadMenuForecastAccuracyViews](/Users/yamon/Desktop/projects/ezstock/src/lib/application/inventory.ts)가 수행합니다.
-- 재료별 백테스트는 [loadIngredientForecastAccuracyViews](/Users/yamon/Desktop/projects/ezstock/src/lib/application/inventory.ts)가 수행합니다.
-- 각 비교일은 **그 전날까지의 데이터만 학습 데이터로 사용**해서 하루 뒤 예측값을 다시 만듭니다.
-- 메뉴는 예측 판매 수량과 실제 판매 수량을 비교합니다.
-- 재료는 메뉴 수요 예측, 기본 레시피, 옵션 선택률을 재료 소요량으로 변환한 뒤 실제 소비량과 비교합니다.
-- 화면에는 평균 절대 오차, 평균 절대 백분율 오차, 과대/과소예측 방향을 표시합니다.
-- 백테스트 카드는 `신뢰도 좋음 / 주의 / 신뢰도 낮음 / 데이터 부족` 라벨과 원인 후보를 표시합니다.
-- 원인 후보는 데이터 부족, 과대/과소예측, 특정 요일 오차 집중, 예측은 있었지만 실제 판매가 없던 날 등을 기준으로 생성합니다.
-- 캘린더 날짜 상세에서도 미래 날짜는 예측 신뢰도와 근거를 보여주고, 최근 과거 날짜는 백테스트 가능한 경우 당시 예측과 실제 판매량을 비교합니다.
+실제 값은 [forecast.ts](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)의 `FORECAST_TUNING_PRESETS`가 단일 출처입니다.
+
+### 5. 메뉴 수요 예측
+
+- 메뉴별 판매 수량을 재료 예측과 같은 계층형 요일 모델에 넣습니다.
+- 미래 `horizonDays`만큼 날짜를 하루씩 만들고, 해당 날짜의 정기휴무 여부와 요일 그룹을 확인합니다.
+- 정기휴무일은 예측 수량 `0`입니다.
+- 영업일이면 개별요일 평균 → 영업일 그룹 평균 → 전체 영업일 평균 순서로 fallback합니다.
+- 최근 7일 평균과 30일 평균 차이가 `±20%` 이상이면 증가/감소 trend를 표시합니다.
+- trend는 예측 수량에도 반영하지만 계수는 `0.85~1.25`로 제한해 과도한 흔들림을 막습니다.
+
+### 6. 옵션 선택률 기반 재료 소요량
+
+메뉴 예측은 옵션까지 재료 소요량에 반영합니다.
+
+- 기본 레시피는 `예측 메뉴 수량 × 기본 재료 사용량`으로 계산합니다.
+- 추가 옵션(`add_on`)은 `예측 메뉴 수량 × 옵션 선택률 × 옵션 재료 사용량`으로 계산합니다.
+- 택1 옵션(`single`)은 선택률 합이 있으면 선택률을 합계 1로 정규화합니다.
+- 택1 옵션 선택률 데이터가 아직 없으면 기본 옵션(`isDefault`)을 균등 fallback으로 사용합니다.
+- 이렇게 만든 날짜별 재료 수요가 재료 소진 예측과 발주 추천의 우선 근거가 됩니다.
+
+관련 함수:
+
+- [forecastMenuDemand](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
+- [forecastIngredientDemandFromMenus](/Users/yamon/Desktop/projects/ezstock/src/lib/domain/forecast.ts)
+- [loadMenuBasedIngredientDemandForecast](/Users/yamon/Desktop/projects/ezstock/src/lib/application/inventory.ts)
+
+### 7. 재료 소진일과 발주 추천
+
+재료 소진일은 현재 재고에서 미래 일별 예상 소비량을 하루씩 차감해 계산합니다.
+
+- 내일부터 최대 365일까지 시뮬레이션합니다.
+- 정기휴무는 소비량 0으로 건너뜁니다.
+- 재고가 `0 이하`가 되는 첫 날짜를 예상 소진일로 봅니다.
+- 1년 안에 소진되지 않으면 소진일은 `null`입니다.
+
+상태 분류는 예상 소진일까지 남은 일수에서 `거래처 리드타임 + 안전여유일`을 뺀 buffer로 결정합니다.
+
+| 상태           | 기준                        |
+| -------------- | --------------------------- |
+| `critical`     | buffer ≤ 1                  |
+| `order_needed` | buffer = 2                  |
+| `caution`      | buffer 3~4                  |
+| `safe`         | buffer ≥ 5 또는 소진일 없음 |
+
+발주 추천량은 `리드타임 + 안전여유 + 목표 운영일` 동안의 예상 소비량에서 현재 재고를 뺀 부족분입니다. 기본 목표 운영일은 7일입니다.
+
+### 8. 정기휴무와 예외 영업
+
+- 정기휴무 요일은 누락 카운트, 판매 입력 독려, 예측 평균 산정에서 제외합니다.
+- 정기휴무일이라도 판매가 입력되면 예외 영업일로 보고 캘린더와 예측 산정에 포함합니다.
+- 정기휴무 변경은 이후 예측에 바로 반영되지만, 과거 데이터 자체를 삭제하지는 않습니다.
+- 휴무였던 요일이 영업일로 바뀌면 초기에는 그룹 평균으로 fallback하고, 해당 요일 데이터가 쌓일수록 개별요일 보정 비중이 올라갑니다.
+
+### 9. 백테스트 정확도 지표
+
+예측 정확도는 `/inventory/forecast-accuracy`에서 확인합니다. 모든 백테스트는 **각 비교일의 전날까지 데이터만 학습 데이터로 사용**해 “그날을 실제로 맞혔다면 어땠는가”를 재현합니다.
+
+사용 지표:
+
+| 대상 | 주요 지표                                           | 화면 표시                           |
+| ---- | --------------------------------------------------- | ----------------------------------- |
+| 메뉴 | 평균 절대 수량오차, WAPE, 과대/과소 방향            | `평균 N개 오차`                     |
+| 매출 | 평균 절대 금액오차, WAPE, signed error              | `평균 N만원 오차`, `높게/낮게 예측` |
+| 재료 | 평균 절대 소비오차, WAPE, 평균 일수오차, 부족위험일 | `보통 ±N일`, `빠르면 N일`           |
+
+WAPE는 `총 절대오차 / 총 실제값`입니다. 기존 MAPE처럼 일별 퍼센트를 단순 평균내지 않습니다. 실제값이 작은 날 하나 때문에 오차율이 과장되는 문제를 줄이기 위해, 운영 판단에는 WAPE와 절대오차를 같이 씁니다.
+
+신뢰도 기준:
+
+- 비교 가능한 날이 3일 미만이면 `데이터 부족`
+- WAPE `80% 이상`이면 `신뢰도 낮음`
+- WAPE `35% 이상`이면 `주의`
+- 그 외는 `신뢰도 좋음`
+
+편향 기준:
+
+- 예측 총량이 실제 총량보다 15% 이상 크면 `과대예측`
+- 예측 총량이 실제 총량보다 15% 이상 작으면 `과소예측`
+- 그 사이면 `균형`
+
+원인 후보:
+
+- 비교 가능한 데이터 부족
+- 총량 기준 오차 과다
+- 과소예측으로 인한 부족 위험
+- 과대예측으로 인한 과발주 위험
+- 특정 요일 오차 집중
+- 예측은 있었지만 실제 판매/소비가 없던 날 반복
+
+### 10. 캘린더와 날짜 상세의 운영형 표시
+
+캘린더는 통계 지표를 그대로 노출하지 않고 사장님이 바로 판단할 수 있는 단위로 바꿉니다.
+
+- 미래 캘린더 셀: `예상 100만±8만`
+- 미래 날짜 상세: `92만~108만원` 예상 범위
+- 과거 캘린더 셀: `오차 +8만` 또는 `오차 -8만`
+- 과거 날짜 상세: `8만원 높게 예측` 또는 `8만원 낮게 예측`
+- 메뉴 예측 카드: `평균 2.3개 오차`
+- 재료 예측 카드: `보통 ±1.3일 · 빠르면 3일`
+
+여기서 `+`는 예측이 실제보다 높았다는 뜻이고, `-`는 예측이 실제보다 낮았다는 뜻입니다. 미래 예상 범위는 최근 백테스트의 평균 절대 금액오차를 사용합니다.
 
 ## 디자인 시스템
 
