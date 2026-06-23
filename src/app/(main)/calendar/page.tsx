@@ -47,9 +47,15 @@ export default function CalendarPage(): React.ReactElement {
     [menuForecastQuery.data],
   );
   const revenueErrorByDate = useMemo(() => {
-    const map = new Map<string, number | null>();
+    const map = new Map<
+      string,
+      { absoluteWonError: number; weightedAbsolutePercentageError: number | null }
+    >();
     for (const day of revenueAccuracyQuery.data?.dailyResults ?? []) {
-      map.set(localIsoDate(day.date), day.weightedAbsolutePercentageError);
+      map.set(localIsoDate(day.date), {
+        absoluteWonError: day.absoluteWonError,
+        weightedAbsolutePercentageError: day.weightedAbsolutePercentageError,
+      });
     }
     return map;
   }, [revenueAccuracyQuery.data]);

@@ -116,8 +116,10 @@ function MenuDemandForecastCard({
 }
 
 function AccuracyBadge({ accuracy }: { accuracy: MenuForecastAccuracyView }): React.ReactElement {
-  const wape = accuracy.weightedAbsolutePercentageError;
-  const label = wape === null ? "정확도 수집 중" : `총량오차 ${formatPercent(wape)}`;
+  const label =
+    accuracy.meanAbsoluteQuantityError === null || accuracy.evaluatedDayCount < 3
+      ? "정확도 수집 중"
+      : `평균 ${formatQuantity(accuracy.meanAbsoluteQuantityError)} 오차`;
 
   return (
     <Link
@@ -236,10 +238,6 @@ function formatQuantity(value: number): string {
 }
 
 function formatRate(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
-
-function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 

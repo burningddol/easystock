@@ -11,10 +11,15 @@ interface CalendarGridProps {
   month: number;
   cells: readonly EnrichedCalendarCell[];
   menuForecastByDate?: ReadonlyMap<string, CalendarMenuForecastSummary>;
-  revenueErrorByDate?: ReadonlyMap<string, number | null>;
+  revenueErrorByDate?: ReadonlyMap<string, CalendarRevenueAccuracySummary>;
   selectedDate: string | null;
   todayIso: string | null;
   onSelect: (cell: EnrichedCalendarCell) => void;
+}
+
+export interface CalendarRevenueAccuracySummary {
+  absoluteWonError: number;
+  weightedAbsolutePercentageError: number | null;
 }
 
 /**
@@ -85,7 +90,7 @@ function BlankCell(): React.ReactElement {
 interface DayCellProps {
   cell: EnrichedCalendarCell;
   forecast: CalendarMenuForecastSummary | null;
-  revenueError: number | null;
+  revenueError: CalendarRevenueAccuracySummary | null;
   maxRevenue: number;
   isSelected: boolean;
   isToday: boolean;
@@ -152,7 +157,7 @@ interface CellStatusTag {
 function getCellTags(
   cell: EnrichedCalendarCell,
   forecast: CalendarMenuForecastSummary | null,
-  revenueError: number | null,
+  revenueError: CalendarRevenueAccuracySummary | null,
 ): CellStatusTag[] {
   if (cell.isMissing) return [{ label: "누락", tone: "red" }];
   if (cell.isFuture && forecast && forecast.totalRevenue > 0) {
@@ -167,8 +172,8 @@ function getCellTags(
     return [
       { label: `매출 ${formatNumber(Math.round(cell.revenue / 10000))}만`, tone: "ink" },
       {
-        label: `오차 ${Math.round(revenueError * 100)}%`,
-        tone: revenueError >= 0.35 ? "red" : "blue",
+        label: `오차 ${formatNumber(Math.round(revenueError.absoluteWonError / 10000))}만`,
+        tone: (revenueError.weightedAbsolutePercentageError ?? 0) >= 0.35 ? "red" : "blue",
       },
     ];
   }
