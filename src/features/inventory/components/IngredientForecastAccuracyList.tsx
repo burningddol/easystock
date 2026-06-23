@@ -38,9 +38,10 @@ export function IngredientForecastAccuracyList({
 
   return (
     <div className="flex flex-col gap-section">
-      <section className="grid grid-cols-3 gap-stack-tight">
-        <SummaryTile label="평균 WAPE" value={formatPercent(summary.meanWape)} />
-        <SummaryTile label="과대예측" value={`${summary.overCount}개`} />
+      <section className="grid grid-cols-2 gap-stack-tight sm:grid-cols-4">
+        <SummaryTile label="평균 총량오차" value={formatPercent(summary.meanWape)} />
+        <SummaryTile label="평균 일수오차" value={formatDayError(summary.meanDayError)} />
+        <SummaryTile label="부족위험일" value={`${summary.underPredictedDayCount}일`} />
         <SummaryTile label="과소예측" value={`${summary.underCount}개`} />
       </section>
 
@@ -91,12 +92,12 @@ function IngredientForecastAccuracyCard({
       </div>
 
       <dl className="mt-stack grid grid-cols-3 gap-stack-tight">
-        <Metric label="WAPE" value={formatPercent(item.weightedAbsolutePercentageError)} />
+        <Metric label="총량오차율" value={formatPercent(item.weightedAbsolutePercentageError)} />
         <Metric
           label="평균 소비오차"
           value={formatNullableAmount(item.meanAbsoluteAmountError, item.unit)}
         />
-        <Metric label="비교일" value={`${item.evaluatedDayCount}일`} />
+        <Metric label="일수오차" value={formatDayError(item.meanAbsoluteDayEquivalentError)} />
       </dl>
 
       <TuningHint item={item} />
@@ -200,7 +201,8 @@ function PriorityNotice({
   return (
     <section className="rounded-[24px] border border-amber/30 bg-amber-soft px-4 py-3 shadow-soft">
       <p className="text-body text-amber-deep">
-        우선 확인: {item.name} · WAPE {formatPercent(item.weightedAbsolutePercentageError)}
+        우선 확인: {item.name} · 부족위험 {item.underPredictedDayCount}일 · 일수오차{" "}
+        {formatDayError(item.meanAbsoluteDayEquivalentError)}
       </p>
       <p className="mt-1 text-caption text-ink-3">{buildTuningHint(item)}</p>
     </section>
@@ -234,24 +236,30 @@ function DiagnosticReasons({ reasons }: { reasons: readonly string[] }): React.R
 
 function buildSummary(items: readonly IngredientForecastAccuracyView[]): {
   meanWape: number | null;
-  overCount: number;
+  meanDayError: number | null;
   underCount: number;
+  underPredictedDayCount: number;
   priorityItem: IngredientForecastAccuracyView | null;
 } {
   const valid = items.filter((item) => item.weightedAbsolutePercentageError !== null);
+  const dayErrorItems = items.filter((item) => item.meanAbsoluteDayEquivalentError !== null);
   return {
     meanWape:
       valid.length > 0
         ? valid.reduce((sum, item) => sum + (item.weightedAbsolutePercentageError ?? 0), 0) /
           valid.length
         : null,
-    overCount: items.filter((item) => item.bias === "over").length,
+    meanDayError:
+      dayErrorItems.length > 0
+        ? dayErrorItems.reduce((sum, item) => sum + (item.meanAbsoluteDayEquivalentError ?? 0), 0) /
+          dayErrorItems.length
+        : null,
     underCount: items.filter((item) => item.bias === "under").length,
+    underPredictedDayCount: items.reduce((sum, item) => sum + item.underPredictedDayCount, 0),
     priorityItem:
-      valid.length > 0
-        ? ([...valid].sort(
-            (a, b) =>
-              (b.weightedAbsolutePercentageError ?? 0) - (a.weightedAbsolutePercentageError ?? 0),
+      items.length > 0
+        ? ([...items].sort(
+            (a, b) => (b.riskAdjustedDayError ?? -1) - (a.riskAdjustedDayError ?? -1),
           )[0] ?? null)
         : null,
   };
@@ -292,6 +300,10 @@ function formatNullableAmount(
 
 function formatPercent(value: number | null): string {
   return value === null ? "-" : `${Math.round(value * 100)}%`;
+}
+
+function formatDayError(value: number | null): string {
+  return value === null ? "-" : `±${Number(value.toFixed(1))}일`;
 }
 
 function formatShortDate(date: Date): string {
