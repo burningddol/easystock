@@ -49,11 +49,16 @@ export default function CalendarPage(): React.ReactElement {
   const revenueErrorByDate = useMemo(() => {
     const map = new Map<
       string,
-      { absoluteWonError: number; weightedAbsolutePercentageError: number | null }
+      {
+        absoluteWonError: number;
+        signedWonError: number;
+        weightedAbsolutePercentageError: number | null;
+      }
     >();
     for (const day of revenueAccuracyQuery.data?.dailyResults ?? []) {
       map.set(localIsoDate(day.date), {
         absoluteWonError: day.absoluteWonError,
+        signedWonError: day.signedWonError,
         weightedAbsolutePercentageError: day.weightedAbsolutePercentageError,
       });
     }
@@ -131,6 +136,7 @@ export default function CalendarPage(): React.ReactElement {
         cells={query.data.cells}
         menuForecastByDate={menuForecastByDate}
         revenueErrorByDate={revenueErrorByDate}
+        revenueMeanAbsoluteWonError={revenueAccuracyQuery.data?.meanAbsoluteWonError ?? null}
         selectedDate={null}
         todayIso={todayIso}
         onSelect={handleSelect}

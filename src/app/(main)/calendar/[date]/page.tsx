@@ -49,7 +49,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
   const saleQuery = useSaleByDate(date);
   const menuForecastQuery = useMenuDemandForecast(forecastHorizonDays);
   const menuAccuracyQuery = useMenuForecastAccuracy(30);
-  const revenueAccuracyQuery = useRevenueForecastAccuracy(30, !isFutureDate);
+  const revenueAccuracyQuery = useRevenueForecastAccuracy(30);
 
   if (!parsedDate) {
     return (
@@ -100,6 +100,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
           menuForecast={menuForecast}
           menuBacktest={menuBacktest}
           revenueBacktest={revenueBacktest}
+          revenueMeanAbsoluteWonError={revenueAccuracyQuery.data?.meanAbsoluteWonError ?? null}
           todayIso={todayIso}
           isShortForecastDate={isShortForecastDate}
         />
@@ -116,6 +117,7 @@ interface DateDetailBodyProps {
   menuForecast: CalendarMenuForecastSummary | null;
   menuBacktest: MenuBacktestDateSummary | null;
   revenueBacktest: RevenueBacktestDateSummary | null;
+  revenueMeanAbsoluteWonError: number | null;
   todayIso: string;
   isShortForecastDate: boolean;
 }
@@ -128,6 +130,7 @@ function DateDetailBody({
   menuForecast,
   menuBacktest,
   revenueBacktest,
+  revenueMeanAbsoluteWonError,
   todayIso,
   isShortForecastDate,
 }: DateDetailBodyProps): React.ReactElement {
@@ -139,6 +142,7 @@ function DateDetailBody({
       <FutureForecastDetail
         date={date}
         forecast={isShortForecastDate ? menuForecast : null}
+        meanAbsoluteWonError={revenueMeanAbsoluteWonError}
         isShortForecastDate={isShortForecastDate}
       />
     );
@@ -165,10 +169,12 @@ function DateDetailBody({
 function FutureForecastDetail({
   date,
   forecast,
+  meanAbsoluteWonError,
   isShortForecastDate,
 }: {
   date: string;
   forecast: CalendarMenuForecastSummary | null;
+  meanAbsoluteWonError: number | null;
   isShortForecastDate: boolean;
 }): React.ReactElement {
   if (!isShortForecastDate) {
@@ -194,9 +200,17 @@ function FutureForecastDetail({
         <div className="flex flex-col gap-stack-tight">
           <p className="text-micro text-ink-3">현재 예측 모델 기준</p>
           <div className="grid grid-cols-2 gap-stack">
-            <Metric label="예상 매출" value={`${formatWon(forecast.totalRevenue)}원`} />
+            <Metric
+              label="예상 매출"
+              value={formatRevenueForecastRange(forecast.totalRevenue, meanAbsoluteWonError)}
+            />
             <Metric label="예상 판매" value={`${formatNumber(forecast.totalQuantity)}개`} />
           </div>
+          {meanAbsoluteWonError !== null && (
+            <p className="text-caption text-ink-3">
+              최근 백테스트 기준 보통 ±{formatAverageWonError(meanAbsoluteWonError)} 범위로 보세요.
+            </p>
+          )}
           <Notice tone="neutral">
             캘린더는 오늘부터 {CALENDAR_SHORT_FORECAST_DAYS}일 이내 단기 예측만 보여줘요. 장기
             구간은 메뉴 수요 예측 화면에서 참고용으로 확인하세요.
@@ -319,6 +333,7 @@ interface RevenueBacktestDateSummary {
   actualRevenue: number;
   predictedRevenue: number;
   absoluteWonError: number;
+  signedWonError: number;
   meanAbsoluteWonError: number | null;
   weightedAbsolutePercentageError: number | null;
   reliability: MenuForecastAccuracyView["reliability"];
@@ -356,7 +371,7 @@ function RevenueBacktestComparison({
       <div className="grid grid-cols-3 gap-stack">
         <Metric label="실제 매출" value={`${formatWon(summary.actualRevenue)}원`} />
         <Metric label="예측 매출" value={`${formatWon(summary.predictedRevenue)}원`} />
-        <Metric label="당일 오차" value={`${formatWon(summary.absoluteWonError)}원`} />
+        <Metric label="당일 오차" value={formatSignedRevenueError(summary.signedWonError)} />
       </div>
     </article>
   );
@@ -615,6 +630,7 @@ function buildRevenueBacktestSummaryForDate(
     actualRevenue: result.actualRevenue,
     predictedRevenue: result.predictedRevenue,
     absoluteWonError: result.absoluteWonError,
+    signedWonError: result.signedWonError,
     meanAbsoluteWonError: data.meanAbsoluteWonError,
     weightedAbsolutePercentageError: result.weightedAbsolutePercentageError,
     reliability: classifyDateBacktestReliability(result.weightedAbsolutePercentageError, 1),
@@ -625,6 +641,20 @@ function buildRevenueBacktestSummaryForDate(
 function formatAverageWonError(value: number | null): string {
   if (value === null) return "-";
   return `${formatNumber(Number((value / 10000).toFixed(1)))}만원`;
+}
+
+function formatRevenueForecastRange(revenue: number, meanAbsoluteWonError: number | null): string {
+  if (meanAbsoluteWonError === null) return `${formatWon(revenue)}원`;
+  const lower = Math.max(0, revenue - meanAbsoluteWonError);
+  const upper = revenue + meanAbsoluteWonError;
+  return `${formatWon(lower)}~${formatWon(upper)}원`;
+}
+
+function formatSignedRevenueError(signedWonError: number): string {
+  const amount = `${formatWon(Math.abs(signedWonError))}원`;
+  if (signedWonError > 0) return `${amount} 높게 예측`;
+  if (signedWonError < 0) return `${amount} 낮게 예측`;
+  return "정확히 일치";
 }
 
 function classifyRevenueBias(
