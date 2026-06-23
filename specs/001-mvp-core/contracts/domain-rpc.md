@@ -221,26 +221,35 @@ type DepletionForecast = Array<{
   name: string;
   unit: 'g'|'ml'|'piece';
   currentStock: number;
-  expectedDepletionDate: string | null;  // ISO date, null = 데이터 부족
-  status: 'safe' | 'caution' | 'order_needed' | 'critical';
-  trend: 'normal' | 'rising' | 'falling';  // 7일 vs 30일 평균 ±20%
-  isColdStart: boolean;  // 가입 후 7일 이내
+  currentAvgPrice: number;
+  signedUpAt: string;
+  regularDaysOff: Weekday[];
+  safetyBufferDays: number;
+  forecastSensitivity: 'stable' | 'balanced' | 'responsive';
+  leadTimeDays: number;
+  leadTimeVendorId: string | null;
+  leadTimeVendorName: string | null;
+  isDefaultLeadTime: boolean;
+  consumptionSamples: Array<{ date: string; amount: number }>;
 }>;
 ```
 
 **Behavior**:
-1. 가입 후 7일 이내 → 모든 항목 `isColdStart=true` (FR-018)
-2. 그 외 정상 영업일 데이터로 계층형 최근가중 평균 계산 (FR-012, 정기휴무 제외 FR-042)
+1. RPC는 예측 raw data만 반환한다. 최종 소진일, status, trend, 콜드스타트, 신뢰도는 `src/lib/domain/forecast.ts`에서 계산한다
+2. 가입 후 7일 이내 → 클라이언트 도메인 함수가 `isColdStart=true`로 처리하고 소진일을 표시하지 않는다 (FR-018)
+3. 그 외 정상 영업일 데이터로 계층형 최근가중 평균 계산 (FR-012, 정기휴무 제외 FR-042)
    - 영업일 그룹 anchor: 평일(월~목), 금요일, 주말(토~일)
    - 개별요일 보정: `count / (count + prior)` shrinkage로 그룹 평균과 혼합
    - 개별요일 최대 반영 비중: 85%
-3. 거래처 리드타임 + 안전여유 1일 반영
-4. status 분류 (FR-013 발주 알림 기준):
-   - critical: 당일/익일 소진
-   - order_needed: 1~2일 후 소진
-   - caution: 3~4일
-   - safe: 5일+
-5. trend 계산 (FR-025)
+4. 최근 sample일수록 지수감쇠 가중치를 적용하고, 극단값은 중앙값 기반 cap으로 완화한다
+5. 거래처 리드타임 + 사용자가 설정한 안전여유일을 반영한다
+6. status 분류는 `소진일까지 남은 일수 - 리드타임 - 안전여유일` buffer 기준이다:
+   - `critical`: buffer ≤ 1
+   - `order_needed`: buffer = 2
+   - `caution`: buffer 3~4
+   - `safe`: buffer ≥ 5 또는 1년 내 소진 없음
+7. trend는 7일 평균 vs 30일 평균 ±20% 기준으로 계산하고, 실제 예측 보정 계수는 0.85~1.25로 제한한다 (FR-025)
+8. 메뉴 기반 재료 예측이 가능한 경우, 메뉴 수요 예측 + 기본 레시피 + 옵션 선택률로 계산한 재료 소요량을 재료 카드의 우선 예측 근거로 사용한다
 
 ---
 
