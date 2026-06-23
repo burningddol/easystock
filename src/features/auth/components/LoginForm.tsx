@@ -13,6 +13,7 @@ export function LoginForm(): React.ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isDemoSubmitting, setIsDemoSubmitting] = useState(false);
 
   const withdrawalNotice = searchParams.get("withdrawal_in_progress") === "1";
 
@@ -25,7 +26,7 @@ export function LoginForm(): React.ReactElement {
     defaultValues: { email: "", password: "" },
   });
 
-  async function onSubmit(values: LoginInput): Promise<void> {
+  async function signIn(values: LoginInput): Promise<void> {
     setSubmitError(null);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
@@ -41,6 +42,19 @@ export function LoginForm(): React.ReactElement {
     const next = searchParams.get("next") ?? "/today";
     router.push(next);
     router.refresh();
+  }
+
+  async function onSubmit(values: LoginInput): Promise<void> {
+    await signIn(values);
+  }
+
+  async function handleDemoLogin(): Promise<void> {
+    setIsDemoSubmitting(true);
+    try {
+      await signIn({ email: "test@test.test", password: "qwer1234" });
+    } finally {
+      setIsDemoSubmitting(false);
+    }
   }
 
   return (
@@ -82,9 +96,18 @@ export function LoginForm(): React.ReactElement {
         </p>
       )}
 
-      <PrimaryButton type="submit" disabled={isSubmitting}>
+      <PrimaryButton type="submit" disabled={isSubmitting || isDemoSubmitting}>
         {isSubmitting ? "로그인 중..." : "로그인"}
       </PrimaryButton>
+
+      <button
+        type="button"
+        onClick={() => void handleDemoLogin()}
+        disabled={isSubmitting || isDemoSubmitting}
+        className="rounded-2xl border border-blue/25 bg-blue-soft px-stack py-stack text-body font-semibold text-blue-deep shadow-soft transition hover:-translate-y-0.5 hover:border-blue disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isDemoSubmitting ? "체험 계정 로그인 중..." : "바로 체험하기"}
+      </button>
     </form>
   );
 }
