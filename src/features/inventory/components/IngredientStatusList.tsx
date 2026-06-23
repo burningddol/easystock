@@ -121,7 +121,7 @@ function IngredientRow({
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
             <span className={cn(toneClass(item.status))}>{depletionLabel}</span>
             {item.trend !== "normal" && <TrendBadge trend={item.trend} />}
-            {accuracy && <AccuracyBadge accuracy={accuracy} />}
+            {accuracy && <AccuracyBadge item={item} accuracy={accuracy} />}
           </div>
           <button
             type="button"
@@ -204,11 +204,13 @@ function OrderFactor({ label, value }: { label: string; value: string }): React.
 }
 
 function AccuracyBadge({
+  item,
   accuracy,
 }: {
+  item: IngredientForecastView;
   accuracy: IngredientForecastAccuracyView;
 }): React.ReactElement {
-  const label = formatAccuracyLabel(accuracy);
+  const label = formatAccuracyLabel(item, accuracy);
 
   return (
     <Link
@@ -229,10 +231,16 @@ function AccuracyBadge({
   );
 }
 
-function formatAccuracyLabel(accuracy: IngredientForecastAccuracyView): string {
+function formatAccuracyLabel(
+  item: IngredientForecastView,
+  accuracy: IngredientForecastAccuracyView,
+): string {
   const dayError = accuracy.meanAbsoluteDayEquivalentError;
   if (dayError === null || accuracy.evaluatedDayCount < 3) return "정확도 수집 중";
-  return `평균 ±${Number(dayError.toFixed(1))}일`;
+  const days = daysUntilDate(item.expectedDepletionDate);
+  if (days === null) return `보통 ±${Number(dayError.toFixed(1))}일`;
+  const earliestDays = Math.max(0, days - Math.ceil(dayError));
+  return `보통 ±${Number(dayError.toFixed(1))}일 · 빠르면 ${earliestDays}일`;
 }
 
 function formatLeadTimeSource(item: IngredientForecastView): string {

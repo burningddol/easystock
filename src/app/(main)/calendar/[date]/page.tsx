@@ -319,6 +319,7 @@ interface RevenueBacktestDateSummary {
   actualRevenue: number;
   predictedRevenue: number;
   absoluteWonError: number;
+  meanAbsoluteWonError: number | null;
   weightedAbsolutePercentageError: number | null;
   reliability: MenuForecastAccuracyView["reliability"];
   bias: "over" | "under" | "balanced" | "insufficient_data";
@@ -349,16 +350,13 @@ function RevenueBacktestComparison({
                 : "bg-blue-soft text-blue-deep",
           )}
         >
-          총량오차{" "}
-          {summary.weightedAbsolutePercentageError === null
-            ? "-"
-            : `${Math.round(summary.weightedAbsolutePercentageError * 100)}%`}
+          평균 {formatAverageWonError(summary.meanAbsoluteWonError)} 오차
         </span>
       </div>
       <div className="grid grid-cols-3 gap-stack">
         <Metric label="실제 매출" value={`${formatWon(summary.actualRevenue)}원`} />
         <Metric label="예측 매출" value={`${formatWon(summary.predictedRevenue)}원`} />
-        <Metric label="오차" value={`${formatWon(summary.absoluteWonError)}원`} />
+        <Metric label="당일 오차" value={`${formatWon(summary.absoluteWonError)}원`} />
       </div>
     </article>
   );
@@ -609,17 +607,24 @@ function buildRevenueBacktestSummaryForDate(
   date: string,
   data: RevenueForecastAccuracyView | undefined,
 ): RevenueBacktestDateSummary | null {
-  const result = data?.dailyResults.find((day) => localIsoDate(day.date) === date);
+  if (!data) return null;
+  const result = data.dailyResults.find((day) => localIsoDate(day.date) === date);
   if (!result || result.actualRevenue <= 0) return null;
 
   return {
     actualRevenue: result.actualRevenue,
     predictedRevenue: result.predictedRevenue,
     absoluteWonError: result.absoluteWonError,
+    meanAbsoluteWonError: data.meanAbsoluteWonError,
     weightedAbsolutePercentageError: result.weightedAbsolutePercentageError,
     reliability: classifyDateBacktestReliability(result.weightedAbsolutePercentageError, 1),
     bias: classifyRevenueBias(result.actualRevenue, result.predictedRevenue),
   };
+}
+
+function formatAverageWonError(value: number | null): string {
+  if (value === null) return "-";
+  return `${formatNumber(Number((value / 10000).toFixed(1)))}만원`;
 }
 
 function classifyRevenueBias(
