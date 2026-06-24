@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createPortal } from "react-dom";
-import { useEffect, useState } from "react";
 import { Calendar, House, Package, ScrollText, ShoppingBasket } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -49,53 +47,13 @@ const TABS: Tab[] = [
 
 export function BottomTabNav(): React.ReactElement {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-  const [bottomOffset, setBottomOffset] = useState(12);
-  const [frame, setFrame] = useState({ left: 12, width: 351 });
 
-  useEffect(() => {
-    setMounted(true);
-
-    function syncFrame(): void {
-      const visualViewport = window.visualViewport;
-      const documentWidth = document.documentElement.clientWidth;
-      const maxWidth = 768;
-      const horizontalGap = documentWidth < 640 ? 12 : 0;
-      const navWidth = Math.min(maxWidth, Math.max(0, documentWidth - horizontalGap * 2));
-      const left = Math.max(horizontalGap, Math.round((documentWidth - navWidth) / 2));
-      const hiddenViewportBottom = visualViewport
-        ? Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop)
-        : 0;
-
-      setFrame({ left, width: navWidth });
-      setBottomOffset(Math.round(hiddenViewportBottom + 12));
-    }
-
-    syncFrame();
-    window.visualViewport?.addEventListener("resize", syncFrame);
-    window.visualViewport?.addEventListener("scroll", syncFrame);
-    window.addEventListener("resize", syncFrame);
-    window.addEventListener("scroll", syncFrame, { passive: true });
-
-    return () => {
-      window.visualViewport?.removeEventListener("resize", syncFrame);
-      window.visualViewport?.removeEventListener("scroll", syncFrame);
-      window.removeEventListener("resize", syncFrame);
-      window.removeEventListener("scroll", syncFrame);
-    };
-  }, []);
-
-  const nav = (
+  return (
     <nav
       aria-label="주요 기능"
-      className="fixed z-[60]"
-      style={{
-        bottom: `calc(${bottomOffset}px + env(safe-area-inset-bottom))`,
-        left: frame.left,
-        width: frame.width,
-      }}
+      className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
     >
-      <ul className="flex w-full items-stretch overflow-hidden rounded-[22px] border border-border bg-card/95 shadow-card backdrop-blur sm:rounded-[24px]">
+      <ul className="mx-auto flex w-full max-w-screen-md items-stretch overflow-hidden rounded-[22px] border border-border bg-card/95 shadow-card backdrop-blur sm:rounded-[24px]">
         {TABS.map(({ label, href, Icon, match }) => {
           const active = match(pathname);
           return (
@@ -122,7 +80,4 @@ export function BottomTabNav(): React.ReactElement {
       </ul>
     </nav>
   );
-
-  if (!mounted) return <></>;
-  return createPortal(nav, document.body);
 }
