@@ -217,7 +217,7 @@ function getCellTags(
     return [
       {
         label: formatForecastRevenueRange(forecast.totalRevenue, revenueMeanAbsoluteWonError),
-        mobileLabel: formatNumber(Math.round(forecast.totalRevenue / 10000)),
+        mobileLabel: `예${formatNumber(Math.round(forecast.totalRevenue / 10000))}`,
         tone: "blue",
       },
     ];
@@ -281,7 +281,7 @@ function CellStatusTags({ tags }: { tags: readonly CellStatusTag[] }): React.Rea
         <span
           key={tag.label}
           className={cn(
-            "inline-flex max-w-full min-w-0 items-center justify-center overflow-hidden rounded-full px-1 py-0.5 text-[9px] font-bold leading-none shadow-soft sm:w-fit sm:px-2 sm:py-1 sm:text-micro",
+            "inline-flex max-w-full min-w-0 items-center justify-center overflow-hidden rounded-full px-[clamp(2px,0.9vw,4px)] py-0.5 text-[clamp(8px,2.45vw,10px)] font-bold leading-none shadow-soft sm:w-fit sm:px-2 sm:py-1 sm:text-micro",
             tag.tone === "red"
               ? "bg-red-soft text-red-deep"
               : tag.tone === "blue"
