@@ -90,7 +90,7 @@ function WeekdayHeader(): React.ReactElement {
 
 function MobileCalendarGuide(): React.ReactElement {
   return (
-    <div className="flex h-6 items-center gap-1.5 overflow-hidden whitespace-nowrap px-1 text-[9px] font-medium text-ink-3 sm:hidden">
+    <div className="flex h-7 items-center gap-1.5 overflow-hidden whitespace-nowrap px-1 text-[11px] font-semibold text-ink-3 sm:hidden">
       <span className="font-semibold text-ink-1">만원 단위</span>
       <GuideItem tone="ink" sample="50" label="실매출" />
       <GuideItem tone="blue" sample="-8" label="오차" />
@@ -115,7 +115,7 @@ function GuideItem({ tone, sample, label }: GuideItemProps): React.ReactElement 
     <span className="inline-flex items-center gap-1">
       <span
         className={cn(
-          "rounded-full px-1 py-0.5 text-[9px] font-bold leading-none shadow-soft",
+          "rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none shadow-soft",
           tone === "red"
             ? "bg-red-soft text-red-deep"
             : tone === "blue"
