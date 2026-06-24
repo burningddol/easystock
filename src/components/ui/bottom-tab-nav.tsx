@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
 import { Calendar, House, Package, ScrollText, ShoppingBasket } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,11 +49,45 @@ const TABS: Tab[] = [
 
 export function BottomTabNav(): React.ReactElement {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+  const [bottomOffset, setBottomOffset] = useState(12);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+
+    function syncBottomOffset(): void {
+      const visualViewport = window.visualViewport;
+      if (!visualViewport) {
+        setBottomOffset(12);
+        return;
+      }
+
+      const hiddenViewportBottom = Math.max(
+        0,
+        window.innerHeight - visualViewport.height - visualViewport.offsetTop,
+      );
+      setBottomOffset(Math.round(hiddenViewportBottom + 12));
+    }
+
+    syncBottomOffset();
+    window.visualViewport?.addEventListener("resize", syncBottomOffset);
+    window.visualViewport?.addEventListener("scroll", syncBottomOffset);
+    window.addEventListener("resize", syncBottomOffset);
+    window.addEventListener("scroll", syncBottomOffset, { passive: true });
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", syncBottomOffset);
+      window.visualViewport?.removeEventListener("scroll", syncBottomOffset);
+      window.removeEventListener("resize", syncBottomOffset);
+      window.removeEventListener("scroll", syncBottomOffset);
+    };
+  }, []);
+
+  const nav = (
     <nav
       aria-label="주요 기능"
-      className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
+      className="fixed inset-x-0 z-[60] px-3"
+      style={{ bottom: `calc(${bottomOffset}px + env(safe-area-inset-bottom))` }}
     >
       <ul className="mx-auto flex w-full max-w-screen-md items-stretch overflow-hidden rounded-[22px] border border-border bg-card/95 shadow-card backdrop-blur sm:rounded-[24px]">
         {TABS.map(({ label, href, Icon, match }) => {
@@ -80,4 +116,7 @@ export function BottomTabNav(): React.ReactElement {
       </ul>
     </nav>
   );
+
+  if (!mounted) return <></>;
+  return createPortal(nav, document.body);
 }
