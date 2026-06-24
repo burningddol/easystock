@@ -90,23 +90,16 @@ function WeekdayHeader(): React.ReactElement {
 
 function MobileCalendarGuide(): React.ReactElement {
   return (
-    <div className="rounded-2xl border border-blue/10 bg-blue-soft/45 px-3 py-2 sm:hidden">
-      <div className="flex items-start gap-2">
-        <p className="shrink-0 text-caption font-semibold text-ink-1">읽는 법</p>
-        <span className="shrink-0 rounded-full bg-white/85 px-2 py-1 text-[10px] font-semibold text-ink-3">
-          만원 단위
-        </span>
-        <div className="flex min-w-0 flex-1 flex-wrap gap-1.5 text-[10px] font-medium text-ink-3">
-          <GuideItem tone="ink" sample="50" label="실제" />
-          <GuideItem tone="blue" sample="-8" label="오차" />
-          <GuideItem tone="blue" sample="예27" label="예상" />
-          <GuideItem tone="red" sample="누락" label="입력 필요" />
-          <span className="flex items-center gap-1.5 rounded-xl bg-white/70 px-2 py-1">
-            <span className="size-1.5 rounded-full bg-amber-deep" aria-hidden />
-            <span>매입</span>
-          </span>
-        </div>
-      </div>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-[10px] font-medium text-ink-3 sm:hidden">
+      <span className="font-semibold text-ink-1">만원 단위</span>
+      <GuideItem tone="ink" sample="50" label="실제" />
+      <GuideItem tone="blue" sample="-8" label="오차" />
+      <GuideItem tone="blue" sample="예27" label="예상" />
+      <GuideItem tone="red" sample="누락" label="입력 필요" />
+      <span className="inline-flex items-center gap-1">
+        <span className="size-1.5 rounded-full bg-amber-deep" aria-hidden />
+        <span>매입</span>
+      </span>
     </div>
   );
 }
@@ -119,10 +112,10 @@ interface GuideItemProps {
 
 function GuideItem({ tone, sample, label }: GuideItemProps): React.ReactElement {
   return (
-    <span className="flex items-center gap-1.5 rounded-xl bg-white/70 px-2 py-1">
+    <span className="inline-flex items-center gap-1">
       <span
         className={cn(
-          "rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none",
+          "rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none shadow-soft",
           tone === "red"
             ? "bg-red-soft text-red-deep"
             : tone === "blue"
