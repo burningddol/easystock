@@ -48,9 +48,10 @@ export function CalendarGrid({
   const trailingBlanks = 42 - leadingBlanks - cells.length;
 
   return (
-    <div className="glow-panel flex flex-col gap-stack-tight rounded-[28px] border border-border bg-card p-4 shadow-card">
+    <div className="glow-panel flex flex-col gap-stack-tight rounded-[28px] border border-border bg-card p-3 shadow-card sm:p-4">
+      <MobileCalendarGuide />
       <WeekdayHeader />
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
         {Array.from({ length: leadingBlanks }, (_, i) => (
           <BlankCell key={`lead-${i}`} />
         ))}
@@ -87,8 +88,57 @@ function WeekdayHeader(): React.ReactElement {
   );
 }
 
+function MobileCalendarGuide(): React.ReactElement {
+  return (
+    <div className="rounded-2xl border border-blue/10 bg-blue-soft/45 px-3 py-2 sm:hidden">
+      <div className="flex items-start gap-2">
+        <p className="shrink-0 text-caption font-semibold text-ink-1">읽는 법</p>
+        <span className="shrink-0 rounded-full bg-white/85 px-2 py-1 text-[10px] font-semibold text-ink-3">
+          만원 단위
+        </span>
+        <div className="flex min-w-0 flex-1 flex-wrap gap-1.5 text-[10px] font-medium text-ink-3">
+          <GuideItem tone="ink" sample="50" label="실제" />
+          <GuideItem tone="blue" sample="-8" label="오차" />
+          <GuideItem tone="blue" sample="예27" label="예상" />
+          <GuideItem tone="red" sample="누락" label="입력 필요" />
+          <span className="flex items-center gap-1.5 rounded-xl bg-white/70 px-2 py-1">
+            <span className="size-1.5 rounded-full bg-amber-deep" aria-hidden />
+            <span>매입</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface GuideItemProps {
+  tone: "ink" | "blue" | "red";
+  sample: string;
+  label: string;
+}
+
+function GuideItem({ tone, sample, label }: GuideItemProps): React.ReactElement {
+  return (
+    <span className="flex items-center gap-1.5 rounded-xl bg-white/70 px-2 py-1">
+      <span
+        className={cn(
+          "rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none",
+          tone === "red"
+            ? "bg-red-soft text-red-deep"
+            : tone === "blue"
+              ? "bg-blue-soft text-blue-deep"
+              : "bg-white text-ink-1 shadow-soft",
+        )}
+      >
+        {sample}
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
 function BlankCell(): React.ReactElement {
-  return <div className="min-h-20 rounded-2xl bg-bg sm:min-h-24" aria-hidden />;
+  return <div className="min-h-16 rounded-2xl bg-bg sm:min-h-24" aria-hidden />;
 }
 
 interface DayCellProps {
@@ -126,7 +176,7 @@ function DayCell({
       aria-label={`${cell.date} ${cellAriaSummary(cell)}`}
       onClick={() => onSelect(cell)}
       className={cn(
-        "relative flex min-h-20 flex-col justify-between rounded-2xl p-2 text-left transition-colors sm:min-h-24 sm:p-2.5",
+        "relative flex min-h-16 flex-col justify-between rounded-2xl p-1.5 text-left transition-colors sm:min-h-24 sm:p-2.5",
         "shadow-soft hover:-translate-y-0.5 hover:shadow-card",
         isSelected ? "bg-ink-1 text-bg" : "text-ink-1",
         isToday && !isSelected && "border-2 border-blue ring-2 ring-blue/15",
@@ -141,7 +191,7 @@ function DayCell({
       <div className="flex items-start justify-between gap-1">
         <span
           className={cn(
-            "text-body font-semibold tabular-nums sm:text-title-md",
+            "text-caption font-semibold tabular-nums sm:text-title-md",
             !isSelected && weekdayTone(weekday, isInactive),
           )}
         >
@@ -157,6 +207,7 @@ function DayCell({
 
 interface CellStatusTag {
   label: string;
+  mobileLabel: string;
   tone: "red" | "blue" | "ink";
 }
 
@@ -166,26 +217,38 @@ function getCellTags(
   revenueError: CalendarRevenueAccuracySummary | null,
   revenueMeanAbsoluteWonError: number | null,
 ): CellStatusTag[] {
-  if (cell.isMissing) return [{ label: "누락", tone: "red" }];
+  if (cell.isMissing) return [{ label: "누락", mobileLabel: "누락", tone: "red" }];
   if (cell.isFuture && forecast && forecast.totalRevenue > 0) {
     return [
       {
         label: formatForecastRevenueRange(forecast.totalRevenue, revenueMeanAbsoluteWonError),
+        mobileLabel: `예${formatNumber(Math.round(forecast.totalRevenue / 10000))}`,
         tone: "blue",
       },
     ];
   }
   if (cell.revenue !== null && cell.revenue > 0 && revenueError !== null) {
     return [
-      { label: `매출 ${formatNumber(Math.round(cell.revenue / 10000))}만`, tone: "ink" },
+      {
+        label: `매출 ${formatNumber(Math.round(cell.revenue / 10000))}만`,
+        mobileLabel: formatNumber(Math.round(cell.revenue / 10000)),
+        tone: "ink",
+      },
       {
         label: `오차 ${formatSignedWonError(revenueError.signedWonError)}`,
+        mobileLabel: formatSignedWonErrorMobile(revenueError.signedWonError),
         tone: (revenueError.weightedAbsolutePercentageError ?? 0) >= 0.35 ? "red" : "blue",
       },
     ];
   }
   if (cell.revenue !== null && cell.revenue > 0) {
-    return [{ label: `매출 ${formatNumber(Math.round(cell.revenue / 10000))}만`, tone: "ink" }];
+    return [
+      {
+        label: `매출 ${formatNumber(Math.round(cell.revenue / 10000))}만`,
+        mobileLabel: formatNumber(Math.round(cell.revenue / 10000)),
+        tone: "ink",
+      },
+    ];
   }
   return [];
 }
@@ -203,22 +266,30 @@ function formatSignedWonError(signedWonError: number): string {
   return `${prefix}${formatNumber(Math.round(Math.abs(actualVsForecast) / 10000))}만`;
 }
 
+function formatSignedWonErrorMobile(signedWonError: number): string {
+  const actualVsForecast = -signedWonError;
+  const prefix = actualVsForecast >= 0 ? "+" : "-";
+  return `${prefix}${formatNumber(Math.round(Math.abs(actualVsForecast) / 10000))}`;
+}
+
 function CellStatusTags({ tags }: { tags: readonly CellStatusTag[] }): React.ReactElement {
   return (
-    <span className="flex flex-col items-start gap-1">
+    <span className="flex min-w-0 flex-col items-start gap-0.5 sm:gap-1">
       {tags.map((tag) => (
         <span
           key={tag.label}
           className={cn(
-            "w-fit rounded-full px-2 py-1 text-[10px] font-semibold leading-none shadow-soft sm:text-micro",
+            "max-w-full truncate rounded-full px-0.5 py-0.5 text-[8px] font-semibold leading-none shadow-soft sm:w-fit sm:px-2 sm:py-1 sm:text-micro",
             tag.tone === "red"
               ? "bg-red-soft text-red-deep"
               : tag.tone === "blue"
                 ? "bg-blue-soft text-blue-deep"
                 : "bg-white/90 text-ink-1",
           )}
+          title={tag.label}
         >
-          {tag.label}
+          <span className="sm:hidden">{tag.mobileLabel}</span>
+          <span className="hidden sm:inline">{tag.label}</span>
         </span>
       ))}
     </span>
@@ -232,9 +303,15 @@ interface TopBadgesProps {
 function TopBadges({ cell }: TopBadgesProps): React.ReactElement | null {
   if (!cell.hasPurchase) return null;
   return (
-    <span className="rounded-full bg-amber-soft px-1.5 py-0.5 text-[9px] font-semibold leading-none text-amber-deep shadow-soft">
-      매입
-    </span>
+    <>
+      <span
+        className="mt-1 size-1.5 rounded-full bg-amber-deep shadow-soft sm:hidden"
+        aria-label="매입 있음"
+      />
+      <span className="hidden rounded-full bg-amber-soft px-1.5 py-0.5 text-[9px] font-semibold leading-none text-amber-deep shadow-soft sm:inline">
+        매입
+      </span>
+    </>
   );
 }
 
