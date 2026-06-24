@@ -181,17 +181,17 @@ function DayCell({
           : { backgroundColor: `color-mix(in srgb, var(--ink-1) ${intensityPct}%, var(--card))` }
       }
     >
-      <div className="flex items-start justify-between gap-1">
+      <div className="flex items-start">
         <span
           className={cn(
-            "text-[18px] font-semibold leading-none tabular-nums sm:text-title-md",
+            "text-[17px] font-semibold leading-none tabular-nums sm:text-title-md",
             !isSelected && weekdayTone(weekday, isInactive),
           )}
         >
           {day}
         </span>
-        <TopBadges cell={cell} />
       </div>
+      <TopBadges cell={cell} />
 
       {!isSelected && tags.length > 0 && <CellStatusTags tags={tags} />}
     </button>
@@ -298,7 +298,7 @@ function TopBadges({ cell }: TopBadgesProps): React.ReactElement | null {
   return (
     <>
       <span
-        className="mt-1 size-1.5 rounded-full bg-amber-deep shadow-soft sm:hidden"
+        className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-amber-deep shadow-soft sm:hidden"
         aria-label="매입 있음"
       />
       <span className="hidden rounded-full bg-amber-soft px-1.5 py-0.5 text-[9px] font-semibold leading-none text-amber-deep shadow-soft sm:inline">
