@@ -49,7 +49,10 @@ export function BottomTabNav(): React.ReactElement {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="주요 기능" className="fixed bottom-6 left-3 right-3 z-40">
+    <nav
+      aria-label="주요 기능"
+      className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
+    >
       <ul className="mx-auto flex w-full max-w-screen-md items-stretch overflow-hidden rounded-[22px] border border-border bg-card/95 shadow-card backdrop-blur sm:rounded-[24px]">
         {TABS.map(({ label, href, Icon, match }) => {
           const active = match(pathname);
