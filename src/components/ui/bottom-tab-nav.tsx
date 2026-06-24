@@ -49,8 +49,8 @@ export function BottomTabNav(): React.ReactElement {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="주요 기능" className="fixed inset-x-0 bottom-0 z-40 px-3 pb-3">
-      <ul className="mx-auto flex max-w-screen-md items-stretch rounded-[24px] border border-border bg-card/95 shadow-card backdrop-blur">
+    <nav aria-label="주요 기능" className="fixed bottom-6 left-3 right-3 z-40">
+      <ul className="mx-auto flex w-full max-w-screen-md items-stretch overflow-hidden rounded-[22px] border border-border bg-card/95 shadow-card backdrop-blur sm:rounded-[24px]">
         {TABS.map(({ label, href, Icon, match }) => {
           const active = match(pathname);
           return (
@@ -59,17 +59,17 @@ export function BottomTabNav(): React.ReactElement {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex h-16 flex-col items-center justify-center gap-1 rounded-[20px] text-caption transition",
+                  "relative flex h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-[18px] text-[11px] font-medium transition sm:h-16 sm:gap-1 sm:rounded-[20px] sm:text-caption",
                   active ? "bg-blue-soft text-blue-deep" : "text-ink-2 hover:text-ink-1",
                 )}
               >
                 <Icon
-                  size={20}
+                  size={18}
                   strokeWidth={active ? 2.2 : 1.8}
                   aria-hidden="true"
                   className="relative z-10"
                 />
-                <span className="relative z-10">{label}</span>
+                <span className="relative z-10 truncate">{label}</span>
               </Link>
             </li>
           );
