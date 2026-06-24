@@ -51,6 +51,7 @@ html,
 body {
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
   background: radial-gradient(circle at top, rgba(49, 130, 246, 0.04), transparent 22%), var(--bg);
   color: var(--ink-1);
   font-family: var(--font-pretendard), "Pretendard", ui-sans-serif, system-ui, sans-serif;

@@ -51,45 +51,51 @@ export function BottomTabNav(): React.ReactElement {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [bottomOffset, setBottomOffset] = useState(12);
+  const [frame, setFrame] = useState({ left: 12, width: 351 });
 
   useEffect(() => {
     setMounted(true);
 
-    function syncBottomOffset(): void {
+    function syncFrame(): void {
       const visualViewport = window.visualViewport;
-      if (!visualViewport) {
-        setBottomOffset(12);
-        return;
-      }
+      const documentWidth = document.documentElement.clientWidth;
+      const maxWidth = 768;
+      const horizontalGap = documentWidth < 640 ? 12 : 0;
+      const navWidth = Math.min(maxWidth, Math.max(0, documentWidth - horizontalGap * 2));
+      const left = Math.max(horizontalGap, Math.round((documentWidth - navWidth) / 2));
+      const hiddenViewportBottom = visualViewport
+        ? Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop)
+        : 0;
 
-      const hiddenViewportBottom = Math.max(
-        0,
-        window.innerHeight - visualViewport.height - visualViewport.offsetTop,
-      );
+      setFrame({ left, width: navWidth });
       setBottomOffset(Math.round(hiddenViewportBottom + 12));
     }
 
-    syncBottomOffset();
-    window.visualViewport?.addEventListener("resize", syncBottomOffset);
-    window.visualViewport?.addEventListener("scroll", syncBottomOffset);
-    window.addEventListener("resize", syncBottomOffset);
-    window.addEventListener("scroll", syncBottomOffset, { passive: true });
+    syncFrame();
+    window.visualViewport?.addEventListener("resize", syncFrame);
+    window.visualViewport?.addEventListener("scroll", syncFrame);
+    window.addEventListener("resize", syncFrame);
+    window.addEventListener("scroll", syncFrame, { passive: true });
 
     return () => {
-      window.visualViewport?.removeEventListener("resize", syncBottomOffset);
-      window.visualViewport?.removeEventListener("scroll", syncBottomOffset);
-      window.removeEventListener("resize", syncBottomOffset);
-      window.removeEventListener("scroll", syncBottomOffset);
+      window.visualViewport?.removeEventListener("resize", syncFrame);
+      window.visualViewport?.removeEventListener("scroll", syncFrame);
+      window.removeEventListener("resize", syncFrame);
+      window.removeEventListener("scroll", syncFrame);
     };
   }, []);
 
   const nav = (
     <nav
       aria-label="주요 기능"
-      className="fixed inset-x-0 z-[60] px-3"
-      style={{ bottom: `calc(${bottomOffset}px + env(safe-area-inset-bottom))` }}
+      className="fixed z-[60]"
+      style={{
+        bottom: `calc(${bottomOffset}px + env(safe-area-inset-bottom))`,
+        left: frame.left,
+        width: frame.width,
+      }}
     >
-      <ul className="mx-auto flex w-full max-w-screen-md items-stretch overflow-hidden rounded-[22px] border border-border bg-card/95 shadow-card backdrop-blur sm:rounded-[24px]">
+      <ul className="flex w-full items-stretch overflow-hidden rounded-[22px] border border-border bg-card/95 shadow-card backdrop-blur sm:rounded-[24px]">
         {TABS.map(({ label, href, Icon, match }) => {
           const active = match(pathname);
           return (
