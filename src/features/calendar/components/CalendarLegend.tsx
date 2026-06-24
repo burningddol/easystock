@@ -18,14 +18,16 @@ export function CalendarLegend(): React.ReactElement {
       </div>
       <div className="flex flex-wrap items-center gap-stack-tight">
         <BadgeKey tone="ink" sample="매출 50만" label="실제 매출" />
-        <BadgeKey tone="blue" sample="오차 -8만" label="예상 대비 실제 매출 차이" />
+        <BadgeKey tone="red" sample="+8만" label="예상보다 많이 나옴" />
+        <BadgeKey tone="blue" sample="-8만" label="예상보다 적게 나옴" />
+        <BadgeKey tone="ink" sample="0만" label="예상과 거의 일치" />
         <BadgeKey tone="blue" sample="예상 27만" label="미래 예상 매출" />
         <BadgeKey tone="red" sample="누락" label="판매 입력 필요" />
         <DotKey tone="amber" label="매입 있음" />
       </div>
       <p className="text-micro text-ink-4">
-        숫자는 만원 단위입니다. 예상 매출은 오늘부터 {CALENDAR_SHORT_FORECAST_DAYS}일 이내 단기
-        예측만 표시합니다.
+        숫자는 만원 단위입니다. 오차 색상은 크기가 아니라 방향입니다. 예상 매출은 오늘부터{" "}
+        {CALENDAR_SHORT_FORECAST_DAYS}일 이내 단기 예측만 표시합니다.
       </p>
     </section>
   );

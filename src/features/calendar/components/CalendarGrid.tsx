@@ -90,16 +90,18 @@ function WeekdayHeader(): React.ReactElement {
 
 function MobileCalendarGuide(): React.ReactElement {
   return (
-    <div className="flex h-7 items-center gap-1.5 overflow-hidden whitespace-nowrap px-1 text-[11px] font-semibold text-ink-3 sm:hidden">
-      <span className="font-semibold text-ink-1">만원 단위</span>
-      <GuideItem tone="ink" sample="50" label="실매출" />
-      <GuideItem tone="blue" sample="-8" label="오차" />
-      <GuideItem tone="blue" sample="예27" label="예상" />
-      <GuideItem tone="red" sample="누락" label="" />
-      <span className="inline-flex items-center gap-1">
-        <span className="size-1.5 rounded-full bg-amber-deep" aria-hidden />
-        <span>매입</span>
-      </span>
+    <div className="relative sm:hidden">
+      <span className="absolute right-1 top-0 text-[9px] font-semibold text-ink-4">단위 만원</span>
+      <div className="flex h-7 items-center gap-1.5 overflow-hidden whitespace-nowrap pr-10 text-[11px] font-semibold text-ink-3">
+        <GuideItem tone="ink" sample="50" label="실매출" />
+        <GuideItem tone="blue" sample="±8" label="예측오차" />
+        <GuideItem tone="blue" sample="예27" label="예상" />
+        <GuideItem tone="red" sample="누락" label="" />
+        <span className="inline-flex items-center gap-1">
+          <span className="size-1.5 rounded-full bg-amber-deep" aria-hidden />
+          <span>매입</span>
+        </span>
+      </div>
     </div>
   );
 }
@@ -230,7 +232,7 @@ function getCellTags(
       {
         label: `오차 ${formatSignedWonError(revenueError.signedWonError)}`,
         mobileLabel: formatSignedWonErrorMobile(revenueError.signedWonError),
-        tone: (revenueError.weightedAbsolutePercentageError ?? 0) >= 0.35 ? "red" : "blue",
+        tone: getSignedWonErrorTone(revenueError.signedWonError),
       },
     ];
   }
@@ -263,6 +265,13 @@ function formatSignedWonErrorMobile(signedWonError: number): string {
   const actualVsForecast = -signedWonError;
   const prefix = actualVsForecast >= 0 ? "+" : "-";
   return `${prefix}${formatNumber(Math.round(Math.abs(actualVsForecast) / 10000))}`;
+}
+
+function getSignedWonErrorTone(signedWonError: number): CellStatusTag["tone"] {
+  const actualVsForecast = -signedWonError;
+  const roundedMan = Math.round(Math.abs(actualVsForecast) / 10000);
+  if (roundedMan === 0) return "ink";
+  return actualVsForecast > 0 ? "red" : "blue";
 }
 
 function CellStatusTags({ tags }: { tags: readonly CellStatusTag[] }): React.ReactElement {
