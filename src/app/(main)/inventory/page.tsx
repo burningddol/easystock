@@ -23,30 +23,42 @@ export default function InventoryPage(): React.ReactElement {
       <PageHeader
         title="재료"
         action={
-          <div className="flex gap-stack-tight">
-            <Link href="/inventory/orders" className={SECONDARY_BUTTON_CLASSES}>
-              발주 추천
-            </Link>
-            <Link href="/inventory/forecast-accuracy" className={SECONDARY_BUTTON_CLASSES}>
-              정확도
-            </Link>
-            <Link href="/inventory/stock-count" className={SECONDARY_BUTTON_CLASSES}>
-              실사
-            </Link>
-            <Link href="/purchase" className={SECONDARY_BUTTON_CLASSES}>
-              + 매입
-            </Link>
-            <button
-              type="button"
-              onClick={() => setIsAddOpen((v) => !v)}
-              aria-expanded={isAddOpen}
-              className="rounded-2xl bg-blue px-4 py-3 text-body-regular font-semibold text-white shadow-card ring-1 ring-blue-deep/10 transition hover:-translate-y-0.5 hover:bg-blue-deep"
-            >
-              + 재료
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsAddOpen((v) => !v)}
+            aria-expanded={isAddOpen}
+            className="whitespace-nowrap rounded-2xl bg-blue px-4 py-3 text-body-regular font-semibold text-white shadow-card ring-1 ring-blue-deep/10 transition hover:-translate-y-0.5 hover:bg-blue-deep"
+          >
+            + 재료
+          </button>
         }
       />
+
+      <nav aria-label="재료 빠른 작업" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div className="flex min-w-max gap-stack-tight sm:min-w-0 sm:flex-wrap">
+          <Link href="/purchase" className={`${SECONDARY_BUTTON_CLASSES} whitespace-nowrap`}>
+            + 매입
+          </Link>
+          <Link
+            href="/inventory/orders"
+            className={`${SECONDARY_BUTTON_CLASSES} whitespace-nowrap`}
+          >
+            발주 추천
+          </Link>
+          <Link
+            href="/inventory/stock-count"
+            className={`${SECONDARY_BUTTON_CLASSES} whitespace-nowrap`}
+          >
+            실사
+          </Link>
+          <Link
+            href="/inventory/forecast-accuracy"
+            className={`${SECONDARY_BUTTON_CLASSES} whitespace-nowrap`}
+          >
+            정확도
+          </Link>
+        </div>
+      </nav>
 
       {isAddOpen && <AddIngredientForm onClose={() => setIsAddOpen(false)} />}
 
