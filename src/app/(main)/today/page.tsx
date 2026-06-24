@@ -100,6 +100,8 @@ export default function TodayPage(): React.ReactElement {
 
       <OrderSummaryCard items={orderItems} isLoading={forecast.isLoading} />
 
+      <ForecastAnalysisCard />
+
       <AlertsCard
         depletionItems={forecast.data ?? []}
         expiryAlerts={data.expiryAlerts}
@@ -113,6 +115,28 @@ export default function TodayPage(): React.ReactElement {
       </nav>
 
       <MarginTop3Card top3={data.top3Menus} lowMargin={data.lowMarginMenu} />
+    </section>
+  );
+}
+
+function ForecastAnalysisCard(): React.ReactElement {
+  return (
+    <section className="rounded-[24px] border border-blue/10 bg-card px-5 py-5 shadow-soft">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-micro uppercase tracking-[0.14em] text-blue-deep">Forecast</p>
+          <h2 className="mt-1 text-title-md text-ink-1">예측 분석</h2>
+          <p className="mt-1 text-caption text-ink-3">
+            매출·메뉴·재료 예측이 실제와 얼마나 맞았는지 한 번에 확인합니다.
+          </p>
+        </div>
+        <Link
+          href="/inventory/forecast-accuracy"
+          className="self-start rounded-2xl border border-border-strong bg-white px-4 py-3 text-label font-semibold text-ink-1 shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft sm:self-auto"
+        >
+          정확도 보기
+        </Link>
+      </div>
     </section>
   );
 }
