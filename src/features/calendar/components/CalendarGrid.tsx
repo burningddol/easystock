@@ -90,12 +90,12 @@ function WeekdayHeader(): React.ReactElement {
 
 function MobileCalendarGuide(): React.ReactElement {
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-[10px] font-medium text-ink-3 sm:hidden">
+    <div className="flex h-6 items-center gap-1.5 overflow-hidden whitespace-nowrap px-1 text-[9px] font-medium text-ink-3 sm:hidden">
       <span className="font-semibold text-ink-1">만원 단위</span>
-      <GuideItem tone="ink" sample="50" label="실제 매출" />
-      <GuideItem tone="blue" sample="-8" label="매출 오차" />
-      <GuideItem tone="blue" sample="예27" label="예상 매출" />
-      <GuideItem tone="red" sample="누락" label="입력 필요" />
+      <GuideItem tone="ink" sample="50" label="실매출" />
+      <GuideItem tone="blue" sample="-8" label="오차" />
+      <GuideItem tone="blue" sample="예27" label="예상" />
+      <GuideItem tone="red" sample="누락" label="" />
       <span className="inline-flex items-center gap-1">
         <span className="size-1.5 rounded-full bg-amber-deep" aria-hidden />
         <span>매입</span>
@@ -115,7 +115,7 @@ function GuideItem({ tone, sample, label }: GuideItemProps): React.ReactElement 
     <span className="inline-flex items-center gap-1">
       <span
         className={cn(
-          "rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none shadow-soft",
+          "rounded-full px-1 py-0.5 text-[9px] font-bold leading-none shadow-soft",
           tone === "red"
             ? "bg-red-soft text-red-deep"
             : tone === "blue"
@@ -125,7 +125,7 @@ function GuideItem({ tone, sample, label }: GuideItemProps): React.ReactElement 
       >
         {sample}
       </span>
-      <span>{label}</span>
+      {label !== "" && <span>{label}</span>}
     </span>
   );
 }
@@ -169,7 +169,7 @@ function DayCell({
       aria-label={`${cell.date} ${cellAriaSummary(cell)}`}
       onClick={() => onSelect(cell)}
       className={cn(
-        "relative flex min-h-16 flex-col justify-between rounded-2xl p-1.5 text-left transition-colors sm:min-h-24 sm:p-2.5",
+        "relative flex min-h-[4.5rem] flex-col justify-between rounded-2xl p-1.5 text-left transition-colors sm:min-h-24 sm:p-2.5",
         "shadow-soft hover:-translate-y-0.5 hover:shadow-card",
         isSelected ? "bg-ink-1 text-bg" : "text-ink-1",
         isToday && !isSelected && "border-2 border-blue ring-2 ring-blue/15",
@@ -184,7 +184,7 @@ function DayCell({
       <div className="flex items-start justify-between gap-1">
         <span
           className={cn(
-            "text-caption font-semibold tabular-nums sm:text-title-md",
+            "text-[18px] font-semibold leading-none tabular-nums sm:text-title-md",
             !isSelected && weekdayTone(weekday, isInactive),
           )}
         >
@@ -272,7 +272,7 @@ function CellStatusTags({ tags }: { tags: readonly CellStatusTag[] }): React.Rea
         <span
           key={tag.label}
           className={cn(
-            "max-w-full truncate rounded-full px-0.5 py-0.5 text-[8px] font-semibold leading-none shadow-soft sm:w-fit sm:px-2 sm:py-1 sm:text-micro",
+            "max-w-full truncate rounded-full px-1 py-0.5 text-[10px] font-bold leading-none shadow-soft sm:w-fit sm:px-2 sm:py-1 sm:text-micro",
             tag.tone === "red"
               ? "bg-red-soft text-red-deep"
               : tag.tone === "blue"
