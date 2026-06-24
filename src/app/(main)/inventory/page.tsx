@@ -51,6 +51,12 @@ export default function InventoryPage(): React.ReactElement {
           >
             실사
           </Link>
+          <Link
+            href="/inventory/forecast-accuracy"
+            className={`${SECONDARY_BUTTON_CLASSES} whitespace-nowrap`}
+          >
+            정확도
+          </Link>
         </div>
       </nav>
 
