@@ -92,9 +92,9 @@ function MobileCalendarGuide(): React.ReactElement {
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-[10px] font-medium text-ink-3 sm:hidden">
       <span className="font-semibold text-ink-1">만원 단위</span>
-      <GuideItem tone="ink" sample="50" label="실제" />
-      <GuideItem tone="blue" sample="-8" label="오차" />
-      <GuideItem tone="blue" sample="예27" label="예상" />
+      <GuideItem tone="ink" sample="50" label="실제 매출" />
+      <GuideItem tone="blue" sample="-8" label="매출 오차" />
+      <GuideItem tone="blue" sample="예27" label="예상 매출" />
       <GuideItem tone="red" sample="누락" label="입력 필요" />
       <span className="inline-flex items-center gap-1">
         <span className="size-1.5 rounded-full bg-amber-deep" aria-hidden />
