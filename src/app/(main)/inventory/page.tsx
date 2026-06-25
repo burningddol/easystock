@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { useDepletionForecast } from "@/features/inventory/hooks/useDepletionForecast";
 import { useIngredientForecastAccuracy } from "@/features/inventory/hooks/useIngredientForecastAccuracy";
 import { IngredientStatusList } from "@/features/inventory/components/IngredientStatusList";
@@ -32,8 +33,14 @@ export default function InventoryPage(): React.ReactElement {
               + 재료
             </button>
             <details className="group relative">
-              <summary className="flex cursor-pointer list-none items-center justify-center rounded-2xl border border-border-strong bg-white px-4 py-3 text-body-regular font-semibold text-ink-1 shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft [&::-webkit-details-marker]:hidden">
-                작업
+              <summary className="flex cursor-pointer list-none items-center justify-center gap-1 rounded-2xl border border-border-strong bg-white px-4 py-3 text-body-regular font-semibold text-ink-1 shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft [&::-webkit-details-marker]:hidden">
+                <span>작업</span>
+                <ChevronDown
+                  size={16}
+                  strokeWidth={2.2}
+                  aria-hidden="true"
+                  className="transition-transform group-open:rotate-180"
+                />
               </summary>
               <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 w-44 overflow-hidden rounded-2xl border border-border bg-card p-1 shadow-card">
                 {INVENTORY_ACTIONS.map((action) => (
