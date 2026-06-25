@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { adjustRevenueForecast } from "@/features/inventory/lib/revenue-forecast-adjustment";
 import { WEEKDAY_KO, formatNumber, parseLocalDateFromIso } from "@/lib/utils/format";
 import type { EnrichedCalendarCell } from "../lib/consecutive-missing";
 import { INTENSITY_LEVELS, INTENSITY_STEP_PCT } from "../lib/intensity";
@@ -13,6 +14,7 @@ interface CalendarGridProps {
   menuForecastByDate?: ReadonlyMap<string, CalendarMenuForecastSummary>;
   revenueErrorByDate?: ReadonlyMap<string, CalendarRevenueAccuracySummary>;
   revenueMeanAbsoluteWonError?: number | null;
+  revenueMeanSignedWonError?: number | null;
   selectedDate: string | null;
   todayIso: string | null;
   onSelect: (cell: EnrichedCalendarCell) => void;
@@ -38,6 +40,7 @@ export function CalendarGrid({
   menuForecastByDate,
   revenueErrorByDate,
   revenueMeanAbsoluteWonError,
+  revenueMeanSignedWonError,
   selectedDate,
   todayIso,
   onSelect,
@@ -62,6 +65,7 @@ export function CalendarGrid({
             forecast={menuForecastByDate?.get(cell.date) ?? null}
             revenueError={revenueErrorByDate?.get(cell.date) ?? null}
             revenueMeanAbsoluteWonError={revenueMeanAbsoluteWonError ?? null}
+            revenueMeanSignedWonError={revenueMeanSignedWonError ?? null}
             maxRevenue={maxRevenue}
             isSelected={cell.date === selectedDate}
             isToday={cell.date === todayIso}
@@ -141,6 +145,7 @@ interface DayCellProps {
   forecast: CalendarMenuForecastSummary | null;
   revenueError: CalendarRevenueAccuracySummary | null;
   revenueMeanAbsoluteWonError: number | null;
+  revenueMeanSignedWonError: number | null;
   maxRevenue: number;
   isSelected: boolean;
   isToday: boolean;
@@ -152,6 +157,7 @@ function DayCell({
   forecast,
   revenueError,
   revenueMeanAbsoluteWonError,
+  revenueMeanSignedWonError,
   maxRevenue,
   isSelected,
   isToday,
@@ -163,7 +169,13 @@ function DayCell({
   const weekday = date.getDay();
   const isInactive = cell.isFuture || cell.isBeforeSignup || cell.isRegularDayOff;
   const intensityPct = computeIntensityPercent(cell.revenue ?? 0, maxRevenue, isInactive);
-  const tags = getCellTags(cell, forecast, revenueError, revenueMeanAbsoluteWonError);
+  const tags = getCellTags(
+    cell,
+    forecast,
+    revenueError,
+    revenueMeanAbsoluteWonError,
+    revenueMeanSignedWonError,
+  );
 
   return (
     <button
@@ -211,13 +223,18 @@ function getCellTags(
   forecast: CalendarMenuForecastSummary | null,
   revenueError: CalendarRevenueAccuracySummary | null,
   revenueMeanAbsoluteWonError: number | null,
+  revenueMeanSignedWonError: number | null,
 ): CellStatusTag[] {
   if (cell.isMissing) return [{ label: "누락", mobileLabel: "누락", tone: "red" }];
   if (cell.isFuture && forecast && forecast.totalRevenue > 0) {
     return [
       {
-        label: formatForecastRevenueRange(forecast.totalRevenue, revenueMeanAbsoluteWonError),
-        mobileLabel: `예${formatNumber(Math.round(forecast.totalRevenue / 10000))}`,
+        label: formatForecastRevenueRange(
+          forecast.totalRevenue,
+          revenueMeanAbsoluteWonError,
+          revenueMeanSignedWonError,
+        ),
+        mobileLabel: `예${formatNumber(Math.round(adjustRevenueForecast(forecast.totalRevenue, revenueMeanSignedWonError) / 10000))}`,
         tone: "blue",
       },
     ];
@@ -248,8 +265,13 @@ function getCellTags(
   return [];
 }
 
-function formatForecastRevenueRange(revenue: number, meanAbsoluteWonError: number | null): string {
-  const revenueMan = formatNumber(Math.round(revenue / 10000));
+function formatForecastRevenueRange(
+  revenue: number,
+  meanAbsoluteWonError: number | null,
+  meanSignedWonError: number | null,
+): string {
+  const adjustedRevenue = adjustRevenueForecast(revenue, meanSignedWonError);
+  const revenueMan = formatNumber(Math.round(adjustedRevenue / 10000));
   if (meanAbsoluteWonError === null) return `예상 ${revenueMan}만`;
   const errorMan = Math.max(1, Math.round(meanAbsoluteWonError / 10000));
   return `예상 ${revenueMan}만±${formatNumber(errorMan)}만`;

@@ -7,6 +7,10 @@ import { useCalendarMonth } from "@/features/calendar/hooks/useCalendarMonth";
 import { useMenuForecastAccuracy } from "@/features/inventory/hooks/useMenuForecastAccuracy";
 import { useMenuDemandForecast } from "@/features/inventory/hooks/useMenuDemandForecast";
 import { useRevenueForecastAccuracy } from "@/features/inventory/hooks/useRevenueForecastAccuracy";
+import {
+  adjustRevenueForecast,
+  getRevenueMeanSignedWonError,
+} from "@/features/inventory/lib/revenue-forecast-adjustment";
 import { useSaleByDate, type SaleWithItems } from "@/features/sale/hooks/useSaleByDate";
 import {
   buildCalendarMenuForecastByDate,
@@ -101,6 +105,7 @@ export default function CalendarDateDetailPage(): React.ReactElement {
           menuBacktest={menuBacktest}
           revenueBacktest={revenueBacktest}
           revenueMeanAbsoluteWonError={revenueAccuracyQuery.data?.meanAbsoluteWonError ?? null}
+          revenueMeanSignedWonError={getRevenueMeanSignedWonError(revenueAccuracyQuery.data)}
           todayIso={todayIso}
           isShortForecastDate={isShortForecastDate}
         />
@@ -118,6 +123,7 @@ interface DateDetailBodyProps {
   menuBacktest: MenuBacktestDateSummary | null;
   revenueBacktest: RevenueBacktestDateSummary | null;
   revenueMeanAbsoluteWonError: number | null;
+  revenueMeanSignedWonError: number | null;
   todayIso: string;
   isShortForecastDate: boolean;
 }
@@ -131,6 +137,7 @@ function DateDetailBody({
   menuBacktest,
   revenueBacktest,
   revenueMeanAbsoluteWonError,
+  revenueMeanSignedWonError,
   todayIso,
   isShortForecastDate,
 }: DateDetailBodyProps): React.ReactElement {
@@ -143,6 +150,7 @@ function DateDetailBody({
         date={date}
         forecast={isShortForecastDate ? menuForecast : null}
         meanAbsoluteWonError={revenueMeanAbsoluteWonError}
+        meanSignedWonError={revenueMeanSignedWonError}
         isShortForecastDate={isShortForecastDate}
       />
     );
@@ -170,11 +178,13 @@ function FutureForecastDetail({
   date,
   forecast,
   meanAbsoluteWonError,
+  meanSignedWonError,
   isShortForecastDate,
 }: {
   date: string;
   forecast: CalendarMenuForecastSummary | null;
   meanAbsoluteWonError: number | null;
+  meanSignedWonError: number | null;
   isShortForecastDate: boolean;
 }): React.ReactElement {
   if (!isShortForecastDate) {
@@ -202,7 +212,11 @@ function FutureForecastDetail({
           <div className="grid grid-cols-2 gap-stack">
             <Metric
               label="예상 매출"
-              value={formatRevenueForecastRange(forecast.totalRevenue, meanAbsoluteWonError)}
+              value={formatRevenueForecastRange(
+                forecast.totalRevenue,
+                meanAbsoluteWonError,
+                meanSignedWonError,
+              )}
             />
             <Metric label="예상 판매" value={`${formatNumber(forecast.totalQuantity)}개`} />
           </div>
@@ -627,10 +641,15 @@ function formatAverageWonError(value: number | null): string {
   return `${formatNumber(Number((value / 10000).toFixed(1)))}만원`;
 }
 
-function formatRevenueForecastRange(revenue: number, meanAbsoluteWonError: number | null): string {
-  if (meanAbsoluteWonError === null) return `${formatWon(revenue)}원`;
-  const lower = Math.max(0, revenue - meanAbsoluteWonError);
-  const upper = revenue + meanAbsoluteWonError;
+function formatRevenueForecastRange(
+  revenue: number,
+  meanAbsoluteWonError: number | null,
+  meanSignedWonError: number | null,
+): string {
+  const adjustedRevenue = adjustRevenueForecast(revenue, meanSignedWonError);
+  if (meanAbsoluteWonError === null) return `${formatWon(adjustedRevenue)}원`;
+  const lower = Math.max(0, adjustedRevenue - meanAbsoluteWonError);
+  const upper = adjustedRevenue + meanAbsoluteWonError;
   return `${formatWon(lower)}~${formatWon(upper)}원`;
 }
 
