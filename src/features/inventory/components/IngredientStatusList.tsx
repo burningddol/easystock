@@ -199,14 +199,14 @@ function OrderRecommendationCard({
             depletionDemand={formatAmount(recommendation.depletionWindowDemandQuantity, item.unit)}
           />
           <OrderFactor
-            label="목표 필요량"
+            label={`목표 필요량 (${recommendation.targetCoverageDays}일)`}
             value={formatAmount(recommendation.targetDemandQuantity, item.unit)}
           />
-          <OrderFactor label="리드타임" value={`${item.leadTimeDays}일`} />
           <OrderFactor
-            label="안전여유 + 목표운영"
-            value={`${item.safetyBufferDays}일 + ${recommendation.targetCoverageDays}일`}
+            label="리드타임 | 안전여유"
+            value={`${item.leadTimeDays}일 | ${item.safetyBufferDays}일`}
           />
+          <OrderFactor label="목표운영" value={`${recommendation.targetCoverageDays}일`} />
         </dl>
         {variant === "detail" && (
           <div className="mt-3 flex flex-col gap-1 leading-relaxed text-ink-3">

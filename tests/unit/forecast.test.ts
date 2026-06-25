@@ -390,10 +390,17 @@ describe("classifyStatus (FR-013)", () => {
     expect(classifyStatus(date, 1, 1, today)).toBe("caution");
     expect(classifyStatus(date, 1, 3, today)).toBe("order_needed");
   });
+
+  it("상태 분류는 시각이 아니라 캘린더 일수 기준으로 계산한다", () => {
+    const afternoon = new Date("2026-04-30T15:30:00");
+    const depletionDate = new Date("2026-05-06T00:00:00");
+
+    expect(classifyStatus(depletionDate, 2, 2, afternoon)).toBe("order_needed");
+  });
 });
 
 describe("recommendPurchaseQuantity", () => {
-  it("리드타임 + 안전여유 + 7일 운영분까지 부족한 수량을 추천한다", () => {
+  it("발주 시점이면 목표 운영일수만큼의 수량을 추천한다", () => {
     const result = recommendPurchaseQuantity({
       currentStock: 100,
       leadTimeDays: 2,
@@ -405,8 +412,8 @@ describe("recommendPurchaseQuantity", () => {
       })),
     });
 
-    expect(result.recommendedOrderQuantity).toBe(100);
-    expect(result.targetDemandQuantity).toBe(200);
+    expect(result.recommendedOrderQuantity).toBe(140);
+    expect(result.targetDemandQuantity).toBe(140);
     expect(result.depletionWindowDemandQuantity).toBe(100);
     expect(result.targetCoverageDays).toBe(7);
     expect(result.isOrderRecommended).toBe(true);
@@ -426,7 +433,7 @@ describe("recommendPurchaseQuantity", () => {
     });
 
     expect(result.recommendedOrderQuantity).toBe(0);
-    expect(result.targetDemandQuantity).toBe(180);
+    expect(result.targetDemandQuantity).toBe(140);
     expect(result.depletionWindowDemandQuantity).toBe(0);
     expect(result.isOrderRecommended).toBe(false);
     expect(result.orderByDate).toBeNull();

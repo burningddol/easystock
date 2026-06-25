@@ -444,10 +444,7 @@ export function classifyStatus(
 ): DepletionStatus {
   if (!depletionDate) return "safe";
 
-  const daysUntilDepletion = Math.max(
-    0,
-    Math.floor((depletionDate.getTime() - today.getTime()) / ONE_DAY_MS),
-  );
+  const daysUntilDepletion = Math.max(0, daysBetweenForecastDays(today, depletionDate));
   const buffer = daysUntilDepletion - leadTimeDays - safetyBufferDays;
 
   if (buffer <= 1) return "critical";
@@ -459,8 +456,8 @@ export function classifyStatus(
 /**
  * 발주 추천량.
  *
- * 현재 재고가 `리드타임 + 안전여유 + 목표 커버리지` 기간의 예상 소요량을
- * 커버하도록 부족분만 추천한다. 기본 목표 커버리지는 7일이다.
+ * 발주 시점은 `리드타임 + 안전여유`로 판단하고, 권장 수량은 목표 운영일수만큼의
+ * 예상 소요량으로 추천한다. 기본 목표 커버리지는 7일이다.
  */
 export function recommendPurchaseQuantity({
   currentStock,
@@ -471,18 +468,14 @@ export function recommendPurchaseQuantity({
   coverageDays = 7,
 }: PurchaseRecommendationInput): PurchaseRecommendationResult {
   const targetCoverageDays = Math.max(1, Math.ceil(coverageDays));
-  const reorderWindowDays = Math.max(0, Math.ceil(leadTimeDays)) + Math.max(0, safetyBufferDays);
-  const targetWindowDays = reorderWindowDays + targetCoverageDays;
   const normalizedToday = startOfForecastDay(today);
   const demandByDay = dailyDemand
     .filter((day) => startOfForecastDay(day.date).getTime() > normalizedToday.getTime())
     .sort((a, b) => startOfForecastDay(a.date).getTime() - startOfForecastDay(b.date).getTime());
 
   const targetDemand = demandByDay
-    .slice(0, targetWindowDays)
+    .slice(0, targetCoverageDays)
     .reduce((sum, day) => sum + Math.max(0, day.amount), 0);
-  const recommendedOrderQuantity = Math.max(0, targetDemand - Math.max(0, currentStock));
-
   const orderByDate = computeOrderByDate({
     currentStock,
     leadTimeDays,
@@ -494,6 +487,7 @@ export function recommendPurchaseQuantity({
     currentStock,
     dailyDemand: demandByDay,
   });
+  const recommendedOrderQuantity = orderByDate === null ? 0 : targetDemand;
   const depletionWindowDemand =
     daysToDepletion === null
       ? 0
@@ -852,4 +846,10 @@ function addIngredientDemand(
 
 function startOfForecastDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function daysBetweenForecastDays(from: Date, to: Date): number {
+  return Math.floor(
+    (startOfForecastDay(to).getTime() - startOfForecastDay(from).getTime()) / ONE_DAY_MS,
+  );
 }
