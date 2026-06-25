@@ -26,6 +26,16 @@ interface RpcClient {
 
 const MENU_DEMAND_DEPLETION_HORIZON_DAYS = 365;
 const MENU_FORECAST_BACKTEST_DAYS = 14;
+const INGREDIENT_CALIBRATION_BACKTEST_DAYS = 14;
+const MIN_INGREDIENT_CALIBRATION_DAYS = 7;
+const INGREDIENT_CALIBRATION_MIN_FACTOR = 0.85;
+const INGREDIENT_CALIBRATION_MAX_FACTOR = 1.3;
+const INGREDIENT_CALIBRATION_DEADBAND = 0.05;
+
+type MenuDemandForecastRows = NonNullable<
+  Awaited<ReturnType<typeof getMenuDemandForecast>>["data"]
+>;
+type DepletionForecastRows = NonNullable<Awaited<ReturnType<typeof getDepletionForecast>>["data"]>;
 
 export interface IngredientForecastView extends ForecastResult {
   ingredientId: string;
@@ -181,6 +191,7 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
   const menuDemandForecasts = await loadMenuBasedIngredientDemandForecastSafely(
     client,
     MENU_DEMAND_DEPLETION_HORIZON_DAYS,
+    data ?? [],
   );
   if (menuDemandForecasts.length === 0) return legacyForecasts;
 
@@ -474,42 +485,7 @@ export async function loadIngredientForecastAccuracyViews(
     addDays(latestActualDate, index - backtestDays + 1),
   );
 
-  const predictedByIngredient = new Map<string, Map<string, number>>();
-  for (const targetDate of targetDates) {
-    const trainUntil = addDays(targetDate, -1);
-    const predicted = forecastIngredientDemandFromMenus(
-      menus.map((row) => {
-        const demandSamples: DailyMenuDemand[] = row.demandSamples
-          .map((sample) => ({
-            date: startOfDay(new Date(sample.date)),
-            quantity: Number(sample.quantity),
-          }))
-          .filter((sample) => sample.date.getTime() <= trainUntil.getTime());
-
-        return {
-          menuId: row.menuId,
-          name: row.name,
-          baseRecipe: row.baseRecipe,
-          optionGroups: row.optionGroups,
-          demandForecast: forecastMenuDemand({
-            demandSamples,
-            daysOff: row.regularDaysOff,
-            signupDate: new Date(row.signedUpAt),
-            today: trainUntil,
-            horizonDays: 1,
-            sensitivity: row.forecastSensitivity,
-          }),
-        };
-      }),
-    );
-
-    for (const ingredient of predicted) {
-      const amount = ingredient.dailyPredictions[0]?.amount ?? 0;
-      const daily = predictedByIngredient.get(ingredient.ingredientId) ?? new Map<string, number>();
-      daily.set(dateKey(targetDate), amount);
-      predictedByIngredient.set(ingredient.ingredientId, daily);
-    }
-  }
+  const predictedByIngredient = buildIngredientBacktestPredictions(menus, targetDates);
 
   return ingredients
     .map((ingredient) => {
@@ -649,9 +625,35 @@ export async function loadMenuBasedIngredientDemandForecast(
   const { data, error } = await getMenuDemandForecast(client);
   if (error) throw new Error(error.message);
 
-  const today = new Date();
+  return buildMenuBasedIngredientDemandForecast(data ?? [], horizonDays, new Date());
+}
+
+async function loadMenuBasedIngredientDemandForecastSafely(
+  client: RpcClient,
+  horizonDays: number,
+  ingredientRows?: DepletionForecastRows,
+): Promise<IngredientDemandForecast[]> {
+  try {
+    const { data, error } = await getMenuDemandForecast(client);
+    if (error) throw new Error(error.message);
+    const menus = data ?? [];
+    const forecasts = buildMenuBasedIngredientDemandForecast(menus, horizonDays, new Date());
+    const calibrationFactors = ingredientRows
+      ? buildIngredientCalibrationFactors(menus, ingredientRows)
+      : new Map<string, number>();
+    return applyIngredientCalibrationFactors(forecasts, calibrationFactors);
+  } catch {
+    return [];
+  }
+}
+
+function buildMenuBasedIngredientDemandForecast(
+  rows: MenuDemandForecastRows,
+  horizonDays: number,
+  today: Date,
+): IngredientDemandForecast[] {
   return forecastIngredientDemandFromMenus(
-    (data ?? []).map((row) => {
+    rows.map((row) => {
       const demandSamples: DailyMenuDemand[] = row.demandSamples.map((sample) => ({
         date: new Date(sample.date),
         quantity: Number(sample.quantity),
@@ -675,15 +677,134 @@ export async function loadMenuBasedIngredientDemandForecast(
   );
 }
 
-async function loadMenuBasedIngredientDemandForecastSafely(
-  client: RpcClient,
-  horizonDays: number,
-): Promise<IngredientDemandForecast[]> {
-  try {
-    return await loadMenuBasedIngredientDemandForecast(client, horizonDays);
-  } catch {
-    return [];
+function buildIngredientCalibrationFactors(
+  menuRows: MenuDemandForecastRows,
+  ingredientRows: DepletionForecastRows,
+): Map<string, number> {
+  const latestActualDate =
+    ingredientRows
+      .flatMap((row) => row.consumptionSamples.map((sample) => startOfDay(new Date(sample.date))))
+      .sort((a, b) => a.getTime() - b.getTime())
+      .at(-1) ?? startOfDay(new Date());
+  const targetDates = Array.from({ length: INGREDIENT_CALIBRATION_BACKTEST_DAYS }, (_, index) =>
+    addDays(latestActualDate, index - INGREDIENT_CALIBRATION_BACKTEST_DAYS + 1),
+  );
+  const actualByIngredient = new Map(
+    ingredientRows.map((row) => [
+      row.ingredientId,
+      new Map(
+        row.consumptionSamples.map((sample) => [
+          dateKey(startOfDay(new Date(sample.date))),
+          Number(sample.amount),
+        ]),
+      ),
+    ]),
+  );
+  const predictedByIngredient = buildIngredientBacktestPredictions(menuRows, targetDates);
+
+  return new Map(
+    ingredientRows.map((ingredient) => {
+      const actualDaily =
+        actualByIngredient.get(ingredient.ingredientId) ?? new Map<string, number>();
+      const predictedDaily =
+        predictedByIngredient.get(ingredient.ingredientId) ?? new Map<string, number>();
+      const evaluated = targetDates
+        .map((date) => {
+          const key = dateKey(date);
+          return {
+            actualAmount: actualDaily.get(key) ?? 0,
+            predictedAmount: predictedDaily.get(key) ?? 0,
+          };
+        })
+        .filter((result) => result.actualAmount > 0);
+      const actualTotal = sumBy(evaluated, (result) => result.actualAmount);
+      const predictedTotal = sumBy(evaluated, (result) => result.predictedAmount);
+      return [
+        ingredient.ingredientId,
+        computeIngredientCalibrationFactor(actualTotal, predictedTotal, evaluated.length),
+      ];
+    }),
+  );
+}
+
+function buildIngredientBacktestPredictions(
+  menuRows: MenuDemandForecastRows,
+  targetDates: readonly Date[],
+): Map<string, Map<string, number>> {
+  const predictedByIngredient = new Map<string, Map<string, number>>();
+  for (const targetDate of targetDates) {
+    const trainUntil = addDays(targetDate, -1);
+    const predicted = forecastIngredientDemandFromMenus(
+      menuRows.map((row) => {
+        const demandSamples: DailyMenuDemand[] = row.demandSamples
+          .map((sample) => ({
+            date: startOfDay(new Date(sample.date)),
+            quantity: Number(sample.quantity),
+          }))
+          .filter((sample) => sample.date.getTime() <= trainUntil.getTime());
+
+        return {
+          menuId: row.menuId,
+          name: row.name,
+          baseRecipe: row.baseRecipe,
+          optionGroups: row.optionGroups,
+          demandForecast: forecastMenuDemand({
+            demandSamples,
+            daysOff: row.regularDaysOff,
+            signupDate: new Date(row.signedUpAt),
+            today: trainUntil,
+            horizonDays: 1,
+            sensitivity: row.forecastSensitivity,
+          }),
+        };
+      }),
+    );
+
+    for (const ingredient of predicted) {
+      const amount = ingredient.dailyPredictions[0]?.amount ?? 0;
+      const daily = predictedByIngredient.get(ingredient.ingredientId) ?? new Map<string, number>();
+      daily.set(dateKey(targetDate), amount);
+      predictedByIngredient.set(ingredient.ingredientId, daily);
+    }
   }
+  return predictedByIngredient;
+}
+
+function computeIngredientCalibrationFactor(
+  actualTotal: number,
+  predictedTotal: number,
+  evaluatedDayCount: number,
+): number {
+  if (
+    evaluatedDayCount < MIN_INGREDIENT_CALIBRATION_DAYS ||
+    actualTotal <= 0 ||
+    predictedTotal <= 0
+  ) {
+    return 1;
+  }
+  const rawFactor = actualTotal / predictedTotal;
+  if (Math.abs(rawFactor - 1) <= INGREDIENT_CALIBRATION_DEADBAND) return 1;
+  return Math.min(
+    INGREDIENT_CALIBRATION_MAX_FACTOR,
+    Math.max(INGREDIENT_CALIBRATION_MIN_FACTOR, rawFactor),
+  );
+}
+
+function applyIngredientCalibrationFactors(
+  forecasts: readonly IngredientDemandForecast[],
+  factors: ReadonlyMap<string, number>,
+): IngredientDemandForecast[] {
+  return forecasts.map((forecast) => {
+    const factor = factors.get(forecast.ingredientId) ?? 1;
+    if (factor === 1) return forecast;
+    return {
+      ...forecast,
+      dailyPredictions: forecast.dailyPredictions.map((day) => ({
+        ...day,
+        amount: day.amount * factor,
+      })),
+    };
+  });
 }
 
 function predictDepletionDateFromDemand(
