@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 interface MonthHeaderProps {
   year: number;
   month: number;
@@ -36,14 +38,28 @@ export function MonthHeader({
             ›
           </NavButton>
         </div>
-        <button
-          type="button"
-          onClick={onToday}
-          className="rounded-xl border border-border bg-card px-3 py-2 text-caption text-ink-2 shadow-soft transition hover:bg-card-hover"
-        >
-          오늘
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/inventory/forecast-accuracy?tab=revenue"
+            className="hidden rounded-xl border border-border bg-card px-3 py-2 text-caption font-semibold text-ink-2 shadow-soft transition hover:bg-card-hover sm:inline-flex"
+          >
+            예측 정확도
+          </Link>
+          <button
+            type="button"
+            onClick={onToday}
+            className="rounded-xl border border-border bg-card px-3 py-2 text-caption text-ink-2 shadow-soft transition hover:bg-card-hover"
+          >
+            오늘
+          </button>
+        </div>
       </div>
+      <Link
+        href="/inventory/forecast-accuracy?tab=revenue"
+        className="mt-3 inline-flex rounded-xl border border-border bg-card px-3 py-2 text-caption font-semibold text-ink-2 shadow-soft transition hover:bg-card-hover sm:hidden"
+      >
+        예측 정확도 보기
+      </Link>
     </header>
   );
 }
