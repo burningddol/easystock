@@ -33,23 +33,27 @@ export default function InventoryPage(): React.ReactElement {
         }
       />
 
-      <nav aria-label="재료 빠른 작업" className="grid gap-stack sm:grid-cols-2">
-        <ActionGroup
-          title="재고 관리"
-          description="실제 재고를 입력하고 맞춥니다."
-          actions={[
-            { href: "/purchase", label: "+ 매입" },
-            { href: "/inventory/stock-count", label: "실사" },
-          ]}
-        />
-        <ActionGroup
-          title="예측 관리"
-          description="발주 판단과 예측 신뢰도를 확인합니다."
-          actions={[
-            { href: "/inventory/orders", label: "발주 추천" },
-            { href: "/inventory/forecast-accuracy", label: "정확도" },
-          ]}
-        />
+      <nav
+        aria-label="재료 빠른 작업"
+        className="rounded-[22px] border border-border bg-card px-4 py-4 shadow-soft"
+      >
+        <div>
+          <h2 className="text-label text-ink-1">빠른 작업</h2>
+          <p className="mt-1 text-caption text-ink-3">
+            재고 입력, 실사, 발주 판단을 바로 처리합니다.
+          </p>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {INVENTORY_ACTIONS.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border-strong bg-white px-3 py-2 text-caption font-semibold text-ink-1 shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft"
+            >
+              {action.label}
+            </Link>
+          ))}
+        </div>
       </nav>
 
       {isAddOpen && <AddIngredientForm onClose={() => setIsAddOpen(false)} />}
@@ -64,37 +68,9 @@ export default function InventoryPage(): React.ReactElement {
   );
 }
 
-interface InventoryAction {
-  href: string;
-  label: string;
-}
-
-function ActionGroup({
-  title,
-  description,
-  actions,
-}: {
-  title: string;
-  description: string;
-  actions: readonly InventoryAction[];
-}): React.ReactElement {
-  return (
-    <section className="rounded-[22px] border border-border bg-card px-4 py-4 shadow-soft">
-      <div>
-        <h2 className="text-label text-ink-1">{title}</h2>
-        <p className="mt-1 text-caption text-ink-3">{description}</p>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {actions.map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border-strong bg-white px-3 py-2 text-caption font-semibold text-ink-1 shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft"
-          >
-            {action.label}
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
+const INVENTORY_ACTIONS = [
+  { href: "/purchase", label: "+ 매입" },
+  { href: "/inventory/stock-count", label: "실사" },
+  { href: "/inventory/orders", label: "발주 추천" },
+  { href: "/inventory/forecast-accuracy", label: "정확도" },
+] as const;
