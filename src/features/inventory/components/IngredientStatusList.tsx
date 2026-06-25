@@ -156,10 +156,7 @@ function OrderRecommendationCard({
   const quantity = Math.ceil(recommendation.recommendedOrderQuantity);
   const days = daysUntilDate(item.expectedDepletionDate);
   const orderByLabel = formatOrderByDate(recommendation.orderByDate);
-  const depletionDemand = Math.min(
-    Math.max(0, item.currentStock),
-    recommendation.targetDemandQuantity,
-  );
+  const depletionDemandLabel = formatDepletionDemandLabel(days);
 
   return (
     <div className="rounded-[22px] border border-red/15 bg-red-soft/70 px-3 py-3 text-red-deep shadow-soft">
@@ -189,7 +186,8 @@ function OrderRecommendationCard({
         <dl className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
           <OrderStockDemandFactor
             currentStock={formatAmount(item.currentStock, item.unit)}
-            depletionDemand={formatAmount(depletionDemand, item.unit)}
+            depletionDemandLabel={depletionDemandLabel}
+            depletionDemand={formatAmount(recommendation.depletionWindowDemandQuantity, item.unit)}
           />
           <OrderFactor
             label="목표 필요량"
@@ -213,14 +211,16 @@ function OrderRecommendationCard({
 
 function OrderStockDemandFactor({
   currentStock,
+  depletionDemandLabel,
   depletionDemand,
 }: {
   currentStock: string;
+  depletionDemandLabel: string;
   depletionDemand: string;
 }): React.ReactElement {
   return (
     <div className="rounded-2xl bg-card px-2 py-2 shadow-soft">
-      <dt className="text-micro text-ink-3">현재고 | 소진까지 사용</dt>
+      <dt className="text-micro text-ink-3">현재고 | {depletionDemandLabel}</dt>
       <dd className="mt-0.5 flex items-center justify-center gap-1 text-caption font-semibold tabular-nums text-ink-1">
         <span>{currentStock}</span>
         <span className="text-ink-4">|</span>
@@ -335,6 +335,12 @@ function formatDepletionBadge(days: number | null): string {
   if (days === null) return "예측 부족";
   if (days === 0) return "오늘";
   return `D-${days}`;
+}
+
+function formatDepletionDemandLabel(days: number | null): string {
+  if (days === null) return "소진까지 사용";
+  if (days === 0) return "오늘 예상 소모";
+  return `${days}일 예상 소모`;
 }
 
 function formatAmount(value: number, unit: string): string {

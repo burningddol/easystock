@@ -407,6 +407,7 @@ describe("recommendPurchaseQuantity", () => {
 
     expect(result.recommendedOrderQuantity).toBe(100);
     expect(result.targetDemandQuantity).toBe(200);
+    expect(result.depletionWindowDemandQuantity).toBe(100);
     expect(result.targetCoverageDays).toBe(7);
     expect(result.isOrderRecommended).toBe(true);
     expect(result.orderByDate).toEqual(new Date(today.getTime() + 2 * ONE_DAY));
@@ -426,6 +427,7 @@ describe("recommendPurchaseQuantity", () => {
 
     expect(result.recommendedOrderQuantity).toBe(0);
     expect(result.targetDemandQuantity).toBe(180);
+    expect(result.depletionWindowDemandQuantity).toBe(0);
     expect(result.isOrderRecommended).toBe(false);
     expect(result.orderByDate).toBeNull();
   });
