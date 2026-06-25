@@ -9,6 +9,7 @@ import type { MenuForecastAccuracyView } from "../hooks/useMenuForecastAccuracy"
 interface MenuDemandForecastListProps {
   items: readonly MenuDemandForecastView[];
   accuracyItems?: readonly MenuForecastAccuracyView[];
+  variant?: "summary" | "detail";
 }
 
 const TREND_LABEL: Record<MenuDemandForecastView["trend"], string> = {
@@ -27,6 +28,7 @@ const CONFIDENCE_LABEL: Record<MenuDemandForecastView["basis"]["confidenceLevel"
 export function MenuDemandForecastList({
   items,
   accuracyItems = [],
+  variant = "detail",
 }: MenuDemandForecastListProps): React.ReactElement {
   if (items.length === 0) {
     return (
@@ -45,6 +47,7 @@ export function MenuDemandForecastList({
           key={item.menuId}
           item={item}
           accuracy={accuracyByMenu.get(item.menuId)}
+          variant={variant}
         />
       ))}
     </div>
@@ -54,9 +57,11 @@ export function MenuDemandForecastList({
 function MenuDemandForecastCard({
   item,
   accuracy,
+  variant,
 }: {
   item: MenuDemandForecastView;
   accuracy?: MenuForecastAccuracyView;
+  variant: "summary" | "detail";
 }): React.ReactElement {
   const maxDailyQuantity = Math.max(
     1,
@@ -80,9 +85,11 @@ function MenuDemandForecastCard({
         </div>
       </div>
 
-      <p className="mt-stack-tight rounded-2xl border border-border bg-bg px-3 py-2 text-caption text-ink-3">
-        {formatForecastBasis(item)}
-      </p>
+      {variant === "detail" && (
+        <p className="mt-stack-tight rounded-2xl border border-border bg-bg px-3 py-2 text-caption text-ink-3">
+          {formatForecastBasis(item)}
+        </p>
+      )}
 
       <ol className="mt-stack grid grid-cols-7 gap-1.5">
         {item.dailyPredictions.map((day) => (
@@ -103,7 +110,7 @@ function MenuDemandForecastCard({
         ))}
       </ol>
 
-      {item.optionGroups.length > 0 && (
+      {variant === "detail" && item.optionGroups.length > 0 && (
         <div className="mt-stack flex flex-col gap-stack-tight border-t border-border pt-stack-tight">
           <p className="text-caption font-semibold text-ink-2">옵션 선택률</p>
           {item.optionGroups.map((group) => (

@@ -52,7 +52,8 @@ function ForecastAccuracyContent(): React.ReactElement {
           최근 {backtestDays}일 기준으로 {getTabNoun(activeTab)} 예측과 실제값을 비교합니다.
         </p>
         <p className="mt-1 text-caption text-ink-3">
-          각 날짜의 예측은 그 전날까지의 판매 이력만 사용해 다시 계산합니다.
+          각 날짜의 전날까지 데이터만 사용해 다시 예측하므로, 모델이 실제로 얼마나 빗나갔는지
+          검증하는 화면입니다.
         </p>
       </section>
 
