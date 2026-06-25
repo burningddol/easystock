@@ -13,7 +13,7 @@ interface YesterdayKpiCardProps {
 
 /**
  * 어제 KPI Hero 카드 (patterns.md "홈" 위계 #2).
- * - 매출 hero + 지난주 같은 요일 比 chip (FR-020)
+ * - 매출 hero + 지난주 같은 요일 대비 chip (FR-020)
  * - 순수익 / 마진율 분리 표시 + "재료 원가 기준 (이동평균법)" 라벨 (FR-019)
  * - 7일 미니 막대 차트 (어제만 ink-1, 나머지 ink-4)
  */
@@ -67,7 +67,7 @@ function ChangeChip({ value }: ChangeChipProps): React.ReactElement | null {
         isPositive ? "bg-green-soft text-green-deep" : "bg-red-soft text-red-deep",
       )}
     >
-      지난주 比 {isPositive ? "+" : ""}
+      지난주 대비 {isPositive ? "+" : ""}
       {value.toFixed(1)}%
     </span>
   );
