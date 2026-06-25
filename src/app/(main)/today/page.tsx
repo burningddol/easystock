@@ -93,12 +93,20 @@ export default function TodayPage(): React.ReactElement {
               ? "어제 판매 입력을 먼저 끝내고, 발주가 필요한 재료를 확인하세요."
               : "오늘 필요한 발주와 마진 변화를 먼저 확인하세요."}
           </p>
-          <Link
-            href="/inventory/forecast?tab=revenue"
-            className="mt-3 inline-flex w-fit items-center rounded-full bg-white px-3 py-2 text-caption font-semibold text-blue-deep shadow-soft transition hover:-translate-y-0.5 hover:bg-blue-soft"
-          >
-            매출 예측 보기
-          </Link>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/inventory/forecast?tab=revenue"
+              className="inline-flex w-fit items-center rounded-full bg-white px-3 py-2 text-caption font-semibold text-blue-deep shadow-soft transition hover:-translate-y-0.5 hover:bg-blue-soft"
+            >
+              예측 보기
+            </Link>
+            <Link
+              href="/inventory/forecast-accuracy?tab=revenue"
+              className="inline-flex w-fit items-center rounded-full border border-blue/15 bg-white/70 px-3 py-2 text-caption font-semibold text-ink-2 shadow-soft transition hover:-translate-y-0.5 hover:bg-white"
+            >
+              예측 정확도
+            </Link>
+          </div>
         </div>
       </header>
 
