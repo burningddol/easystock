@@ -290,10 +290,10 @@ function formatAccuracyLabel(
   const errorLabel = `오차 ±${formatDayDelta(depletionDayError)}일`;
   const direction = getAccuracyDirection(accuracy);
   if (direction === "under") {
-    return `${errorLabel} · 빠르면 약 ${formatDayDelta(Math.max(0, days - depletionDayError))}일`;
+    return `소비↑ · ${errorLabel} · 빠르면 약 ${formatDayDelta(Math.max(0, days - depletionDayError))}일`;
   }
   if (direction === "over") {
-    return `${errorLabel} · 느리면 약 ${formatDayDelta(days + depletionDayError)}일`;
+    return `소비↓ · ${errorLabel} · 느리면 약 ${formatDayDelta(days + depletionDayError)}일`;
   }
   return errorLabel;
 }
