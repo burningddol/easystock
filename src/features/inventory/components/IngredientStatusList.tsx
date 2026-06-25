@@ -182,7 +182,11 @@ function OrderRecommendationCard({
 
       <details className="mt-3 rounded-2xl bg-white/70 px-3 py-2 text-caption text-ink-2 shadow-soft">
         <summary className="cursor-pointer select-none font-semibold text-ink-1">근거 보기</summary>
-        <dl className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
+        <dl className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
+          <OrderFactor
+            label="예상 소모량"
+            value={formatAmount(recommendation.targetDemandQuantity, item.unit)}
+          />
           <OrderFactor label="현재고" value={formatAmount(item.currentStock, item.unit)} />
           <OrderFactor label="리드타임" value={`${item.leadTimeDays}일`} />
           <OrderFactor label="안전여유" value={`${item.safetyBufferDays}일`} />

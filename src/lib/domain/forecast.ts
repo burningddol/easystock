@@ -161,6 +161,7 @@ export interface PurchaseRecommendationInput {
 
 export interface PurchaseRecommendationResult {
   recommendedOrderQuantity: number;
+  targetDemandQuantity: number;
   orderByDate: Date | null;
   targetCoverageDays: number;
   isOrderRecommended: boolean;
@@ -491,6 +492,7 @@ export function recommendPurchaseQuantity({
 
   return {
     recommendedOrderQuantity,
+    targetDemandQuantity: targetDemand,
     orderByDate,
     targetCoverageDays,
     isOrderRecommended: recommendedOrderQuantity > 0,
