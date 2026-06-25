@@ -39,16 +39,18 @@ export default function InventoryPage(): React.ReactElement {
       >
         <div>
           <h2 className="text-label text-ink-1">빠른 작업</h2>
-          <p className="mt-1 text-caption text-ink-3">자주 쓰는 재료 작업을 모아뒀어요.</p>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {INVENTORY_ACTIONS.map((action) => (
             <Link
               key={action.href}
               href={action.href}
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border-strong bg-white px-3 py-2 text-caption font-semibold text-ink-1 shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft"
+              className="group flex min-h-[4.25rem] flex-col justify-center rounded-2xl border border-border-strong bg-white px-4 py-3 text-left shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft"
             >
-              {action.label}
+              <span className="text-label font-semibold text-ink-1 group-hover:text-blue-deep">
+                {action.label}
+              </span>
+              <span className="mt-1 text-caption text-ink-3">{action.description}</span>
             </Link>
           ))}
         </div>
@@ -67,8 +69,20 @@ export default function InventoryPage(): React.ReactElement {
 }
 
 const INVENTORY_ACTIONS = [
-  { href: "/purchase", label: "+ 매입" },
-  { href: "/inventory/stock-count", label: "실사" },
-  { href: "/inventory/orders", label: "발주 추천" },
-  { href: "/inventory/forecast-accuracy", label: "정확도" },
+  { href: "/purchase", label: "매입 등록", description: "재료를 사온 내역을 입력합니다." },
+  {
+    href: "/inventory/stock-count",
+    label: "재고 실사",
+    description: "실제 남은 수량으로 맞춥니다.",
+  },
+  {
+    href: "/inventory/orders",
+    label: "발주 추천",
+    description: "부족해질 재료와 주문량을 봅니다.",
+  },
+  {
+    href: "/inventory/forecast-accuracy",
+    label: "예측 정확도",
+    description: "매출·메뉴·재료 예측이 맞았는지 봅니다.",
+  },
 ] as const;
