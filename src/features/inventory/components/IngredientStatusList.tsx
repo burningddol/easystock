@@ -284,7 +284,10 @@ function formatAccuracyLabel(
   const depletionDayError = days * accuracy.weightedAbsolutePercentageError;
   const earliestDays = Math.max(0, Math.floor(days - depletionDayError));
   const latestDays = Math.ceil(days + depletionDayError);
-  return `오차 ±${Number(depletionDayError.toFixed(1))}일 · 예상 ${earliestDays}~${latestDays}일`;
+  const errorLabel = `오차 ±${Number(depletionDayError.toFixed(1))}일`;
+  if (accuracy.bias === "under") return `${errorLabel} · 빠르면 ${earliestDays}일`;
+  if (accuracy.bias === "over") return `${errorLabel} · 늦으면 ${latestDays}일`;
+  return `${errorLabel} · 예상 ${earliestDays}~${latestDays}일`;
 }
 
 function formatLeadTimeSource(item: IngredientForecastView): string {
