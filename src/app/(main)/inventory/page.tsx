@@ -39,9 +39,7 @@ export default function InventoryPage(): React.ReactElement {
       >
         <div>
           <h2 className="text-label text-ink-1">빠른 작업</h2>
-          <p className="mt-1 text-caption text-ink-3">
-            재고 입력, 실사, 발주 판단을 바로 처리합니다.
-          </p>
+          <p className="mt-1 text-caption text-ink-3">자주 쓰는 재료 작업을 모아뒀어요.</p>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {INVENTORY_ACTIONS.map((action) => (
