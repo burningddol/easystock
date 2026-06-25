@@ -86,6 +86,7 @@ function IngredientRow({
   accuracy?: IngredientForecastAccuracyView;
 }): React.ReactElement {
   const depletionLabel = formatDepletion(item);
+  const isOrderRecommended = Boolean(item.purchaseRecommendation?.isOrderRecommended);
   const deleteMutation = useDeleteIngredient();
 
   async function handleDelete(): Promise<void> {
@@ -107,15 +108,15 @@ function IngredientRow({
         <div className="min-w-0 flex flex-col gap-1">
           <span className="text-body text-ink-1">{item.name}</span>
           <span className="text-caption text-ink-3 tabular-nums">
-            현재 {formatNumber(item.currentStock)}
-            {item.unit}
-            <span className="text-ink-4"> · </span>
-            리드타임 {item.leadTimeDays}일<span className="text-ink-4"> · </span>
-            안전여유 {item.safetyBufferDays}일
+            현재 {formatAmount(item.currentStock, item.unit)}
           </span>
-          <span className="text-caption text-ink-3">{formatLeadTimeSource(item)}</span>
-          <span className="text-caption text-ink-3">{formatForecastSource(item)}</span>
-          <span className="text-caption text-ink-3">{formatForecastBasis(item)}</span>
+          {!isOrderRecommended && (
+            <>
+              <span className="text-caption text-ink-3">{formatLeadTimeSource(item)}</span>
+              <span className="text-caption text-ink-3">{formatForecastSource(item)}</span>
+              <span className="text-caption text-ink-3">{formatForecastBasis(item)}</span>
+            </>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-stack-tight">
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
@@ -139,66 +140,101 @@ function IngredientRow({
           {deleteMutation.error.message}
         </p>
       )}
-      {item.purchaseRecommendation?.isOrderRecommended && (
-        <OrderRecommendationCard item={item} depletionLabel={depletionLabel} />
-      )}
+      {isOrderRecommended && <OrderRecommendationCard item={item} />}
     </li>
   );
 }
 
 function OrderRecommendationCard({
   item,
-  depletionLabel,
 }: {
   item: IngredientForecastView;
-  depletionLabel: string;
 }): React.ReactElement | null {
   const recommendation = item.purchaseRecommendation;
   if (!recommendation?.isOrderRecommended) return null;
 
   const quantity = Math.ceil(recommendation.recommendedOrderQuantity);
+  const days = daysUntilDate(item.expectedDepletionDate);
   const orderByLabel = formatOrderByDate(recommendation.orderByDate);
+  const depletionDemandLabel = formatDepletionDemandLabel(days);
 
   return (
-    <div className="rounded-[22px] border border-blue/20 bg-blue-soft px-3 py-3 text-blue-deep shadow-soft">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="rounded-[22px] border border-red/15 bg-red-soft/70 px-3 py-3 text-red-deep shadow-soft">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="text-caption font-semibold">권장 발주</p>
-          <p className="mt-1 text-title-md tabular-nums">
-            {formatNumber(quantity)}
-            {item.unit}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-red px-2.5 py-1 text-micro font-semibold text-white shadow-soft">
+              {formatDepletionBadge(days)}
+            </span>
+            <span className="text-caption font-semibold text-red-deep/70">권장 발주</span>
+          </div>
+          <p className="mt-1 text-title-lg tabular-nums text-red-deep">
+            {formatAmount(quantity, item.unit)}
           </p>
-          <p className="mt-1 text-caption text-blue-deep/75">
-            {orderByLabel}까지 발주 · {depletionLabel}
-          </p>
+          <p className="mt-1 text-caption text-red-deep/75">{orderByLabel}까지 매입 등록 권장</p>
         </div>
         <Link
           href={buildPurchasePrefillHref(item)}
-          className="flex shrink-0 items-center justify-center rounded-xl bg-blue px-4 py-2.5 text-label text-white shadow-soft transition hover:-translate-y-0.5"
+          className="flex shrink-0 items-center justify-center rounded-xl bg-red px-4 py-2.5 text-label text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-red-deep"
         >
-          매입 등록
+          권장량으로 매입 등록
         </Link>
       </div>
 
-      <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <OrderFactor label="리드타임" value={`${item.leadTimeDays}일`} />
-        <OrderFactor label="안전여유" value={`${item.safetyBufferDays}일`} />
-        <OrderFactor label="목표운영" value={`${recommendation.targetCoverageDays}일`} />
-      </dl>
+      <details className="mt-3 rounded-2xl bg-white/70 px-3 py-2 text-caption text-ink-2 shadow-soft">
+        <summary className="cursor-pointer select-none font-semibold text-ink-1">근거 보기</summary>
+        <dl className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
+          <OrderStockDemandFactor
+            currentStock={formatAmount(item.currentStock, item.unit)}
+            depletionDemandLabel={depletionDemandLabel}
+            depletionDemand={formatAmount(recommendation.depletionWindowDemandQuantity, item.unit)}
+          />
+          <OrderFactor
+            label="목표 필요량"
+            value={formatAmount(recommendation.targetDemandQuantity, item.unit)}
+          />
+          <OrderFactor label="리드타임" value={`${item.leadTimeDays}일`} />
+          <OrderFactor
+            label="안전여유 + 목표운영"
+            value={`${item.safetyBufferDays}일 + ${recommendation.targetCoverageDays}일`}
+          />
+        </dl>
+        <div className="mt-3 flex flex-col gap-1 leading-relaxed text-ink-3">
+          <span>{formatForecastBasisCompact(item)}</span>
+          <span>{formatForecastSource(item)}</span>
+          <span>{formatLeadTimeSource(item)}</span>
+        </div>
+      </details>
+    </div>
+  );
+}
 
-      <p className="mt-3 text-caption leading-relaxed text-blue-deep/75">
-        현재 재고에서 리드타임, 안전여유, 목표 운영일 동안의 예상 소요량을 뺀 부족분만 추천합니다.{" "}
-        {formatLeadTimeSource(item)}
-      </p>
+function OrderStockDemandFactor({
+  currentStock,
+  depletionDemandLabel,
+  depletionDemand,
+}: {
+  currentStock: string;
+  depletionDemandLabel: string;
+  depletionDemand: string;
+}): React.ReactElement {
+  return (
+    <div className="rounded-2xl bg-card px-2 py-2 shadow-soft">
+      <dt className="text-micro text-ink-3">현재고 | {depletionDemandLabel}</dt>
+      <dd className="mt-0.5 flex items-center justify-center gap-1 text-caption font-semibold tabular-nums text-ink-1">
+        <span>{currentStock}</span>
+        <span className="text-ink-4">|</span>
+        <span>{depletionDemand}</span>
+      </dd>
     </div>
   );
 }
 
 function OrderFactor({ label, value }: { label: string; value: string }): React.ReactElement {
   return (
-    <div className="rounded-2xl bg-white/70 px-2 py-2 shadow-soft">
-      <dt className="text-micro text-blue-deep/60">{label}</dt>
-      <dd className="mt-0.5 text-caption font-semibold tabular-nums text-blue-deep">{value}</dd>
+    <div className="rounded-2xl bg-card px-2 py-2 shadow-soft">
+      <dt className="text-micro text-ink-3">{label}</dt>
+      <dd className="mt-0.5 text-caption font-semibold tabular-nums text-ink-1">{value}</dd>
     </div>
   );
 }
@@ -265,6 +301,11 @@ function formatForecastBasis(item: IngredientForecastView): string {
   return `${label} · 데이터 ${item.basis.usableSampleCount}일 · 요일 보정 ${confidence}%`;
 }
 
+function formatForecastBasisCompact(item: IngredientForecastView): string {
+  const label = CONFIDENCE_LABEL[item.basis.confidenceLevel];
+  return `${label} · 데이터 ${item.basis.usableSampleCount}일 기준`;
+}
+
 const CONFIDENCE_LABEL: Record<IngredientForecastView["basis"]["confidenceLevel"], string> = {
   high: "예측 신뢰도 높음",
   medium: "예측 신뢰도 보통",
@@ -288,6 +329,35 @@ function formatDepletion(item: IngredientForecastView): string {
   if (days === null) return "예측 데이터 부족";
   if (days === 0) return "오늘 소진";
   return `${days}일 후 소진`;
+}
+
+function formatDepletionBadge(days: number | null): string {
+  if (days === null) return "예측 부족";
+  if (days === 0) return "오늘";
+  return `D-${days}`;
+}
+
+function formatDepletionDemandLabel(days: number | null): string {
+  if (days === null) return "소진까지 사용";
+  if (days === 0) return "오늘 예상 소모";
+  return `${days}일 예상 소모`;
+}
+
+function formatAmount(value: number, unit: string): string {
+  const normalizedUnit = unit.toLowerCase();
+  if (normalizedUnit === "g" && Math.abs(value) >= 1000) {
+    return `${formatDecimal(value / 1000)}kg`;
+  }
+  if (normalizedUnit === "ml" && Math.abs(value) >= 1000) {
+    return `${formatDecimal(value / 1000)}L`;
+  }
+  return `${formatNumber(Math.round(value))}${unit}`;
+}
+
+function formatDecimal(value: number): string {
+  return value.toLocaleString("ko-KR", {
+    maximumFractionDigits: 1,
+  });
 }
 
 function formatOrderByDate(date: Date | null): string {

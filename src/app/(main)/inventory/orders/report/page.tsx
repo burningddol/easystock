@@ -24,7 +24,7 @@ export default function OrderRecommendationReportPage(): React.ReactElement {
             <Link href="/inventory/orders" className={SECONDARY_BUTTON_CLASSES}>
               오늘 주문할 것
             </Link>
-            <Link href="/inventory" className={SECONDARY_BUTTON_CLASSES}>
+            <Link href="/inventory/forecast?tab=ingredient" className={SECONDARY_BUTTON_CLASSES}>
               재료 예측
             </Link>
           </div>

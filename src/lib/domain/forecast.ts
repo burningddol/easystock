@@ -161,6 +161,8 @@ export interface PurchaseRecommendationInput {
 
 export interface PurchaseRecommendationResult {
   recommendedOrderQuantity: number;
+  targetDemandQuantity: number;
+  depletionWindowDemandQuantity: number;
   orderByDate: Date | null;
   targetCoverageDays: number;
   isOrderRecommended: boolean;
@@ -488,13 +490,41 @@ export function recommendPurchaseQuantity({
     dailyDemand: demandByDay,
     today: normalizedToday,
   });
+  const daysToDepletion = computeDaysToDepletion({
+    currentStock,
+    dailyDemand: demandByDay,
+  });
+  const depletionWindowDemand =
+    daysToDepletion === null
+      ? 0
+      : demandByDay
+          .slice(0, daysToDepletion)
+          .reduce((sum, day) => sum + Math.max(0, day.amount), 0);
 
   return {
     recommendedOrderQuantity,
+    targetDemandQuantity: targetDemand,
+    depletionWindowDemandQuantity: depletionWindowDemand,
     orderByDate,
     targetCoverageDays,
     isOrderRecommended: recommendedOrderQuantity > 0,
   };
+}
+
+function computeDaysToDepletion({
+  currentStock,
+  dailyDemand,
+}: {
+  currentStock: number;
+  dailyDemand: readonly IngredientDemandForecastDay[];
+}): number | null {
+  if (currentStock <= 0) return 0;
+  let remaining = currentStock;
+  for (let index = 0; index < dailyDemand.length; index += 1) {
+    remaining -= Math.max(0, dailyDemand[index]?.amount ?? 0);
+    if (remaining <= 0) return index + 1;
+  }
+  return null;
 }
 
 function computeOrderByDate({
