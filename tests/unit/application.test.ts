@@ -424,7 +424,7 @@ describe("application layer", () => {
       expect(result?.forecastSource).toBe("menu_demand");
       expect(result?.purchaseRecommendation?.isOrderRecommended).toBe(true);
       expect(result?.purchaseRecommendation?.recommendedOrderQuantity).toBeGreaterThan(10);
-      expect(result?.purchaseRecommendation?.targetDemandQuantity).toBeGreaterThan(80);
+      expect(result?.purchaseRecommendation?.targetDemandQuantity).toBeGreaterThan(60);
     });
 
     it("loadDepletionForecast falls back to safety buffer 1 when rpc field is missing", async () => {

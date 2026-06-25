@@ -127,8 +127,8 @@ function IngredientRow({
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
             <span className={cn(toneClass(item.status))}>{depletionLabel}</span>
             {item.trend !== "normal" && <TrendBadge trend={item.trend} />}
-            {variant === "detail" && accuracy && shouldShowAccuracyBadge(item) && (
-              <AccuracyBadge item={item} accuracy={accuracy} />
+            {accuracy && shouldShowAccuracyBadge(item) && (
+              <AccuracyBadge item={item} accuracy={accuracy} variant={variant} />
             )}
           </div>
           <button
@@ -199,14 +199,14 @@ function OrderRecommendationCard({
             depletionDemand={formatAmount(recommendation.depletionWindowDemandQuantity, item.unit)}
           />
           <OrderFactor
-            label="목표 필요량"
+            label={`목표 필요량 (${recommendation.targetCoverageDays}일)`}
             value={formatAmount(recommendation.targetDemandQuantity, item.unit)}
           />
-          <OrderFactor label="리드타임" value={`${item.leadTimeDays}일`} />
           <OrderFactor
-            label="안전여유 + 목표운영"
-            value={`${item.safetyBufferDays}일 + ${recommendation.targetCoverageDays}일`}
+            label="리드타임 | 안전여유"
+            value={`${item.leadTimeDays}일 | ${item.safetyBufferDays}일`}
           />
+          <OrderFactor label="목표운영" value={`${recommendation.targetCoverageDays}일`} />
         </dl>
         {variant === "detail" && (
           <div className="mt-3 flex flex-col gap-1 leading-relaxed text-ink-3">
@@ -253,25 +253,19 @@ function OrderFactor({ label, value }: { label: string; value: string }): React.
 function AccuracyBadge({
   item,
   accuracy,
+  variant,
 }: {
   item: IngredientForecastView;
   accuracy: IngredientForecastAccuracyView;
-}): React.ReactElement {
-  const label = formatAccuracyLabel(item, accuracy);
+  variant: "action" | "detail";
+}): React.ReactElement | null {
+  const label = formatAccuracyLabel(item, accuracy, variant);
+  if (!label) return null;
 
   return (
     <Link
       href="/inventory/forecast-accuracy?tab=ingredient"
-      className={cn(
-        "rounded-full px-2 py-0.5 text-micro shadow-soft",
-        accuracy.reliability === "good"
-          ? "bg-blue-soft text-blue-deep"
-          : accuracy.reliability === "watch"
-            ? "bg-amber-soft text-amber-deep"
-            : accuracy.reliability === "low"
-              ? "bg-red-soft text-red-deep"
-              : "bg-bg text-ink-3",
-      )}
+      className={cn("rounded-full px-2 py-0.5 text-micro shadow-soft", accuracyTone(accuracy))}
     >
       {label}
     </Link>
@@ -281,22 +275,33 @@ function AccuracyBadge({
 function formatAccuracyLabel(
   item: IngredientForecastView,
   accuracy: IngredientForecastAccuracyView,
-): string {
+  variant: "action" | "detail",
+): string | null {
   if (accuracy.weightedAbsolutePercentageError === null || accuracy.evaluatedDayCount < 3) {
-    return "정확도 수집 중";
+    return variant === "detail" ? "정확도 수집 중" : null;
   }
   const days = daysUntilDate(item.expectedDepletionDate);
   if (days === null) {
     const dayError = accuracy.meanAbsoluteDayEquivalentError;
-    return dayError === null ? "정확도 수집 중" : `오차 ±${Number(dayError.toFixed(1))}일`;
+    if (dayError === null) return variant === "detail" ? "정확도 수집 중" : null;
+    return `오차 ±${formatDayDelta(dayError)}일`;
   }
-  const depletionDayError = days * accuracy.weightedAbsolutePercentageError;
+  const depletionDayError =
+    accuracy.meanAbsoluteDayEquivalentError ?? days * accuracy.weightedAbsolutePercentageError;
   const earliestDays = Math.max(0, Math.floor(days - depletionDayError));
   const latestDays = Math.ceil(days + depletionDayError);
-  const errorLabel = `오차 ±${Number(depletionDayError.toFixed(1))}일`;
+  const errorLabel = `오차 ±${formatDayDelta(depletionDayError)}일`;
   if (accuracy.bias === "under") return `${errorLabel} · 빠르면 ${earliestDays}일`;
-  if (accuracy.bias === "over") return `${errorLabel} · 늦으면 ${latestDays}일`;
+  if (accuracy.bias === "over") return `${errorLabel} · 느리면 ${latestDays}일`;
   return `${errorLabel} · 예상 ${earliestDays}~${latestDays}일`;
+}
+
+function accuracyTone(accuracy: IngredientForecastAccuracyView): string {
+  if (accuracy.bias === "under") return "bg-red-soft text-red-deep";
+  if (accuracy.bias === "over") return "bg-blue-soft text-blue-deep";
+  if (accuracy.reliability === "watch") return "bg-amber-soft text-amber-deep";
+  if (accuracy.reliability === "low") return "bg-red-soft text-red-deep";
+  return "bg-bg text-ink-3";
 }
 
 function formatLeadTimeSource(item: IngredientForecastView): string {
@@ -355,7 +360,13 @@ function formatDepletion(item: IngredientForecastView): string {
 
 function shouldShowAccuracyBadge(item: IngredientForecastView): boolean {
   const days = daysUntilDate(item.expectedDepletionDate);
-  return days !== null && days <= 14;
+  return days !== null && days <= 30;
+}
+
+function formatDayDelta(value: number): string {
+  return Number(value.toFixed(1)).toLocaleString("ko-KR", {
+    maximumFractionDigits: 1,
+  });
 }
 
 function formatDepletionBadge(days: number | null): string {
