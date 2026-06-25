@@ -271,12 +271,18 @@ function formatAccuracyLabel(
   item: IngredientForecastView,
   accuracy: IngredientForecastAccuracyView,
 ): string {
-  const dayError = accuracy.meanAbsoluteDayEquivalentError;
-  if (dayError === null || accuracy.evaluatedDayCount < 3) return "정확도 수집 중";
+  if (accuracy.weightedAbsolutePercentageError === null || accuracy.evaluatedDayCount < 3) {
+    return "정확도 수집 중";
+  }
   const days = daysUntilDate(item.expectedDepletionDate);
-  if (days === null) return `보통 ±${Number(dayError.toFixed(1))}일`;
-  const earliestDays = Math.max(0, days - Math.ceil(dayError));
-  return `보통 ±${Number(dayError.toFixed(1))}일 · 빠르면 ${earliestDays}일`;
+  if (days === null) {
+    const dayError = accuracy.meanAbsoluteDayEquivalentError;
+    return dayError === null ? "정확도 수집 중" : `보통 ±${Number(dayError.toFixed(1))}일`;
+  }
+  const depletionDayError = days * accuracy.weightedAbsolutePercentageError;
+  const earliestDays = Math.max(0, Math.floor(days - depletionDayError));
+  const latestDays = Math.ceil(days + depletionDayError);
+  return `보통 ±${Number(depletionDayError.toFixed(1))}일 · 예상 ${earliestDays}~${latestDays}일`;
 }
 
 function formatLeadTimeSource(item: IngredientForecastView): string {
