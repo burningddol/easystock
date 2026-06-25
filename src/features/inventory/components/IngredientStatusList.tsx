@@ -284,36 +284,18 @@ function formatAccuracyLabel(
   if (days === null) {
     const dayError = accuracy.meanAbsoluteDayEquivalentError;
     if (dayError === null) return variant === "detail" ? "정확도 수집 중" : null;
-    return `오차 ±${formatDayDelta(dayError)}일`;
+    return `최근 검증 오차 ±${formatDayDelta(dayError)}일`;
   }
-  const depletionDayError = days * accuracy.weightedAbsolutePercentageError;
-  const errorLabel = `오차 ±${formatDayDelta(depletionDayError)}일`;
-  const direction = getAccuracyDirection(accuracy);
-  if (direction === "under") {
-    return `사용량 증가 · ${errorLabel} · 빠르면 약 ${formatDayDelta(Math.max(0, days - depletionDayError))}일`;
-  }
-  if (direction === "over") {
-    return `사용량 감소 · ${errorLabel} · 느리면 약 ${formatDayDelta(days + depletionDayError)}일`;
-  }
-  return errorLabel;
+  const depletionDayError =
+    accuracy.meanAbsoluteDayEquivalentError ?? days * accuracy.weightedAbsolutePercentageError;
+  return `최근 검증 오차 ±${formatDayDelta(depletionDayError)}일`;
 }
 
 function accuracyTone(accuracy: IngredientForecastAccuracyView): string {
-  const direction = getAccuracyDirection(accuracy);
-  if (direction === "under") return "bg-red-soft text-red-deep";
-  if (direction === "over") return "bg-blue-soft text-blue-deep";
   if (accuracy.reliability === "watch") return "bg-amber-soft text-amber-deep";
   if (accuracy.reliability === "low") return "bg-red-soft text-red-deep";
+  if (accuracy.reliability === "good") return "bg-blue-soft text-blue-deep";
   return "bg-bg text-ink-3";
-}
-
-function getAccuracyDirection(
-  accuracy: IngredientForecastAccuracyView,
-): "under" | "over" | "balanced" {
-  if (accuracy.bias === "under" || accuracy.bias === "over") return accuracy.bias;
-  if (accuracy.underPredictedDayCount > accuracy.overPredictedDayCount) return "under";
-  if (accuracy.overPredictedDayCount > accuracy.underPredictedDayCount) return "over";
-  return "balanced";
 }
 
 function formatLeadTimeSource(item: IngredientForecastView): string {
