@@ -288,20 +288,33 @@ function formatAccuracyLabel(
   }
   const depletionDayError =
     accuracy.meanAbsoluteDayEquivalentError ?? days * accuracy.weightedAbsolutePercentageError;
-  const earliestDays = Math.max(0, Math.floor(days - depletionDayError));
-  const latestDays = Math.ceil(days + depletionDayError);
   const errorLabel = `오차 ±${formatDayDelta(depletionDayError)}일`;
-  if (accuracy.bias === "under") return `${errorLabel} · 빠르면 ${earliestDays}일`;
-  if (accuracy.bias === "over") return `${errorLabel} · 느리면 ${latestDays}일`;
-  return `${errorLabel} · 예상 ${earliestDays}~${latestDays}일`;
+  const direction = getAccuracyDirection(accuracy);
+  if (direction === "under") {
+    return `${errorLabel} · 빠르면 약 ${formatDayDelta(Math.max(0, days - depletionDayError))}일`;
+  }
+  if (direction === "over") {
+    return `${errorLabel} · 느리면 약 ${formatDayDelta(days + depletionDayError)}일`;
+  }
+  return errorLabel;
 }
 
 function accuracyTone(accuracy: IngredientForecastAccuracyView): string {
-  if (accuracy.bias === "under") return "bg-red-soft text-red-deep";
-  if (accuracy.bias === "over") return "bg-blue-soft text-blue-deep";
+  const direction = getAccuracyDirection(accuracy);
+  if (direction === "under") return "bg-red-soft text-red-deep";
+  if (direction === "over") return "bg-blue-soft text-blue-deep";
   if (accuracy.reliability === "watch") return "bg-amber-soft text-amber-deep";
   if (accuracy.reliability === "low") return "bg-red-soft text-red-deep";
   return "bg-bg text-ink-3";
+}
+
+function getAccuracyDirection(
+  accuracy: IngredientForecastAccuracyView,
+): "under" | "over" | "balanced" {
+  if (accuracy.bias === "under" || accuracy.bias === "over") return accuracy.bias;
+  if (accuracy.underPredictedDayCount > accuracy.overPredictedDayCount) return "under";
+  if (accuracy.overPredictedDayCount > accuracy.underPredictedDayCount) return "over";
+  return "balanced";
 }
 
 function formatLeadTimeSource(item: IngredientForecastView): string {
