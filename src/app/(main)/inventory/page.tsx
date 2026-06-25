@@ -22,41 +22,34 @@ export default function InventoryPage(): React.ReactElement {
       <PageHeader
         title="재료"
         action={
-          <button
-            type="button"
-            onClick={() => setIsAddOpen((v) => !v)}
-            aria-expanded={isAddOpen}
-            className="whitespace-nowrap rounded-2xl bg-blue px-4 py-3 text-body-regular font-semibold text-white shadow-card ring-1 ring-blue-deep/10 transition hover:-translate-y-0.5 hover:bg-blue-deep"
-          >
-            + 재료
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsAddOpen((v) => !v)}
+              aria-expanded={isAddOpen}
+              className="whitespace-nowrap rounded-2xl bg-blue px-4 py-3 text-body-regular font-semibold text-white shadow-card ring-1 ring-blue-deep/10 transition hover:-translate-y-0.5 hover:bg-blue-deep"
+            >
+              + 재료
+            </button>
+            <details className="group relative">
+              <summary className="flex cursor-pointer list-none items-center justify-center rounded-2xl border border-border-strong bg-white px-4 py-3 text-body-regular font-semibold text-ink-1 shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft [&::-webkit-details-marker]:hidden">
+                작업
+              </summary>
+              <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 w-44 overflow-hidden rounded-2xl border border-border bg-card p-1 shadow-card">
+                {INVENTORY_ACTIONS.map((action) => (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    className="block rounded-xl px-3 py-2.5 text-caption font-semibold text-ink-1 transition hover:bg-blue-soft hover:text-blue-deep"
+                  >
+                    {action.label}
+                  </Link>
+                ))}
+              </div>
+            </details>
+          </div>
         }
       />
-
-      <nav
-        aria-label="재료 빠른 작업"
-        className="rounded-[22px] border border-border bg-card px-4 py-3 shadow-soft"
-      >
-        <div>
-          <h2 className="text-label text-ink-1">빠른 작업</h2>
-        </div>
-        <div className="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
-          {INVENTORY_ACTIONS.map((action) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              className="group flex min-h-[3.25rem] flex-col justify-center rounded-2xl border border-border-strong bg-white px-3 py-2 text-left shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft"
-            >
-              <span className="text-caption font-semibold text-ink-1 group-hover:text-blue-deep">
-                {action.label}
-              </span>
-              <span className="mt-0.5 truncate text-[11px] leading-snug text-ink-3">
-                {action.description}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </nav>
 
       {isAddOpen && <AddIngredientForm onClose={() => setIsAddOpen(false)} />}
 
@@ -71,20 +64,8 @@ export default function InventoryPage(): React.ReactElement {
 }
 
 const INVENTORY_ACTIONS = [
-  { href: "/purchase", label: "매입 등록", description: "사온 재료 입력" },
-  {
-    href: "/inventory/stock-count",
-    label: "재고 실사",
-    description: "실제 수량 맞춤",
-  },
-  {
-    href: "/inventory/orders",
-    label: "발주 추천",
-    description: "부족 재료 확인",
-  },
-  {
-    href: "/inventory/forecast-accuracy",
-    label: "예측 정확도",
-    description: "예측 결과 확인",
-  },
+  { href: "/purchase", label: "매입 등록" },
+  { href: "/inventory/stock-count", label: "재고 실사" },
+  { href: "/inventory/orders", label: "발주 추천" },
+  { href: "/inventory/forecast-accuracy", label: "예측 정확도" },
 ] as const;
