@@ -11,6 +11,7 @@ import type { IngredientForecastAccuracyView } from "../hooks/useIngredientForec
 interface IngredientStatusListProps {
   items: readonly IngredientForecastView[];
   accuracyItems?: readonly IngredientForecastAccuracyView[];
+  variant?: "action" | "detail";
 }
 
 const STATUS_GROUP_ORDER: readonly DepletionStatus[] = [
@@ -30,6 +31,7 @@ const STATUS_LABEL: Record<DepletionStatus, string> = {
 export function IngredientStatusList({
   items,
   accuracyItems = [],
+  variant = "action",
 }: IngredientStatusListProps): React.ReactElement {
   if (items.length === 0) {
     return (
@@ -68,6 +70,7 @@ export function IngredientStatusList({
                   key={item.ingredientId}
                   item={item}
                   accuracy={accuracyByIngredient.get(item.ingredientId)}
+                  variant={variant}
                 />
               ))}
             </ul>
@@ -81,9 +84,11 @@ export function IngredientStatusList({
 function IngredientRow({
   item,
   accuracy,
+  variant,
 }: {
   item: IngredientForecastView;
   accuracy?: IngredientForecastAccuracyView;
+  variant: "action" | "detail";
 }): React.ReactElement {
   const depletionLabel = formatDepletion(item);
   const isOrderRecommended = Boolean(item.purchaseRecommendation?.isOrderRecommended);
@@ -110,7 +115,7 @@ function IngredientRow({
           <span className="text-caption text-ink-3 tabular-nums">
             현재 {formatAmount(item.currentStock, item.unit)}
           </span>
-          {!isOrderRecommended && (
+          {!isOrderRecommended && variant === "detail" && (
             <>
               <span className="text-caption text-ink-3">{formatLeadTimeSource(item)}</span>
               <span className="text-caption text-ink-3">{formatForecastSource(item)}</span>
@@ -122,7 +127,7 @@ function IngredientRow({
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
             <span className={cn(toneClass(item.status))}>{depletionLabel}</span>
             {item.trend !== "normal" && <TrendBadge trend={item.trend} />}
-            {accuracy && shouldShowAccuracyBadge(item) && (
+            {variant === "detail" && accuracy && shouldShowAccuracyBadge(item) && (
               <AccuracyBadge item={item} accuracy={accuracy} />
             )}
           </div>
@@ -142,15 +147,17 @@ function IngredientRow({
           {deleteMutation.error.message}
         </p>
       )}
-      {isOrderRecommended && <OrderRecommendationCard item={item} />}
+      {isOrderRecommended && <OrderRecommendationCard item={item} variant={variant} />}
     </li>
   );
 }
 
 function OrderRecommendationCard({
   item,
+  variant,
 }: {
   item: IngredientForecastView;
+  variant: "action" | "detail";
 }): React.ReactElement | null {
   const recommendation = item.purchaseRecommendation;
   if (!recommendation?.isOrderRecommended) return null;
@@ -201,11 +208,13 @@ function OrderRecommendationCard({
             value={`${item.safetyBufferDays}일 + ${recommendation.targetCoverageDays}일`}
           />
         </dl>
-        <div className="mt-3 flex flex-col gap-1 leading-relaxed text-ink-3">
-          <span>{formatForecastBasisCompact(item)}</span>
-          <span>{formatForecastSource(item)}</span>
-          <span>{formatLeadTimeSource(item)}</span>
-        </div>
+        {variant === "detail" && (
+          <div className="mt-3 flex flex-col gap-1 leading-relaxed text-ink-3">
+            <span>{formatForecastBasisCompact(item)}</span>
+            <span>{formatForecastSource(item)}</span>
+            <span>{formatLeadTimeSource(item)}</span>
+          </div>
+        )}
       </details>
     </div>
   );

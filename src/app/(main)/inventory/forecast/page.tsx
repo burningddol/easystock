@@ -10,6 +10,7 @@ import { useDepletionForecast } from "@/features/inventory/hooks/useDepletionFor
 import { useIngredientForecastAccuracy } from "@/features/inventory/hooks/useIngredientForecastAccuracy";
 import { useMenuDemandForecast } from "@/features/inventory/hooks/useMenuDemandForecast";
 import { useMenuForecastAccuracy } from "@/features/inventory/hooks/useMenuForecastAccuracy";
+import { useRevenueForecastAccuracy } from "@/features/inventory/hooks/useRevenueForecastAccuracy";
 import { PageHeader } from "@/components/ui/page-header";
 import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ function ForecastContent(): React.ReactElement {
   const horizonDays = parseOption(searchParams.get("horizon"), HORIZON_OPTIONS, 7);
   const menuQuery = useMenuDemandForecast(horizonDays);
   const menuAccuracyQuery = useMenuForecastAccuracy(14);
+  const revenueAccuracyQuery = useRevenueForecastAccuracy(14, activeTab === "revenue");
   const ingredientQuery = useDepletionForecast();
   const ingredientAccuracyQuery = useIngredientForecastAccuracy(14);
   const revenueDays = useMemo(
@@ -58,7 +60,7 @@ function ForecastContent(): React.ReactElement {
       <section className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
         <p className="text-body text-ink-1">{getIntro(activeTab, horizonDays)}</p>
         <p className="mt-1 text-caption text-ink-3">
-          메뉴 수요 예측을 기준으로 매출과 재료 소진을 함께 계산합니다.
+          중심값은 보정된 메뉴 예측 기준이고, 자세한 오차 검증은 정확도 화면에서 확인합니다.
         </p>
       </section>
 
@@ -81,7 +83,15 @@ function ForecastContent(): React.ReactElement {
         >
           {menuQuery.isLoading && <LoadingText />}
           {menuQuery.error && <ErrorAlert message={menuQuery.error.message} />}
-          {menuQuery.data && <RevenueForecastList days={revenueDays} />}
+          {revenueAccuracyQuery.error && (
+            <ErrorAlert message={revenueAccuracyQuery.error.message} />
+          )}
+          {menuQuery.data && (
+            <RevenueForecastList
+              days={revenueDays}
+              meanAbsoluteWonError={revenueAccuracyQuery.data?.meanAbsoluteWonError ?? null}
+            />
+          )}
         </ForecastSection>
       ) : activeTab === "menu" ? (
         <ForecastSection
@@ -94,6 +104,7 @@ function ForecastContent(): React.ReactElement {
             <MenuDemandForecastList
               items={menuQuery.data}
               accuracyItems={menuAccuracyQuery.data ?? []}
+              variant="detail"
             />
           )}
         </ForecastSection>
@@ -108,6 +119,7 @@ function ForecastContent(): React.ReactElement {
             <IngredientStatusList
               items={ingredientQuery.data}
               accuracyItems={ingredientAccuracyQuery.data ?? []}
+              variant="detail"
             />
           )}
         </ForecastSection>
@@ -219,8 +231,10 @@ interface RevenueForecastDay {
 
 function RevenueForecastList({
   days,
+  meanAbsoluteWonError,
 }: {
   days: readonly RevenueForecastDay[];
+  meanAbsoluteWonError: number | null;
 }): React.ReactElement {
   if (days.length === 0) {
     return (
@@ -232,15 +246,24 @@ function RevenueForecastList({
 
   const totalRevenue = days.reduce((sum, day) => sum + day.predictedRevenue, 0);
   const totalQuantity = days.reduce((sum, day) => sum + day.predictedQuantity, 0);
+  const periodMeanAbsoluteWonError =
+    meanAbsoluteWonError === null ? null : meanAbsoluteWonError * Math.sqrt(days.length);
 
   return (
     <div className="flex flex-col gap-stack">
       <section className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
-        <p className="text-caption text-ink-3">기간 합계</p>
-        <p className="mt-1 text-title-lg text-ink-1">{formatWon(totalRevenue)}원</p>
+        <p className="text-caption text-ink-3">예상 매출 합계</p>
+        <p className="mt-1 text-title-lg text-ink-1">
+          {formatRevenueRange(totalRevenue, periodMeanAbsoluteWonError)}
+        </p>
         <p className="mt-1 text-caption text-ink-3">
           예상 판매 {formatNumber(Number(totalQuantity.toFixed(1)))}개
         </p>
+        {meanAbsoluteWonError !== null && (
+          <p className="mt-2 text-caption text-ink-3">
+            최근 14일 기준 평균 {formatWon(meanAbsoluteWonError)}원 정도 차이가 났어요.
+          </p>
+        )}
       </section>
       <ol className="flex flex-col gap-stack-tight">
         {days.map((day) => (
@@ -254,9 +277,14 @@ function RevenueForecastList({
                 예상 판매 {formatNumber(Number(day.predictedQuantity.toFixed(1)))}개
               </p>
             </div>
-            <p className="shrink-0 text-body font-semibold text-blue-deep">
-              {formatWon(day.predictedRevenue)}원
-            </p>
+            <div className="shrink-0 text-right">
+              <p className="text-body font-semibold text-blue-deep">
+                {formatWon(day.predictedRevenue)}원
+              </p>
+              {meanAbsoluteWonError !== null && (
+                <p className="text-micro text-ink-3">±{formatWon(meanAbsoluteWonError)}원</p>
+              )}
+            </div>
           </li>
         ))}
       </ol>
@@ -297,11 +325,20 @@ function parseTab(raw: string | null): ForecastTab {
 }
 
 function getIntro(tab: ForecastTab, horizonDays: number): string {
-  if (tab === "revenue") return `앞으로 ${horizonDays}일간 예상 매출을 보여줍니다.`;
-  if (tab === "menu") return `앞으로 ${horizonDays}일간 메뉴별 예상 판매량을 보여줍니다.`;
-  return "재료별 소진 위험과 권장 발주량을 보여줍니다.";
+  if (tab === "revenue")
+    return `앞으로 ${horizonDays}일간 예상 매출과 흔들릴 수 있는 범위를 보여줍니다.`;
+  if (tab === "menu")
+    return `앞으로 ${horizonDays}일간 메뉴별 예상 판매량과 옵션 선택 근거를 보여줍니다.`;
+  return "재료별 소진 위험, 권장 발주량, 계산 근거를 함께 보여줍니다.";
 }
 
 function formatDateLabel(date: Date): string {
   return `${date.getMonth() + 1}/${date.getDate()} ${WEEKDAY_KO[date.getDay()]}`;
+}
+
+function formatRevenueRange(value: number, meanAbsoluteWonError: number | null): string {
+  if (meanAbsoluteWonError === null) return `${formatWon(value)}원`;
+  const low = Math.max(0, value - meanAbsoluteWonError);
+  const high = value + meanAbsoluteWonError;
+  return `${formatWon(low)}~${formatWon(high)}원`;
 }
