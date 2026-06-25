@@ -33,15 +33,6 @@ export default function InventoryPage(): React.ReactElement {
         }
       />
 
-      {isAddOpen && <AddIngredientForm onClose={() => setIsAddOpen(false)} />}
-
-      {isLoading && <LoadingText />}
-      {error && <ErrorAlert message={error.message} />}
-
-      {isAllColdStart && <ColdStartNotice />}
-
-      {data && <IngredientStatusList items={data} accuracyItems={accuracyQuery.data ?? []} />}
-
       <nav
         aria-label="재료 빠른 작업"
         className="rounded-[22px] border border-border bg-card px-4 py-3 shadow-soft"
@@ -66,6 +57,15 @@ export default function InventoryPage(): React.ReactElement {
           ))}
         </div>
       </nav>
+
+      {isAddOpen && <AddIngredientForm onClose={() => setIsAddOpen(false)} />}
+
+      {isLoading && <LoadingText />}
+      {error && <ErrorAlert message={error.message} />}
+
+      {isAllColdStart && <ColdStartNotice />}
+
+      {data && <IngredientStatusList items={data} accuracyItems={accuracyQuery.data ?? []} />}
     </section>
   );
 }

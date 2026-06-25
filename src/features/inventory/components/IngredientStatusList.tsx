@@ -140,19 +140,15 @@ function IngredientRow({
           {deleteMutation.error.message}
         </p>
       )}
-      {isOrderRecommended && (
-        <OrderRecommendationCard item={item} depletionLabel={depletionLabel} />
-      )}
+      {isOrderRecommended && <OrderRecommendationCard item={item} />}
     </li>
   );
 }
 
 function OrderRecommendationCard({
   item,
-  depletionLabel,
 }: {
   item: IngredientForecastView;
-  depletionLabel: string;
 }): React.ReactElement | null {
   const recommendation = item.purchaseRecommendation;
   if (!recommendation?.isOrderRecommended) return null;
@@ -164,20 +160,17 @@ function OrderRecommendationCard({
   return (
     <div className="rounded-[22px] border border-red/15 bg-red-soft/70 px-3 py-3 text-red-deep shadow-soft">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 space-y-2">
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-red px-2.5 py-1 text-micro font-semibold text-white shadow-soft">
               {formatDepletionBadge(days)}
             </span>
-            <span className="text-caption font-semibold">{depletionLabel}</span>
+            <span className="text-caption font-semibold text-red-deep/70">권장 발주</span>
           </div>
-          <div>
-            <p className="text-caption text-red-deep/70">권장 발주</p>
-            <p className="mt-0.5 text-title-lg tabular-nums text-red-deep">
-              {formatAmount(quantity, item.unit)}
-            </p>
-          </div>
-          <p className="text-caption text-red-deep/75">{orderByLabel}까지 매입 등록 권장</p>
+          <p className="mt-1 text-title-lg tabular-nums text-red-deep">
+            {formatAmount(quantity, item.unit)}
+          </p>
+          <p className="mt-1 text-caption text-red-deep/75">{orderByLabel}까지 매입 등록 권장</p>
         </div>
         <Link
           href={buildPurchasePrefillHref(item)}
