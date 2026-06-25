@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCalendarMonth } from "@/features/calendar/hooks/useCalendarMonth";
 import { useMenuDemandForecast } from "@/features/inventory/hooks/useMenuDemandForecast";
 import { useRevenueForecastAccuracy } from "@/features/inventory/hooks/useRevenueForecastAccuracy";
-import { getRevenueMeanSignedWonError } from "@/features/inventory/lib/revenue-forecast-adjustment";
 import { MonthHeader } from "@/features/calendar/components/MonthHeader";
 import { MonthCumulativeCard } from "@/features/calendar/components/MonthCumulativeCard";
 import { CalendarGrid } from "@/features/calendar/components/CalendarGrid";
@@ -130,7 +129,6 @@ export default function CalendarPage(): React.ReactElement {
         cells={query.data.cells}
         menuForecastByDate={menuForecastByDate}
         revenueErrorByDate={revenueErrorByDate}
-        revenueMeanSignedWonError={getRevenueMeanSignedWonError(revenueAccuracyQuery.data)}
         selectedDate={null}
         todayIso={todayIso}
         onSelect={handleSelect}

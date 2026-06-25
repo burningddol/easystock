@@ -11,10 +11,6 @@ import { useIngredientForecastAccuracy } from "@/features/inventory/hooks/useIng
 import { useMenuDemandForecast } from "@/features/inventory/hooks/useMenuDemandForecast";
 import { useMenuForecastAccuracy } from "@/features/inventory/hooks/useMenuForecastAccuracy";
 import { useRevenueForecastAccuracy } from "@/features/inventory/hooks/useRevenueForecastAccuracy";
-import {
-  adjustRevenueForecast,
-  getRevenueMeanSignedWonError,
-} from "@/features/inventory/lib/revenue-forecast-adjustment";
 import { PageHeader } from "@/components/ui/page-header";
 import { ErrorAlert, LoadingText } from "@/components/ui/query-state";
 import { cn } from "@/lib/utils";
@@ -94,7 +90,6 @@ function ForecastContent(): React.ReactElement {
             <RevenueForecastList
               days={revenueDays}
               meanAbsoluteWonError={revenueAccuracyQuery.data?.meanAbsoluteWonError ?? null}
-              meanSignedWonError={getRevenueMeanSignedWonError(revenueAccuracyQuery.data)}
             />
           )}
         </ForecastSection>
@@ -237,11 +232,9 @@ interface RevenueForecastDay {
 function RevenueForecastList({
   days,
   meanAbsoluteWonError,
-  meanSignedWonError,
 }: {
   days: readonly RevenueForecastDay[];
   meanAbsoluteWonError: number | null;
-  meanSignedWonError: number | null;
 }): React.ReactElement {
   if (days.length === 0) {
     return (
@@ -251,11 +244,7 @@ function RevenueForecastList({
     );
   }
 
-  const adjustedDays = days.map((day) => ({
-    ...day,
-    adjustedRevenue: adjustRevenueForecast(day.predictedRevenue, meanSignedWonError),
-  }));
-  const totalRevenue = adjustedDays.reduce((sum, day) => sum + day.adjustedRevenue, 0);
+  const totalRevenue = days.reduce((sum, day) => sum + day.predictedRevenue, 0);
   const totalQuantity = days.reduce((sum, day) => sum + day.predictedQuantity, 0);
   const periodMeanAbsoluteWonError =
     meanAbsoluteWonError === null ? null : meanAbsoluteWonError * Math.sqrt(days.length);
@@ -272,13 +261,12 @@ function RevenueForecastList({
         </p>
         {meanAbsoluteWonError !== null && (
           <p className="mt-2 text-caption text-ink-3">
-            최근 14일 기준 방향 보정 후 평균 {formatWon(meanAbsoluteWonError)}원 정도 흔들릴 수
-            있어요.
+            최근 14일 기준 평균 {formatWon(meanAbsoluteWonError)}원 정도 흔들릴 수 있어요.
           </p>
         )}
       </section>
       <ol className="flex flex-col gap-stack-tight">
-        {adjustedDays.map((day) => (
+        {days.map((day) => (
           <li
             key={day.date.toISOString()}
             className="flex items-center justify-between gap-stack rounded-[22px] border border-border bg-card px-4 py-3 shadow-soft"
@@ -291,7 +279,7 @@ function RevenueForecastList({
             </div>
             <div className="shrink-0 text-right">
               <p className="text-body font-semibold text-blue-deep">
-                {formatWon(day.adjustedRevenue)}원
+                {formatWon(day.predictedRevenue)}원
               </p>
               {meanAbsoluteWonError !== null && (
                 <p className="text-micro text-ink-3">±{formatWon(meanAbsoluteWonError)}원</p>
