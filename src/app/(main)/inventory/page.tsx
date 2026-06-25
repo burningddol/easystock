@@ -35,22 +35,24 @@ export default function InventoryPage(): React.ReactElement {
 
       <nav
         aria-label="재료 빠른 작업"
-        className="rounded-[22px] border border-border bg-card px-4 py-4 shadow-soft"
+        className="rounded-[22px] border border-border bg-card px-4 py-3 shadow-soft"
       >
         <div>
           <h2 className="text-label text-ink-1">빠른 작업</h2>
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
           {INVENTORY_ACTIONS.map((action) => (
             <Link
               key={action.href}
               href={action.href}
-              className="group flex min-h-[4.25rem] flex-col justify-center rounded-2xl border border-border-strong bg-white px-4 py-3 text-left shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft"
+              className="group flex min-h-[3.25rem] flex-col justify-center rounded-2xl border border-border-strong bg-white px-3 py-2 text-left shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft"
             >
-              <span className="text-label font-semibold text-ink-1 group-hover:text-blue-deep">
+              <span className="text-caption font-semibold text-ink-1 group-hover:text-blue-deep">
                 {action.label}
               </span>
-              <span className="mt-1 text-caption text-ink-3">{action.description}</span>
+              <span className="mt-0.5 truncate text-[11px] leading-snug text-ink-3">
+                {action.description}
+              </span>
             </Link>
           ))}
         </div>
@@ -69,20 +71,20 @@ export default function InventoryPage(): React.ReactElement {
 }
 
 const INVENTORY_ACTIONS = [
-  { href: "/purchase", label: "매입 등록", description: "재료를 사온 내역을 입력합니다." },
+  { href: "/purchase", label: "매입 등록", description: "사온 재료 입력" },
   {
     href: "/inventory/stock-count",
     label: "재고 실사",
-    description: "실제 남은 수량으로 맞춥니다.",
+    description: "실제 수량 맞춤",
   },
   {
     href: "/inventory/orders",
     label: "발주 추천",
-    description: "부족해질 재료와 주문량을 봅니다.",
+    description: "부족 재료 확인",
   },
   {
     href: "/inventory/forecast-accuracy",
     label: "예측 정확도",
-    description: "매출·메뉴·재료 예측이 맞았는지 봅니다.",
+    description: "예측 결과 확인",
   },
 ] as const;
