@@ -126,7 +126,7 @@ function ForecastTabNav({
   return (
     <nav
       aria-label="예측 종류"
-      className="grid gap-stack-tight rounded-[24px] border border-border bg-card p-2 shadow-soft md:grid-cols-3"
+      className="grid grid-cols-3 gap-1 rounded-[20px] border border-border bg-card p-1.5 shadow-soft"
     >
       <ForecastTabLink
         tab="revenue"
@@ -174,14 +174,19 @@ function ForecastTabLink({
       href={`/inventory/forecast?${params.toString()}`}
       aria-current={selected ? "page" : undefined}
       className={cn(
-        "rounded-[20px] px-4 py-3 transition",
+        "min-w-0 rounded-2xl px-2 py-2.5 text-center transition md:px-4 md:py-3",
         selected
           ? "bg-blue text-white shadow-card"
           : "bg-white text-ink-2 shadow-soft hover:bg-blue-soft hover:text-blue-deep",
       )}
     >
-      <span className="block text-body font-semibold">{title}</span>
-      <span className={cn("mt-1 block text-caption", selected ? "text-white/80" : "text-ink-3")}>
+      <span className="block truncate text-caption font-semibold md:text-body">{title}</span>
+      <span
+        className={cn(
+          "mt-1 hidden text-caption md:block",
+          selected ? "text-white/80" : "text-ink-3",
+        )}
+      >
         {description}
       </span>
     </Link>
