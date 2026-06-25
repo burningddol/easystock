@@ -10,6 +10,7 @@ import {
   type ForecastResult,
   type ForecastBasis,
   type IngredientDemandForecast,
+  type MenuDemandForecastResult,
   type PurchaseRecommendationResult,
 } from "@/lib/domain/forecast";
 import {
@@ -26,6 +27,12 @@ interface RpcClient {
 
 const MENU_DEMAND_DEPLETION_HORIZON_DAYS = 365;
 const MENU_FORECAST_BACKTEST_DAYS = 14;
+const MENU_CALIBRATION_BACKTEST_DAYS = 14;
+const MIN_MENU_CALIBRATION_DAYS = 7;
+const MIN_MENU_CALIBRATION_TOTAL_QUANTITY = 10;
+const MENU_CALIBRATION_MIN_FACTOR = 0.8;
+const MENU_CALIBRATION_MAX_FACTOR = 1.25;
+const MENU_CALIBRATION_DEADBAND = 0.05;
 const INGREDIENT_CALIBRATION_BACKTEST_DAYS = 14;
 const MIN_INGREDIENT_CALIBRATION_DAYS = 7;
 const INGREDIENT_CALIBRATION_MIN_FACTOR = 0.85;
@@ -233,17 +240,10 @@ export async function loadMenuDemandForecastViews(
   const today = new Date();
   return (data ?? [])
     .map((row) => {
-      const demandSamples: DailyMenuDemand[] = row.demandSamples.map((sample) => ({
-        date: new Date(sample.date),
-        quantity: Number(sample.quantity),
-      }));
-      const forecast = forecastMenuDemand({
-        demandSamples,
-        daysOff: row.regularDaysOff,
-        signupDate: new Date(row.signedUpAt),
+      const forecast = buildCalibratedMenuDemandForecast({
+        row,
         today,
         horizonDays,
-        sensitivity: row.forecastSensitivity,
       });
       const dailyPredictions = forecast.dailyPredictions.map((day) => ({
         date: day.date,
@@ -304,16 +304,10 @@ export async function loadMenuForecastAccuracyViews(
 
       const dailyResults = targetDates.map((targetDate) => {
         const trainUntil = addDays(targetDate, -1);
-        const trainingSamples: DailyMenuDemand[] = samples
-          .filter((sample) => sample.date.getTime() <= trainUntil.getTime())
-          .map((sample) => ({ date: sample.date, quantity: sample.quantity }));
-        const forecast = forecastMenuDemand({
-          demandSamples: trainingSamples,
-          daysOff: row.regularDaysOff,
-          signupDate: new Date(row.signedUpAt),
+        const forecast = buildCalibratedMenuDemandForecast({
+          row,
           today: trainUntil,
           horizonDays: 1,
-          sensitivity: row.forecastSensitivity,
         });
         const actualQuantity = sampleByDate.get(dateKey(targetDate))?.quantity ?? 0;
         const predictedQuantity = forecast.dailyPredictions[0]?.predictedQuantity ?? 0;
@@ -399,19 +393,10 @@ export async function loadRevenueForecastAccuracyView(
   const dailyResults = targetDates.map((targetDate) => {
     const trainUntil = addDays(targetDate, -1);
     const predictedRevenue = sumBy(menus, (row) => {
-      const demandSamples: DailyMenuDemand[] = row.demandSamples
-        .map((sample) => ({
-          date: startOfDay(new Date(sample.date)),
-          quantity: Number(sample.quantity),
-        }))
-        .filter((sample) => sample.date.getTime() <= trainUntil.getTime());
-      const forecast = forecastMenuDemand({
-        demandSamples,
-        daysOff: row.regularDaysOff,
-        signupDate: new Date(row.signedUpAt),
+      const forecast = buildCalibratedMenuDemandForecast({
+        row,
         today: trainUntil,
         horizonDays: 1,
-        sensitivity: row.forecastSensitivity,
       });
       return (forecast.dailyPredictions[0]?.predictedQuantity ?? 0) * row.price;
     });
@@ -654,27 +639,127 @@ function buildMenuBasedIngredientDemandForecast(
 ): IngredientDemandForecast[] {
   return forecastIngredientDemandFromMenus(
     rows.map((row) => {
-      const demandSamples: DailyMenuDemand[] = row.demandSamples.map((sample) => ({
-        date: new Date(sample.date),
-        quantity: Number(sample.quantity),
-      }));
-
       return {
         menuId: row.menuId,
         name: row.name,
         baseRecipe: row.baseRecipe,
         optionGroups: row.optionGroups,
-        demandForecast: forecastMenuDemand({
-          demandSamples,
-          daysOff: row.regularDaysOff,
-          signupDate: new Date(row.signedUpAt),
+        demandForecast: buildCalibratedMenuDemandForecast({
+          row,
           today,
           horizonDays,
-          sensitivity: row.forecastSensitivity,
         }),
       };
     }),
   );
+}
+
+function buildCalibratedMenuDemandForecast({
+  row,
+  today,
+  horizonDays,
+}: {
+  row: MenuDemandForecastRows[number];
+  today: Date;
+  horizonDays: number;
+}): MenuDemandForecastResult {
+  const normalizedToday = startOfDay(today);
+  const demandSamples = normalizeMenuDemandSamples(row).filter(
+    (sample) => sample.date.getTime() <= normalizedToday.getTime(),
+  );
+  const forecast = forecastMenuDemand({
+    demandSamples,
+    daysOff: row.regularDaysOff,
+    signupDate: new Date(row.signedUpAt),
+    today: normalizedToday,
+    horizonDays,
+    sensitivity: row.forecastSensitivity,
+  });
+  const calibrationFactor = computeMenuCalibrationFactorForSamples({
+    row,
+    samples: demandSamples,
+  });
+  return applyMenuCalibrationFactor(forecast, calibrationFactor);
+}
+
+function normalizeMenuDemandSamples(row: MenuDemandForecastRows[number]): DailyMenuDemand[] {
+  return row.demandSamples
+    .map((sample) => ({
+      date: startOfDay(new Date(sample.date)),
+      quantity: Number(sample.quantity),
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+function computeMenuCalibrationFactorForSamples({
+  row,
+  samples,
+}: {
+  row: MenuDemandForecastRows[number];
+  samples: readonly DailyMenuDemand[];
+}): number {
+  const latestSampleDate = samples.at(-1)?.date;
+  if (!latestSampleDate) return 1;
+
+  const sampleByDate = new Map(samples.map((sample) => [dateKey(sample.date), sample]));
+  const targetDates = Array.from({ length: MENU_CALIBRATION_BACKTEST_DAYS }, (_, index) =>
+    addDays(latestSampleDate, index - MENU_CALIBRATION_BACKTEST_DAYS + 1),
+  );
+  const evaluated = targetDates
+    .map((targetDate) => {
+      const trainUntil = addDays(targetDate, -1);
+      const trainingSamples = samples.filter(
+        (sample) => sample.date.getTime() <= trainUntil.getTime(),
+      );
+      const forecast = forecastMenuDemand({
+        demandSamples: trainingSamples,
+        daysOff: row.regularDaysOff,
+        signupDate: new Date(row.signedUpAt),
+        today: trainUntil,
+        horizonDays: 1,
+        sensitivity: row.forecastSensitivity,
+      });
+      return {
+        actualQuantity: sampleByDate.get(dateKey(targetDate))?.quantity ?? 0,
+        predictedQuantity: forecast.dailyPredictions[0]?.predictedQuantity ?? 0,
+      };
+    })
+    .filter((result) => result.actualQuantity > 0);
+
+  const actualTotal = sumBy(evaluated, (result) => result.actualQuantity);
+  const predictedTotal = sumBy(evaluated, (result) => result.predictedQuantity);
+  return computeMenuCalibrationFactor(actualTotal, predictedTotal, evaluated.length);
+}
+
+function computeMenuCalibrationFactor(
+  actualTotal: number,
+  predictedTotal: number,
+  evaluatedDayCount: number,
+): number {
+  if (
+    evaluatedDayCount < MIN_MENU_CALIBRATION_DAYS ||
+    actualTotal < MIN_MENU_CALIBRATION_TOTAL_QUANTITY ||
+    predictedTotal <= 0
+  ) {
+    return 1;
+  }
+  const rawFactor = actualTotal / predictedTotal;
+  if (Math.abs(rawFactor - 1) <= MENU_CALIBRATION_DEADBAND) return 1;
+  return Math.min(MENU_CALIBRATION_MAX_FACTOR, Math.max(MENU_CALIBRATION_MIN_FACTOR, rawFactor));
+}
+
+function applyMenuCalibrationFactor(
+  forecast: MenuDemandForecastResult,
+  factor: number,
+): MenuDemandForecastResult {
+  if (factor === 1) return forecast;
+  return {
+    ...forecast,
+    dailyPredictions: forecast.dailyPredictions.map((day) => ({
+      ...day,
+      predictedQuantity: day.predictedQuantity * factor,
+    })),
+  };
 }
 
 function buildIngredientCalibrationFactors(
@@ -736,25 +821,15 @@ function buildIngredientBacktestPredictions(
     const trainUntil = addDays(targetDate, -1);
     const predicted = forecastIngredientDemandFromMenus(
       menuRows.map((row) => {
-        const demandSamples: DailyMenuDemand[] = row.demandSamples
-          .map((sample) => ({
-            date: startOfDay(new Date(sample.date)),
-            quantity: Number(sample.quantity),
-          }))
-          .filter((sample) => sample.date.getTime() <= trainUntil.getTime());
-
         return {
           menuId: row.menuId,
           name: row.name,
           baseRecipe: row.baseRecipe,
           optionGroups: row.optionGroups,
-          demandForecast: forecastMenuDemand({
-            demandSamples,
-            daysOff: row.regularDaysOff,
-            signupDate: new Date(row.signedUpAt),
+          demandForecast: buildCalibratedMenuDemandForecast({
+            row,
             today: trainUntil,
             horizonDays: 1,
-            sensitivity: row.forecastSensitivity,
           }),
         };
       }),

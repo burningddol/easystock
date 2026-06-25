@@ -424,7 +424,7 @@ describe("application layer", () => {
       expect(result?.forecastSource).toBe("menu_demand");
       expect(result?.purchaseRecommendation?.isOrderRecommended).toBe(true);
       expect(result?.purchaseRecommendation?.recommendedOrderQuantity).toBeGreaterThan(10);
-      expect(result?.purchaseRecommendation?.targetDemandQuantity).toBeGreaterThan(90);
+      expect(result?.purchaseRecommendation?.targetDemandQuantity).toBeGreaterThan(80);
     });
 
     it("loadDepletionForecast falls back to safety buffer 1 when rpc field is missing", async () => {
@@ -594,6 +594,40 @@ describe("application layer", () => {
         "large",
         "regular",
       ]);
+    });
+
+    it("loadMenuDemandForecastViews calibrates recent menu underprediction within safe bounds", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-06-25T00:00:00.000Z"));
+      rpcMocks.getMenuDemandForecast.mockResolvedValue({
+        data: [
+          {
+            menuId: "menu-1",
+            name: "망고빙수",
+            price: 12000,
+            isActive: true,
+            baseRecipe: [],
+            optionGroups: [],
+            demandSamples: Array.from({ length: 36 }, (_, index) => ({
+              date: new Date(2026, 4, 20 + index).toISOString().slice(0, 10),
+              quantity: index < 22 ? 5 : 20,
+            })),
+            signedUpAt: "2026-05-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+
+      try {
+        const [result] = await loadMenuDemandForecastViews({ rpc: {} }, 7);
+
+        expect(result?.dailyPredictions).toHaveLength(7);
+        expect(result?.sevenDayTotalQuantity).toBeGreaterThan(120);
+        expect(result?.sevenDayTotalQuantity).toBeLessThan(175);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it("loadMenuForecastAccuracyViews backtests predicted demand against actual sales", async () => {
