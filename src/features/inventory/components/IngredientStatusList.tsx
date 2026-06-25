@@ -286,8 +286,7 @@ function formatAccuracyLabel(
     if (dayError === null) return variant === "detail" ? "정확도 수집 중" : null;
     return `오차 ±${formatDayDelta(dayError)}일`;
   }
-  const depletionDayError =
-    accuracy.meanAbsoluteDayEquivalentError ?? days * accuracy.weightedAbsolutePercentageError;
+  const depletionDayError = days * accuracy.weightedAbsolutePercentageError;
   const errorLabel = `오차 ±${formatDayDelta(depletionDayError)}일`;
   const direction = getAccuracyDirection(accuracy);
   if (direction === "under") {
