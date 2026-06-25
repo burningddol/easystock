@@ -156,6 +156,10 @@ function OrderRecommendationCard({
   const quantity = Math.ceil(recommendation.recommendedOrderQuantity);
   const days = daysUntilDate(item.expectedDepletionDate);
   const orderByLabel = formatOrderByDate(recommendation.orderByDate);
+  const depletionDemand = Math.min(
+    Math.max(0, item.currentStock),
+    recommendation.targetDemandQuantity,
+  );
 
   return (
     <div className="rounded-[22px] border border-red/15 bg-red-soft/70 px-3 py-3 text-red-deep shadow-soft">
@@ -185,11 +189,17 @@ function OrderRecommendationCard({
         <dl className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
           <OrderStockDemandFactor
             currentStock={formatAmount(item.currentStock, item.unit)}
-            targetDemand={formatAmount(recommendation.targetDemandQuantity, item.unit)}
+            depletionDemand={formatAmount(depletionDemand, item.unit)}
+          />
+          <OrderFactor
+            label="목표 필요량"
+            value={formatAmount(recommendation.targetDemandQuantity, item.unit)}
           />
           <OrderFactor label="리드타임" value={`${item.leadTimeDays}일`} />
-          <OrderFactor label="안전여유" value={`${item.safetyBufferDays}일`} />
-          <OrderFactor label="목표운영" value={`${recommendation.targetCoverageDays}일`} />
+          <OrderFactor
+            label="안전여유 + 목표운영"
+            value={`${item.safetyBufferDays}일 + ${recommendation.targetCoverageDays}일`}
+          />
         </dl>
         <div className="mt-3 flex flex-col gap-1 leading-relaxed text-ink-3">
           <span>{formatForecastBasisCompact(item)}</span>
@@ -203,18 +213,18 @@ function OrderRecommendationCard({
 
 function OrderStockDemandFactor({
   currentStock,
-  targetDemand,
+  depletionDemand,
 }: {
   currentStock: string;
-  targetDemand: string;
+  depletionDemand: string;
 }): React.ReactElement {
   return (
     <div className="rounded-2xl bg-card px-2 py-2 shadow-soft">
-      <dt className="text-micro text-ink-3">현재고 | 예상 소모량</dt>
+      <dt className="text-micro text-ink-3">현재고 | 소진까지 사용</dt>
       <dd className="mt-0.5 flex items-center justify-center gap-1 text-caption font-semibold tabular-nums text-ink-1">
         <span>{currentStock}</span>
         <span className="text-ink-4">|</span>
-        <span>{targetDemand}</span>
+        <span>{depletionDemand}</span>
       </dd>
     </div>
   );
