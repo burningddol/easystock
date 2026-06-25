@@ -37,7 +37,7 @@ export default function InventoryOrdersPage(): React.ReactElement {
             <Link href="/inventory/orders/report" className={SECONDARY_BUTTON_CLASSES}>
               이력
             </Link>
-            <Link href="/inventory" className={SECONDARY_BUTTON_CLASSES}>
+            <Link href="/inventory/forecast?tab=ingredient" className={SECONDARY_BUTTON_CLASSES}>
               재료 예측
             </Link>
             <Link href="/purchase" className={SECONDARY_BUTTON_CLASSES}>

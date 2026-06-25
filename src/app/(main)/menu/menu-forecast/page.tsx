@@ -36,7 +36,7 @@ function MenuForecastContent(): React.ReactElement {
             <Link href="/inventory/forecast-accuracy?tab=menu" className={SECONDARY_BUTTON_CLASSES}>
               정확도
             </Link>
-            <Link href="/inventory" className={SECONDARY_BUTTON_CLASSES}>
+            <Link href="/inventory/forecast?tab=ingredient" className={SECONDARY_BUTTON_CLASSES}>
               재료 예측
             </Link>
           </div>
@@ -64,7 +64,8 @@ function MenuForecastContent(): React.ReactElement {
         selectedValue={horizonDays}
         options={HORIZON_OPTIONS}
         suffix="일"
-        pathname="/menu/menu-forecast"
+        pathname="/inventory/forecast"
+        extraParams={{ tab: "menu" }}
       />
 
       {query.isLoading && <LoadingText />}

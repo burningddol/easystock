@@ -74,5 +74,6 @@ const INVENTORY_ACTIONS = [
   { href: "/purchase", label: "매입 등록" },
   { href: "/inventory/stock-count", label: "재고 실사" },
   { href: "/inventory/orders", label: "발주 추천" },
-  { href: "/inventory/forecast-accuracy", label: "예측 정확도" },
+  { href: "/inventory/forecast?tab=ingredient", label: "재료 예측" },
+  { href: "/inventory/forecast-accuracy?tab=ingredient", label: "예측 정확도" },
 ] as const;

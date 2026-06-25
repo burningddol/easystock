@@ -41,8 +41,8 @@ function ForecastAccuracyContent(): React.ReactElement {
       <PageHeader
         title="예측 정확도"
         action={
-          <Link href="/menu/menu-forecast" className={SECONDARY_BUTTON_CLASSES}>
-            메뉴 예측
+          <Link href={`/inventory/forecast?tab=${activeTab}`} className={SECONDARY_BUTTON_CLASSES}>
+            예측 보기
           </Link>
         }
       />

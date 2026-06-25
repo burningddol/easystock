@@ -94,10 +94,10 @@ export default function TodayPage(): React.ReactElement {
               : "오늘 필요한 발주와 마진 변화를 먼저 확인하세요."}
           </p>
           <Link
-            href="/inventory/forecast-accuracy"
+            href="/inventory/forecast?tab=revenue"
             className="mt-3 inline-flex w-fit items-center rounded-full bg-white px-3 py-2 text-caption font-semibold text-blue-deep shadow-soft transition hover:-translate-y-0.5 hover:bg-blue-soft"
           >
-            예측 정확도 보기
+            매출 예측 보기
           </Link>
         </div>
       </header>

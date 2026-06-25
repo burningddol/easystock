@@ -60,6 +60,6 @@ export default function MenuPage(): React.ReactElement {
 }
 
 const MENU_ACTIONS = [
-  { href: "/menu/menu-forecast", label: "메뉴 예측" },
+  { href: "/inventory/forecast?tab=menu", label: "메뉴 예측" },
   { href: "/inventory/forecast-accuracy?tab=menu", label: "예측 정확도" },
 ] as const;
