@@ -110,10 +110,6 @@ export default function TodayPage(): React.ReactElement {
         </div>
       </header>
 
-      <YesterdayKpiCard yesterday={data.yesterday} weeklyChart={data.weeklyChart} />
-
-      <OrderSummaryCard items={orderItems} isLoading={forecast.isLoading} />
-
       <AlertsCard
         depletionItems={forecast.data ?? []}
         expiryAlerts={data.expiryAlerts}
@@ -125,6 +121,10 @@ export default function TodayPage(): React.ReactElement {
         <QuickAction href="/sale" label="판매 입력" tone="primary" />
         <QuickAction href="/purchase" label="매입 등록" tone="secondary" />
       </nav>
+
+      <YesterdayKpiCard yesterday={data.yesterday} weeklyChart={data.weeklyChart} />
+
+      <OrderSummaryCard items={orderItems} isLoading={forecast.isLoading} />
 
       <MarginTop3Card top3={data.top3Menus} lowMargin={data.lowMarginMenu} />
     </section>
