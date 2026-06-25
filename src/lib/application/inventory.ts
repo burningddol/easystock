@@ -540,22 +540,26 @@ export async function loadIngredientForecastAccuracyViews(
         evaluated.length > 0
           ? sumBy(evaluated, (result) => result.absoluteAmountError) / evaluated.length
           : null;
+      const meanActualDailyAmount =
+        evaluated.length > 0
+          ? sumBy(evaluated, (result) => result.actualAmount) / evaluated.length
+          : null;
       const weightedAbsolutePercentageError = computeWape(
         sumBy(dailyResults, (result) => result.absoluteAmountError),
         actualTotalAmount,
       );
-      const dayErrorSamples = evaluated.filter((result) => result.dayEquivalentError !== null);
       const meanAbsoluteDayEquivalentError =
-        dayErrorSamples.length > 0
-          ? sumBy(dayErrorSamples, (result) => result.dayEquivalentError ?? 0) /
-            dayErrorSamples.length
+        meanAbsoluteAmountError !== null &&
+        meanActualDailyAmount !== null &&
+        meanActualDailyAmount > 0
+          ? meanAbsoluteAmountError / meanActualDailyAmount
           : null;
       const riskAdjustedDayError =
-        dayErrorSamples.length > 0
-          ? sumBy(dayErrorSamples, (result) => {
+        meanActualDailyAmount !== null && meanActualDailyAmount > 0 && evaluated.length > 0
+          ? sumBy(evaluated, (result) => {
               const weight = result.signedAmountError < 0 ? 2 : 1;
-              return (result.dayEquivalentError ?? 0) * weight;
-            }) / dayErrorSamples.length
+              return (result.absoluteAmountError / meanActualDailyAmount) * weight;
+            }) / evaluated.length
           : null;
       const underPredictedDayCount = evaluated.filter(
         (result) => result.signedAmountError < 0,

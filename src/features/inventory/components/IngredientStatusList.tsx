@@ -122,7 +122,9 @@ function IngredientRow({
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
             <span className={cn(toneClass(item.status))}>{depletionLabel}</span>
             {item.trend !== "normal" && <TrendBadge trend={item.trend} />}
-            {accuracy && <AccuracyBadge item={item} accuracy={accuracy} />}
+            {accuracy && shouldShowAccuracyBadge(item) && (
+              <AccuracyBadge item={item} accuracy={accuracy} />
+            )}
           </div>
           <button
             type="button"
@@ -271,12 +273,21 @@ function formatAccuracyLabel(
   item: IngredientForecastView,
   accuracy: IngredientForecastAccuracyView,
 ): string {
-  const dayError = accuracy.meanAbsoluteDayEquivalentError;
-  if (dayError === null || accuracy.evaluatedDayCount < 3) return "정확도 수집 중";
+  if (accuracy.weightedAbsolutePercentageError === null || accuracy.evaluatedDayCount < 3) {
+    return "정확도 수집 중";
+  }
   const days = daysUntilDate(item.expectedDepletionDate);
-  if (days === null) return `보통 ±${Number(dayError.toFixed(1))}일`;
-  const earliestDays = Math.max(0, days - Math.ceil(dayError));
-  return `보통 ±${Number(dayError.toFixed(1))}일 · 빠르면 ${earliestDays}일`;
+  if (days === null) {
+    const dayError = accuracy.meanAbsoluteDayEquivalentError;
+    return dayError === null ? "정확도 수집 중" : `오차 ±${Number(dayError.toFixed(1))}일`;
+  }
+  const depletionDayError = days * accuracy.weightedAbsolutePercentageError;
+  const earliestDays = Math.max(0, Math.floor(days - depletionDayError));
+  const latestDays = Math.ceil(days + depletionDayError);
+  const errorLabel = `오차 ±${Number(depletionDayError.toFixed(1))}일`;
+  if (accuracy.bias === "under") return `${errorLabel} · 빠르면 ${earliestDays}일`;
+  if (accuracy.bias === "over") return `${errorLabel} · 늦으면 ${latestDays}일`;
+  return `${errorLabel} · 예상 ${earliestDays}~${latestDays}일`;
 }
 
 function formatLeadTimeSource(item: IngredientForecastView): string {
@@ -328,7 +339,14 @@ function formatDepletion(item: IngredientForecastView): string {
   const days = daysUntilDate(item.expectedDepletionDate);
   if (days === null) return "예측 데이터 부족";
   if (days === 0) return "오늘 소진";
+  if (days > 30) return `여유 있음 · 약 ${days}일 후 소진`;
+  if (days > 14) return `약 ${days}일 후 소진`;
   return `${days}일 후 소진`;
+}
+
+function shouldShowAccuracyBadge(item: IngredientForecastView): boolean {
+  const days = daysUntilDate(item.expectedDepletionDate);
+  return days !== null && days <= 14;
 }
 
 function formatDepletionBadge(days: number | null): string {

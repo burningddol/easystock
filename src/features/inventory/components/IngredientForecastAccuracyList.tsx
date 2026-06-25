@@ -97,7 +97,7 @@ function IngredientForecastAccuracyCard({
           label="평균 소비오차"
           value={formatNullableAmount(item.meanAbsoluteAmountError, item.unit)}
         />
-        <Metric label="일수오차" value={formatDayError(item.meanAbsoluteDayEquivalentError)} />
+        <Metric label="소진일 영향" value={formatDayError(item.meanAbsoluteDayEquivalentError)} />
       </dl>
 
       <TuningHint item={item} />
