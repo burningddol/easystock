@@ -25,7 +25,7 @@ export default function MenuPage(): React.ReactElement {
             </Link>
             <details className="group relative">
               <summary className="flex cursor-pointer list-none items-center justify-center gap-1 rounded-2xl border border-border-strong bg-white px-4 py-3 text-body-regular font-semibold text-ink-1 shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft [&::-webkit-details-marker]:hidden">
-                <span>작업</span>
+                <span>예측</span>
                 <ChevronDown
                   size={16}
                   strokeWidth={2.2}

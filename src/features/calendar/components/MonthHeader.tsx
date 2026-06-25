@@ -12,7 +12,7 @@ interface MonthHeaderProps {
 
 /**
  * 월간 캘린더 헤더 (patterns.md "캘린더" 위계 #1).
- * "2026년 4월" + 이전/다음 달 네비 + 캘린더 작업.
+ * "2026년 4월" + 이전/다음 달 네비 + 캘린더 예측.
  */
 export function MonthHeader({ year, month, onPrev, onNext }: MonthHeaderProps): React.ReactElement {
   return (
@@ -61,7 +61,7 @@ function CalendarActions(): React.ReactElement {
   return (
     <details className="group relative">
       <summary className="flex cursor-pointer list-none items-center justify-center gap-1 rounded-2xl border border-border-strong bg-white px-4 py-3 text-body-regular font-semibold text-ink-1 shadow-soft transition hover:-translate-y-0.5 hover:border-blue/30 hover:bg-blue-soft [&::-webkit-details-marker]:hidden">
-        <span>작업</span>
+        <span>예측</span>
         <ChevronDown
           size={16}
           strokeWidth={2.2}
