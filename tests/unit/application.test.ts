@@ -369,6 +369,64 @@ describe("application layer", () => {
       expect(result?.purchaseRecommendation?.recommendedOrderQuantity).toBeGreaterThan(0);
     });
 
+    it("loadDepletionForecast calibrates menu-based ingredient demand from recent actual usage", async () => {
+      rpcMocks.getDepletionForecast.mockResolvedValue({
+        data: [
+          {
+            ingredientId: "milk",
+            name: "우유",
+            unit: "ml",
+            currentStock: 10,
+            leadTimeDays: 1,
+            leadTimeVendorId: null,
+            leadTimeVendorName: null,
+            isDefaultLeadTime: true,
+            safetyBufferDays: 1,
+            purchaseCoverageDays: 7,
+            consumptionSamples: Array.from({ length: 14 }, (_, index) => ({
+              date: `2026-06-${String(index + 11).padStart(2, "0")}`,
+              amount: 20,
+            })),
+            signedUpAt: "2026-05-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+      rpcMocks.getMenuDemandForecast.mockResolvedValue({
+        data: [
+          {
+            menuId: "menu-1",
+            name: "라떼",
+            price: 4500,
+            isActive: true,
+            baseRecipe: [{ ingredientId: "milk", quantityPerServing: 1 }],
+            optionGroups: [],
+            demandSamples: Array.from({ length: 36 }, (_, index) => ({
+              date: new Date(2026, 4, 20 + index).toISOString().slice(0, 10),
+              quantity: 10,
+            })),
+            signedUpAt: "2026-05-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+      forecastMocks.forecastIngredient.mockReturnValue({
+        expectedDepletionDate: null,
+        status: "safe",
+        trend: "normal",
+        isColdStart: false,
+      });
+
+      const [result] = await loadDepletionForecast({ rpc: {} });
+
+      expect(result?.forecastSource).toBe("menu_demand");
+      expect(result?.purchaseRecommendation?.isOrderRecommended).toBe(true);
+      expect(result?.purchaseRecommendation?.recommendedOrderQuantity).toBeGreaterThan(10);
+      expect(result?.purchaseRecommendation?.targetDemandQuantity).toBeGreaterThan(90);
+    });
+
     it("loadDepletionForecast falls back to safety buffer 1 when rpc field is missing", async () => {
       rpcMocks.getDepletionForecast.mockResolvedValue({
         data: [
