@@ -96,12 +96,6 @@ export default function CalendarPage(): React.ReactElement {
     }
   }
 
-  function jumpToday(): void {
-    const now = new Date();
-    setYear(now.getFullYear());
-    setMonth(now.getMonth() + 1);
-  }
-
   if (year === null || month === null || query.isLoading) {
     return (
       <p className="glow-panel rounded-[28px] border border-white/70 bg-white/92 px-5 py-4 text-body-regular text-ink-3 shadow-soft">
@@ -124,7 +118,6 @@ export default function CalendarPage(): React.ReactElement {
         month={month}
         onPrev={() => navigate(-1)}
         onNext={() => navigate(1)}
-        onToday={jumpToday}
       />
       <MonthCumulativeCard
         cumulative={query.data.cumulative}
