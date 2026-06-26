@@ -59,8 +59,8 @@ function ForecastContent(): React.ReactElement {
 
       <section className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
         <p className="text-body text-ink-1">{getIntro(activeTab, horizonDays)}</p>
-        <p className="mt-1 text-caption text-ink-3">
-          중심값은 최종 메뉴 예측 기준이고, 자세한 오차 검증은 정확도 화면에서 확인합니다.
+        <p className="mt-1 text-caption leading-6 text-ink-3">
+          표시값은 내부 보정이 반영된 최종 예측입니다. 오차 검증은 정확도 화면에서 확인합니다.
         </p>
       </section>
 
