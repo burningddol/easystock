@@ -52,8 +52,7 @@ function ForecastAccuracyContent(): React.ReactElement {
           최근 {backtestDays}일 기준으로 {getTabNoun(activeTab)} 예측과 실제값을 비교합니다.
         </p>
         <p className="mt-1 text-caption leading-6 text-ink-3">
-          전날까지 데이터로 다시 예측해 실제와 비교합니다. 운영 화면의 예측값은 이미 내부 보정이
-          반영된 최종값이며, 여기의 오차율은 추가 보정값이 아니라 검증 지표입니다.
+          오차율은 추가 보정값이 아니라, 최종 예측과 실제값의 차이입니다.
         </p>
       </section>
 
