@@ -131,21 +131,21 @@ function AccuracyTabNav({
         tab="revenue"
         activeTab={activeTab}
         backtestDays={backtestDays}
-        title="매출 예측"
+        title="매출 정확도"
         description="운영 판단 기준"
       />
       <AccuracyTabLink
         tab="menu"
         activeTab={activeTab}
         backtestDays={backtestDays}
-        title="메뉴 예측"
+        title="메뉴 정확도"
         description="판매량·예상 매출 기준"
       />
       <AccuracyTabLink
         tab="ingredient"
         activeTab={activeTab}
         backtestDays={backtestDays}
-        title="재료 예측"
+        title="재료 정확도"
         description="소비량·발주 판단 기준"
       />
     </nav>
