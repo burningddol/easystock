@@ -198,17 +198,14 @@ function FutureForecastDetail({
     <div className="flex flex-col gap-section">
       <article className="flex flex-col gap-stack rounded-xl border border-border bg-card p-tile">
         <div className="flex flex-col gap-stack-tight">
-          <p className="text-micro text-ink-3">예상 범위</p>
+          <p className="text-micro text-ink-3">예상</p>
           <div className="grid grid-cols-2 gap-stack">
-            <Metric
-              label="예상 매출"
-              value={formatRevenueForecastRange(forecast.totalRevenue, meanAbsoluteWonError)}
-            />
+            <Metric label="예상 매출" value={`${formatWon(forecast.totalRevenue)}원`} />
             <Metric label="예상 판매" value={`${formatNumber(forecast.totalQuantity)}개`} />
           </div>
           {meanAbsoluteWonError !== null && (
             <p className="text-caption text-ink-3">
-              최근 백테스트 기준 보통 ±{formatAverageWonError(meanAbsoluteWonError)} 범위로 보세요.
+              최근 검증 오차는 예측 정확도 화면에서 확인할 수 있어요.
             </p>
           )}
           <Notice tone="neutral">
@@ -625,13 +622,6 @@ function buildRevenueBacktestSummaryForDate(
 function formatAverageWonError(value: number | null): string {
   if (value === null) return "-";
   return `${formatNumber(Number((value / 10000).toFixed(1)))}만원`;
-}
-
-function formatRevenueForecastRange(revenue: number, meanAbsoluteWonError: number | null): string {
-  if (meanAbsoluteWonError === null) return `${formatWon(revenue)}원`;
-  const lower = Math.max(0, revenue - meanAbsoluteWonError);
-  const upper = revenue + meanAbsoluteWonError;
-  return `${formatWon(lower)}~${formatWon(upper)}원`;
 }
 
 function formatSignedRevenueError(signedWonError: number): string {

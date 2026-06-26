@@ -129,7 +129,6 @@ export default function CalendarPage(): React.ReactElement {
         cells={query.data.cells}
         menuForecastByDate={menuForecastByDate}
         revenueErrorByDate={revenueErrorByDate}
-        revenueMeanAbsoluteWonError={revenueAccuracyQuery.data?.meanAbsoluteWonError ?? null}
         selectedDate={null}
         todayIso={todayIso}
         onSelect={handleSelect}

@@ -12,7 +12,6 @@ interface CalendarGridProps {
   cells: readonly EnrichedCalendarCell[];
   menuForecastByDate?: ReadonlyMap<string, CalendarMenuForecastSummary>;
   revenueErrorByDate?: ReadonlyMap<string, CalendarRevenueAccuracySummary>;
-  revenueMeanAbsoluteWonError?: number | null;
   selectedDate: string | null;
   todayIso: string | null;
   onSelect: (cell: EnrichedCalendarCell) => void;
@@ -37,7 +36,6 @@ export function CalendarGrid({
   cells,
   menuForecastByDate,
   revenueErrorByDate,
-  revenueMeanAbsoluteWonError,
   selectedDate,
   todayIso,
   onSelect,
@@ -61,7 +59,6 @@ export function CalendarGrid({
             cell={cell}
             forecast={menuForecastByDate?.get(cell.date) ?? null}
             revenueError={revenueErrorByDate?.get(cell.date) ?? null}
-            revenueMeanAbsoluteWonError={revenueMeanAbsoluteWonError ?? null}
             maxRevenue={maxRevenue}
             isSelected={cell.date === selectedDate}
             isToday={cell.date === todayIso}
@@ -140,7 +137,6 @@ interface DayCellProps {
   cell: EnrichedCalendarCell;
   forecast: CalendarMenuForecastSummary | null;
   revenueError: CalendarRevenueAccuracySummary | null;
-  revenueMeanAbsoluteWonError: number | null;
   maxRevenue: number;
   isSelected: boolean;
   isToday: boolean;
@@ -151,7 +147,6 @@ function DayCell({
   cell,
   forecast,
   revenueError,
-  revenueMeanAbsoluteWonError,
   maxRevenue,
   isSelected,
   isToday,
@@ -163,7 +158,7 @@ function DayCell({
   const weekday = date.getDay();
   const isInactive = cell.isFuture || cell.isBeforeSignup || cell.isRegularDayOff;
   const intensityPct = computeIntensityPercent(cell.revenue ?? 0, maxRevenue, isInactive);
-  const tags = getCellTags(cell, forecast, revenueError, revenueMeanAbsoluteWonError);
+  const tags = getCellTags(cell, forecast, revenueError);
 
   return (
     <button
@@ -210,13 +205,12 @@ function getCellTags(
   cell: EnrichedCalendarCell,
   forecast: CalendarMenuForecastSummary | null,
   revenueError: CalendarRevenueAccuracySummary | null,
-  revenueMeanAbsoluteWonError: number | null,
 ): CellStatusTag[] {
   if (cell.isMissing) return [{ label: "누락", mobileLabel: "누락", tone: "red" }];
   if (cell.isFuture && forecast && forecast.totalRevenue > 0) {
     return [
       {
-        label: formatForecastRevenueRange(forecast.totalRevenue, revenueMeanAbsoluteWonError),
+        label: formatForecastRevenueLabel(forecast.totalRevenue),
         mobileLabel: `예${formatNumber(Math.round(forecast.totalRevenue / 10000))}`,
         tone: "blue",
       },
@@ -248,11 +242,9 @@ function getCellTags(
   return [];
 }
 
-function formatForecastRevenueRange(revenue: number, meanAbsoluteWonError: number | null): string {
+function formatForecastRevenueLabel(revenue: number): string {
   const revenueMan = formatNumber(Math.round(revenue / 10000));
-  if (meanAbsoluteWonError === null) return `예상 ${revenueMan}만`;
-  const errorMan = Math.max(1, Math.round(meanAbsoluteWonError / 10000));
-  return `예상 ${revenueMan}만±${formatNumber(errorMan)}만`;
+  return `예상 ${revenueMan}만`;
 }
 
 function formatSignedWonError(signedWonError: number): string {

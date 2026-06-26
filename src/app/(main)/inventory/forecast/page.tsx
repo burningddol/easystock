@@ -59,8 +59,8 @@ function ForecastContent(): React.ReactElement {
 
       <section className="rounded-[24px] border border-border bg-card px-5 py-5 shadow-soft">
         <p className="text-body text-ink-1">{getIntro(activeTab, horizonDays)}</p>
-        <p className="mt-1 text-caption text-ink-3">
-          중심값은 보정된 메뉴 예측 기준이고, 자세한 오차 검증은 정확도 화면에서 확인합니다.
+        <p className="mt-1 text-caption leading-6 text-ink-3">
+          표시값은 내부 보정이 반영된 최종 예측입니다.
         </p>
       </section>
 
@@ -261,7 +261,7 @@ function RevenueForecastList({
         </p>
         {meanAbsoluteWonError !== null && (
           <p className="mt-2 text-caption text-ink-3">
-            최근 14일 기준 평균 {formatWon(meanAbsoluteWonError)}원 정도 차이가 났어요.
+            최근 검증 기준 평균 {formatWon(meanAbsoluteWonError)}원 정도 차이 났어요.
           </p>
         )}
       </section>

@@ -51,9 +51,8 @@ function ForecastAccuracyContent(): React.ReactElement {
         <p className="text-body text-ink-1">
           최근 {backtestDays}일 기준으로 {getTabNoun(activeTab)} 예측과 실제값을 비교합니다.
         </p>
-        <p className="mt-1 text-caption text-ink-3">
-          각 날짜의 전날까지 데이터만 사용해 다시 예측하므로, 모델이 실제로 얼마나 빗나갔는지
-          검증하는 화면입니다.
+        <p className="mt-1 text-caption leading-6 text-ink-3">
+          오차율은 추가 보정값이 아니라, 최종 예측과 실제값의 차이입니다.
         </p>
       </section>
 
@@ -132,21 +131,21 @@ function AccuracyTabNav({
         tab="revenue"
         activeTab={activeTab}
         backtestDays={backtestDays}
-        title="매출 예측"
+        title="매출 정확도"
         description="운영 판단 기준"
       />
       <AccuracyTabLink
         tab="menu"
         activeTab={activeTab}
         backtestDays={backtestDays}
-        title="메뉴 예측"
+        title="메뉴 정확도"
         description="판매량·예상 매출 기준"
       />
       <AccuracyTabLink
         tab="ingredient"
         activeTab={activeTab}
         backtestDays={backtestDays}
-        title="재료 예측"
+        title="재료 정확도"
         description="소비량·발주 판단 기준"
       />
     </nav>

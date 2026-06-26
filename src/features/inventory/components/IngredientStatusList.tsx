@@ -6,11 +6,10 @@ import { daysUntilDate, formatDateKoFromIso, formatNumber, localIsoDate } from "
 import type { DepletionStatus } from "@/lib/domain/forecast";
 import { useDeleteIngredient } from "@/features/purchase/hooks/useIngredients";
 import type { IngredientForecastView } from "../hooks/useDepletionForecast";
-import type { IngredientForecastAccuracyView } from "../hooks/useIngredientForecastAccuracy";
 
 interface IngredientStatusListProps {
   items: readonly IngredientForecastView[];
-  accuracyItems?: readonly IngredientForecastAccuracyView[];
+  accuracyItems?: readonly unknown[];
   variant?: "action" | "detail";
 }
 
@@ -30,7 +29,6 @@ const STATUS_LABEL: Record<DepletionStatus, string> = {
 
 export function IngredientStatusList({
   items,
-  accuracyItems = [],
   variant = "action",
 }: IngredientStatusListProps): React.ReactElement {
   if (items.length === 0) {
@@ -42,9 +40,6 @@ export function IngredientStatusList({
   }
 
   const grouped = new Map<DepletionStatus, IngredientForecastView[]>();
-  const accuracyByIngredient = new Map(
-    accuracyItems.map((accuracy) => [accuracy.ingredientId, accuracy]),
-  );
   for (const item of items) {
     const list = grouped.get(item.status) ?? [];
     list.push(item);
@@ -66,12 +61,7 @@ export function IngredientStatusList({
             </div>
             <ul className="flex flex-col gap-stack-tight">
               {list.map((item) => (
-                <IngredientRow
-                  key={item.ingredientId}
-                  item={item}
-                  accuracy={accuracyByIngredient.get(item.ingredientId)}
-                  variant={variant}
-                />
+                <IngredientRow key={item.ingredientId} item={item} variant={variant} />
               ))}
             </ul>
           </section>
@@ -83,11 +73,9 @@ export function IngredientStatusList({
 
 function IngredientRow({
   item,
-  accuracy,
   variant,
 }: {
   item: IngredientForecastView;
-  accuracy?: IngredientForecastAccuracyView;
   variant: "action" | "detail";
 }): React.ReactElement {
   const depletionLabel = formatDepletion(item);
@@ -127,9 +115,6 @@ function IngredientRow({
           <div className="flex flex-col items-end gap-1 text-caption tabular-nums">
             <span className={cn(toneClass(item.status))}>{depletionLabel}</span>
             {item.trend !== "normal" && <TrendBadge trend={item.trend} />}
-            {accuracy && shouldShowAccuracyBadge(item) && (
-              <AccuracyBadge item={item} accuracy={accuracy} variant={variant} />
-            )}
           </div>
           <button
             type="button"
@@ -250,72 +235,6 @@ function OrderFactor({ label, value }: { label: string; value: string }): React.
   );
 }
 
-function AccuracyBadge({
-  item,
-  accuracy,
-  variant,
-}: {
-  item: IngredientForecastView;
-  accuracy: IngredientForecastAccuracyView;
-  variant: "action" | "detail";
-}): React.ReactElement | null {
-  const label = formatAccuracyLabel(item, accuracy, variant);
-  if (!label) return null;
-
-  return (
-    <Link
-      href="/inventory/forecast-accuracy?tab=ingredient"
-      className={cn("rounded-full px-2 py-0.5 text-micro shadow-soft", accuracyTone(accuracy))}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function formatAccuracyLabel(
-  item: IngredientForecastView,
-  accuracy: IngredientForecastAccuracyView,
-  variant: "action" | "detail",
-): string | null {
-  if (accuracy.weightedAbsolutePercentageError === null || accuracy.evaluatedDayCount < 3) {
-    return variant === "detail" ? "정확도 수집 중" : null;
-  }
-  const days = daysUntilDate(item.expectedDepletionDate);
-  if (days === null) {
-    const dayError = accuracy.meanAbsoluteDayEquivalentError;
-    if (dayError === null) return variant === "detail" ? "정확도 수집 중" : null;
-    return `오차 ±${formatDayDelta(dayError)}일`;
-  }
-  const depletionDayError = days * accuracy.weightedAbsolutePercentageError;
-  const errorLabel = `오차 ±${formatDayDelta(depletionDayError)}일`;
-  const direction = getAccuracyDirection(accuracy);
-  if (direction === "under") {
-    return `사용량 증가 · ${errorLabel} · 빠르면 약 ${formatDayDelta(Math.max(0, days - depletionDayError))}일`;
-  }
-  if (direction === "over") {
-    return `사용량 감소 · ${errorLabel} · 느리면 약 ${formatDayDelta(days + depletionDayError)}일`;
-  }
-  return errorLabel;
-}
-
-function accuracyTone(accuracy: IngredientForecastAccuracyView): string {
-  const direction = getAccuracyDirection(accuracy);
-  if (direction === "under") return "bg-red-soft text-red-deep";
-  if (direction === "over") return "bg-blue-soft text-blue-deep";
-  if (accuracy.reliability === "watch") return "bg-amber-soft text-amber-deep";
-  if (accuracy.reliability === "low") return "bg-red-soft text-red-deep";
-  return "bg-bg text-ink-3";
-}
-
-function getAccuracyDirection(
-  accuracy: IngredientForecastAccuracyView,
-): "under" | "over" | "balanced" {
-  if (accuracy.bias === "under" || accuracy.bias === "over") return accuracy.bias;
-  if (accuracy.underPredictedDayCount > accuracy.overPredictedDayCount) return "under";
-  if (accuracy.overPredictedDayCount > accuracy.underPredictedDayCount) return "over";
-  return "balanced";
-}
-
 function formatLeadTimeSource(item: IngredientForecastView): string {
   if (item.isDefaultLeadTime) {
     return "구매 이력이 없어 기본 1일 리드타임을 사용 중";
@@ -368,17 +287,6 @@ function formatDepletion(item: IngredientForecastView): string {
   if (days > 30) return `여유 있음 · 약 ${days}일 후 소진`;
   if (days > 14) return `약 ${days}일 후 소진`;
   return `${days}일 후 소진`;
-}
-
-function shouldShowAccuracyBadge(item: IngredientForecastView): boolean {
-  const days = daysUntilDate(item.expectedDepletionDate);
-  return days !== null && days <= 30;
-}
-
-function formatDayDelta(value: number): string {
-  return Number(value.toFixed(1)).toLocaleString("ko-KR", {
-    maximumFractionDigits: 1,
-  });
 }
 
 function formatDepletionBadge(days: number | null): string {
