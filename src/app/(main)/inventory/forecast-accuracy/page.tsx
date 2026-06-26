@@ -55,6 +55,11 @@ function ForecastAccuracyContent(): React.ReactElement {
           각 날짜의 전날까지 데이터만 사용해 다시 예측하므로, 모델이 실제로 얼마나 빗나갔는지
           검증하는 화면입니다.
         </p>
+        <p className="mt-2 rounded-2xl bg-bg px-3 py-2 text-caption text-ink-3">
+          운영 화면의 예측값은 이 검증 결과를 참고한 내부 보정이 이미 반영된 최종값입니다. 여기의
+          오차율은 예측값을 한 번 더 조정하라는 뜻이 아니라, 최근 최종 예측이 실제와 얼마나 차이
+          났는지 확인하는 지표입니다.
+        </p>
       </section>
 
       <AccuracyTabNav activeTab={activeTab} backtestDays={backtestDays} />
