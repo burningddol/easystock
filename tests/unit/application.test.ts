@@ -369,6 +369,59 @@ describe("application layer", () => {
       expect(result?.purchaseRecommendation?.recommendedOrderQuantity).toBeGreaterThan(0);
     });
 
+    it("loadDepletionForecast does not recommend purchases for safe menu-based demand", async () => {
+      rpcMocks.getDepletionForecast.mockResolvedValue({
+        data: [
+          {
+            ingredientId: "ice",
+            name: "얼음",
+            unit: "g",
+            currentStock: 100000,
+            leadTimeDays: 1,
+            leadTimeVendorId: "vendor-ice",
+            leadTimeVendorName: "얼음상회",
+            isDefaultLeadTime: false,
+            safetyBufferDays: 1,
+            purchaseCoverageDays: 14,
+            consumptionSamples: [{ date: "2026-06-01", amount: 1 }],
+            signedUpAt: "2026-05-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+      rpcMocks.getMenuDemandForecast.mockResolvedValue({
+        data: [
+          {
+            menuId: "menu-1",
+            name: "과일빙수",
+            price: 12000,
+            isActive: true,
+            baseRecipe: [{ ingredientId: "ice", quantityPerServing: 100 }],
+            optionGroups: [],
+            demandSamples: Array.from({ length: 30 }, (_, index) => ({
+              date: `2026-05-${String(index + 1).padStart(2, "0")}`,
+              quantity: 10,
+            })),
+            signedUpAt: "2026-04-01T00:00:00.000Z",
+            regularDaysOff: [],
+          },
+        ],
+        error: null,
+      });
+      forecastMocks.forecastIngredient.mockReturnValue({
+        expectedDepletionDate: null,
+        status: "safe",
+        trend: "normal",
+        isColdStart: false,
+      });
+
+      const [result] = await loadDepletionForecast({ rpc: {} });
+
+      expect(result?.status).toBe("safe");
+      expect(result?.purchaseRecommendation).toBeNull();
+    });
+
     it("loadDepletionForecast calibrates menu-based ingredient demand from recent actual usage", async () => {
       rpcMocks.getDepletionForecast.mockResolvedValue({
         data: [

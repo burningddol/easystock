@@ -211,19 +211,28 @@ export async function loadDepletionForecast(client: RpcClient): Promise<Ingredie
     if (!demand) return legacy;
     const depletionDate = predictDepletionDateFromDemand(legacy.currentStock, demand);
     if (!depletionDate) return legacy;
-    const purchaseRecommendation = recommendPurchaseQuantity({
-      currentStock: legacy.currentStock,
-      leadTimeDays: legacy.leadTimeDays,
-      safetyBufferDays: legacy.safetyBufferDays,
-      dailyDemand: demand.dailyPredictions,
+    const status = classifyStatus(
+      depletionDate,
+      legacy.leadTimeDays,
+      legacy.safetyBufferDays,
       today,
-      coverageDays: legacy.purchaseCoverageDays,
-    });
+    );
+    const shouldRecommendPurchase = status === "critical" || status === "order_needed";
+    const purchaseRecommendation = shouldRecommendPurchase
+      ? recommendPurchaseQuantity({
+          currentStock: legacy.currentStock,
+          leadTimeDays: legacy.leadTimeDays,
+          safetyBufferDays: legacy.safetyBufferDays,
+          dailyDemand: demand.dailyPredictions,
+          today,
+          coverageDays: legacy.purchaseCoverageDays,
+        })
+      : null;
 
     return {
       ...legacy,
       expectedDepletionDate: depletionDate,
-      status: classifyStatus(depletionDate, legacy.leadTimeDays, legacy.safetyBufferDays, today),
+      status,
       forecastSource: "menu_demand",
       purchaseRecommendation,
     };
